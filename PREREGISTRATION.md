@@ -76,6 +76,9 @@ H7 (convergence). Report median fitted slopes per integrator and region against 
 leapfrog 2, RK4 4). No pass/fail threshold; deviations are findings.
 
 ## Which data evaluates what
+- Lock guard: a CSV that has a `locked_test_set*.json` next to it (matched by the CSV's SHA-256) is refused by every command unless
+  `--locked` points at that file. `--ignore_lock` overrides this, prints a warning and is recorded in the run's `manifest.json`;
+  nothing computed with it may be used for a claim about the locked set.
 - Locked set (via `final`, once): H1, H1' and the locked audit for H2.
 - Development rows only (every command run with `--locked data/locked_test_set.json` so locked rows are excluded): H3 (`ablate`),
   H4 and the calibration-stability part of H2 (`audit`), H5 (`errmodel`), H6 (`crash`), H7 (`convergence`), `proxy`, and `gate`.

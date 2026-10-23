@@ -75,3 +75,13 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
   now has a `code` entry.
 - `run_rigor_suite_3d.py`: reports store `prereg_body_sha256`; after a seal `final` refuses to run if the code or the pre-registration
   body changed (override `--allow_post_freeze_changes`, recorded in `final_eval_log.jsonl`); other commands warn.
+
+# 2026-10-23: lock guard
+- `orbit_ml_cr3bp/protocol_3d.py`: `find_lock_for(csv)` finds a `locked_test_set*.json` next to the CSV whose `csv_sha256` matches;
+  `lock_test_set` refuses to draw a second lock for a CSV that already has one.
+- `run_rigor_suite_3d.py`: `load_accuracy_data` (used by every command) raises unless `--locked` is given when the CSV has a lock, or if
+  `--locked` is not that lock; `--ignore_lock` (all commands) overrides with a warning and is recorded in the manifest. `final --final_data`
+  and `lock` skip the check. `lock --locked_out` now defaults to `<folder of --data>/locked_test_set.json` (it used to be the current
+  directory), warns if a custom path would escape the guard, and tells you to pass `--locked` from then on. `--lock_frac` help corrected
+  (the lock is always a random subset of all rows, default 0.25).
+- Not a security boundary: reading the CSV directly (pandas) or a lock stored elsewhere is not detected.

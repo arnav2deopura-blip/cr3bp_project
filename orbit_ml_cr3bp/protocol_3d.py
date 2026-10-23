@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import glob
 import hashlib
 import json
 import math
@@ -13,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 LOCK_FORMAT = "cr3bp_locked_v1"
+LOCK_GLOB = "locked_test_set*.json"
 MIN_PIPELINE_VERSION = 3
 ACCURACY_LABEL_MODES = ("accuracy", "accuracy_monotone")
 
@@ -114,9 +116,32 @@ def check_independent_datasets(paths):
                                      f"their orbit streams overlap. Regenerate with the current generator.")
 
 
+def find_lock_for(csv_path):
+    """Path of a lock file in the CSV's own directory (name locked_test_set*.json) whose recorded csv_sha256
+    matches this CSV, else None. Used to make development commands refuse to load a locked CSV without --locked."""
+    d = os.path.dirname(os.path.abspath(str(csv_path)))
+    cands = sorted(glob.glob(os.path.join(d, LOCK_GLOB)))
+    if not cands:
+        return None
+    h = sha256_file(csv_path)
+    for p in cands:
+        try:
+            with open(p) as f:
+                rec = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if isinstance(rec, dict) and rec.get("format") == LOCK_FORMAT and rec.get("csv_sha256") == h:
+            return p
+    return None
+
+
 def lock_test_set(data, out_path, csv_path, seed=2024, test_frac=0.25):
     if "row_id" not in data.columns:
         raise ValueError("data needs a row_id column (load_accuracy_data adds it)")
+    existing = find_lock_for(csv_path)
+    if existing:
+        raise FileExistsError(f"{csv_path} already has a locked test set ({existing}). A CSV is locked once; archive "
+                              f"that file (and its final-evaluation log) before drawing another.")
     if os.path.exists(out_path):
         raise FileExistsError(f"{out_path} already exists. A locked set is drawn once; archive the old file "
                               f"(and its final-evaluation log) before drawing a new one.")

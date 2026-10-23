@@ -68,8 +68,26 @@ PINNED_REGRESSOR = "hgb_quantile"
 PINNED_QUANTILE = 0.1
 
 
-def load_accuracy_data(path, keep_divergent=False, locked_path=None, only_locked=False):
+# Set from --ignore_lock in main(): knowingly use ALL rows of a CSV that has a lock (recorded in the manifest args).
+LOCK_POLICY = {"ignore": False}
+
+
+def load_accuracy_data(path, keep_divergent=False, locked_path=None, only_locked=False, check_lock=True):
+    """check_lock: a CSV that has a lock file next to it (proto.find_lock_for) is only loaded with --locked pointing at
+    that file, unless --ignore_lock. False for `lock` itself and for an independent --final_data CSV."""
     proto.check_dataset_pipeline(path)
+    if check_lock:
+        existing = proto.find_lock_for(path)
+        if existing and not locked_path:
+            if LOCK_POLICY["ignore"]:
+                print(f"WARNING: --ignore_lock: using ALL rows of {path}, including the rows locked in {existing}. "
+                      f"Do not use anything computed this way for a claim about the locked set.")
+            else:
+                raise ValueError(f"{path} has a locked test set ({existing}) but --locked was not given. Pass "
+                                 f"--locked {existing}, or --ignore_lock to knowingly use all rows (it is recorded "
+                                 f"in the manifest).")
+        if existing and locked_path and os.path.realpath(existing) != os.path.realpath(locked_path):
+            raise ValueError(f"--locked {locked_path} is not the lock for {path}; that is {existing}.")
     d = pd.read_csv(path)
     d["row_id"] = np.arange(len(d))
     if "ftle_nan" in d.columns:
@@ -433,7 +451,7 @@ def cmd_final(a):
     if a.final_data:
         proto.check_independent_datasets([a.data, a.final_data])
         dev = load_accuracy_data(a.data, locked_path=a.locked)
-        locked = load_accuracy_data(a.final_data)
+        locked = load_accuracy_data(a.final_data, check_lock=False)
     else:
         if not a.locked:
             raise ValueError("final needs --locked <locked_test_set.json> or --final_data <independent dataset>")
@@ -495,10 +513,17 @@ def cmd_final(a):
 
 
 def cmd_lock(a):
-    data = load_accuracy_data(a.data, keep_divergent=True)
-    rec = proto.lock_test_set(data, a.locked_out, csv_path=a.data, seed=a.lock_seed, test_frac=a.lock_frac)
-    print(f"Locked {rec['n_locked']} of {rec['n_rows_in_split_pool']} rows to {a.locked_out} "
+    data = load_accuracy_data(a.data, keep_divergent=True, check_lock=False)
+    csv_dir = os.path.dirname(os.path.abspath(a.data))
+    out = a.locked_out or os.path.join(csv_dir, "locked_test_set.json")
+    if os.path.dirname(os.path.abspath(out)) != csv_dir or not os.path.basename(out).startswith("locked_test_set"):
+        print(f"WARNING: {out} is not named locked_test_set*.json in {csv_dir}; the guard that makes development "
+              f"commands refuse this CSV without --locked will not see it. Pass --locked {out} every time.")
+    rec = proto.lock_test_set(data, out, csv_path=a.data, seed=a.lock_seed, test_frac=a.lock_frac)
+    print(f"Locked {rec['n_locked']} of {rec['n_rows_in_split_pool']} rows to {out} "
           f"(csv sha256 {rec['csv_sha256'][:12]}...). Do not use these rows for development.")
+    print(f"From now on pass --locked {out} to every command that reads {a.data}; without it they refuse "
+          f"(--ignore_lock overrides, loudly).")
 
 
 def cmd_proxy(a):
@@ -763,7 +788,10 @@ def main():
         sp.add_argument("--n_estimators", type=int, default=150)
         sp.add_argument("--out_dir", default=".", help="root folder; each run gets its own timestamped subfolder")
         sp.add_argument("--no_run_dir", action="store_true", help="write directly into --out_dir (no run folder)")
-        sp.add_argument("--locked", default=None, help="locked_test_set.json: exclude those rows from this command")
+        sp.add_argument("--locked", default=None, help="locked_test_set.json: exclude those rows from this command. "
+                                                       "Required for any CSV that has a lock file next to it.")
+        sp.add_argument("--ignore_lock", action="store_true",
+                        help="knowingly use ALL rows of a CSV that has a lock (prints a warning; recorded in the manifest)")
         sp.add_argument("--prereg", default=None, help="pre-registration file; its SHA-256 is recorded")
 
     def model_opts(sp):
@@ -802,10 +830,13 @@ def main():
     fn.set_defaults(fn=cmd_final)
 
     lk = sub.add_parser("lock"); common(lk)
-    lk.add_argument("--locked_out", default="locked_test_set.json")
+    lk.add_argument("--locked_out", default=None,
+                    help="where to write the lock; default <folder of --data>/locked_test_set.json (the guard only "
+                         "sees locked_test_set*.json next to the CSV)")
     lk.add_argument("--lock_seed", type=int, default=2024)
     lk.add_argument("--lock_frac", type=float, default=0.25,
-                    help="fraction locked; the grouped split falls back to a RANDOM split for 0.2 or less")
+                    help="fraction of ALL rows (reference-divergent ones included) locked at random with --lock_seed; "
+                         "default 0.25")
     lk.set_defaults(fn=cmd_lock)
 
     pr = sub.add_parser("proxy"); common(pr)
@@ -871,6 +902,7 @@ def main():
     warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
     a.tol_km = resolve_tol_km(a)
     _warn_if_unpinned(a)
+    LOCK_POLICY["ignore"] = bool(getattr(a, "ignore_lock", False))
     freeze_info = _freeze_guard(a)
     root = a.out_dir
     os.makedirs(root, exist_ok=True)
