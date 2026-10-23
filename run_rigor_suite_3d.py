@@ -2,7 +2,7 @@
 Subcommands (all expect an accuracy-labeled CSV from generate_3d_data.py --label_mode accuracy
 or accuracy_monotone; datasets generated before the label-pipeline fixes trigger a warning):
 
-  gate        train, certify per-integrator step scales and a per-method adaptive rtol on held-out
+  gate        train (random split by default), certify per-integrator step scales and a per-method adaptive rtol on held-out
               calibration orbits, run the matched-accuracy baseline (ML cost INCLUDES the FTLE feature
               and prediction; adaptive solvers both oracle-tuned "_spec" and calibrated "_cal"), apply the
               pre-registered pass/fail criteria, regime breakdown, lockstep ensemble cost model
@@ -30,6 +30,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 from orbit_ml_cr3bp.config import MU, POSITION_TOL_KM, PHYSICS_FEATURE_COLUMNS_3D
 from orbit_ml_cr3bp.modeling_3d import create_grouped_split_3d, fit_hurdle_models, predict_hurdle
@@ -151,6 +152,17 @@ def regime_table(df, eval_data, method):
     return pd.DataFrame(rows)
 
 
+def _split_dev(data, a):
+    """Train / held-out split for gate and final. `random` (default): the held-out rows are drawn the same way as the
+    locked rows (a random subset) and never used for training, so calibrating on them is exchangeable with the locked
+    set. `grouped`: whole feature-space regions held out (a harder, region-shift stress test; NOT exchangeable with random
+    locked rows, so a certificate from it carries no guarantee for them)."""
+    if a.split == "grouped":
+        return create_grouped_split_3d(data, test_size=0.3, random_state=a.seed, n_bins=5)
+    tr, te = train_test_split(np.arange(len(data)), test_size=0.3, random_state=a.seed)
+    return np.sort(tr), np.sort(te)
+
+
 def _model_kw(a):
     return {"regressor_kind": a.regressor, "quantile": a.quantile}
 
@@ -260,10 +272,9 @@ def _cost_gate(models, cal_data, cal_pred, eval_data, a, seed, spec_cache=None):
     if not evaluated:
         overall = ("NOT_EVALUATED: no cost comparison could be run (no certified safety scale for any candidate "
                    "integrator and no --fallback_scale, or every orbit was skipped). This is NOT a verdict on cost.")
-    elif all(evaluated):
-        overall = "ML_COMPETITIVE_ON_COST"
     else:
-        overall = "ML_DOES_NOT_BEAT_ADAPTIVE_ON_COST: do not claim a speed advantage"
+        overall = _judge_group(verdict, "ML_COMPETITIVE_ON_COST",
+                               "ML_DOES_NOT_BEAT_ADAPTIVE_ON_COST: do not claim a speed advantage")
     if fallback_used and evaluated:
         overall += f" [UNCERTIFIED fallback scale {a.fallback_scale} used for {fallback_used}: no safety guarantee]"
     part = {"certified_scales": scales, "ltt": ltt, "adaptive_calibration": adaptive_info,
@@ -285,13 +296,19 @@ def _cost_gate(models, cal_data, cal_pred, eval_data, a, seed, spec_cache=None):
 
 
 def _judge_group(verdict, win_label, lose_label):
-    """Strict: every comparison in the group must be evaluated; a pass needs all of them to pass."""
-    if not verdict:
-        return "NOT_EVALUATED: no comparison available"
+    """A group is supported only if EVERY comparison was evaluated and passed. One failed comparison already
+    makes it unsupported (reported with the number of comparisons that could not be evaluated); with no failure but
+    a missing comparison the result is NOT_FULLY_EVALUATED, never a win on a subset."""
     passes = [v["passes"] for v in verdict.values()]
-    if any(p is None for p in passes):
-        return "NOT_FULLY_EVALUATED: at least one comparison could not be evaluated; this is NOT a verdict"
-    return win_label if all(passes) else lose_label
+    if not passes or all(p is None for p in passes):
+        return "NOT_EVALUATED: no comparison could be evaluated; this is NOT a verdict"
+    n_none = sum(p is None for p in passes)
+    if any(p is False for p in passes):
+        return lose_label + (f" [{n_none} comparison(s) not evaluated]" if n_none else "")
+    if n_none:
+        return (f"NOT_FULLY_EVALUATED: {n_none} comparison(s) could not be evaluated and none of the others failed; "
+                f"this is NOT a verdict")
+    return win_label
 
 
 def _cost_gate_h1_prime(models, cal_data, cal_pred, eval_data, a, seed, adaptive_info, spec_cache):
@@ -406,12 +423,12 @@ def _prereg_info(a):
 def cmd_gate(a):
     data = load_accuracy_data(a.data, locked_path=a.locked)
     feats = feature_columns(data)
-    tr, te = create_grouped_split_3d(data, test_size=0.3, random_state=a.seed, n_bins=5)
+    tr, te = _split_dev(data, a)
     models = fit_hurdle_models(data, feats, tr, random_state=a.seed, n_estimators=a.n_estimators,
                                regressor_kind=a.regressor, quantile=a.quantile)
     test = data.iloc[te].reset_index(drop=True)
     pred = predict_hurdle(models, test)
-    report = {"args": args_dict(a), "n_train": int(len(tr)), "n_test": int(len(te)),
+    report = {"args": args_dict(a), "split": a.split, "n_train": int(len(tr)), "n_test": int(len(te)),
               "held_out_metrics": metrics_from_prediction(test, pred),
               "criteria": {"min_frac_ml_meets_tol": GATE_MIN_FRAC_ML_MEETS_TOL,
                            "min_frac_ml_cheaper": GATE_MIN_FRAC_ML_CHEAPER, "min_group_n": GATE_MIN_GROUP_N},
@@ -458,7 +475,7 @@ def cmd_final(a):
         dev = load_accuracy_data(a.data, locked_path=a.locked)
         locked = load_accuracy_data(a.data, locked_path=a.locked, only_locked=True)
     feats = feature_columns(dev)
-    tr, te = create_grouped_split_3d(dev, test_size=0.3, random_state=a.seed, n_bins=5)
+    tr, te = _split_dev(dev, a)
     models = fit_hurdle_models(dev, feats, tr, random_state=a.seed, n_estimators=a.n_estimators,
                                regressor_kind=a.regressor, quantile=a.quantile)
     cal_pool = dev.iloc[te].reset_index(drop=True)
@@ -467,7 +484,7 @@ def cmd_final(a):
     cal_data = cal_pool.iloc[cal_rows].reset_index(drop=True)
     cal_pred = _subset_pred(predict_hurdle(models, cal_pool), cal_rows)
     pred_locked = predict_hurdle(models, locked)
-    report = {"args": args_dict(a), "n_dev_train": int(len(tr)), "n_calibration": int(n_cal),
+    report = {"args": args_dict(a), "split": a.split, "n_dev_train": int(len(tr)), "n_calibration": int(n_cal),
               "n_locked": int(len(locked)),
               "locked_metrics": metrics_from_prediction(locked, pred_locked),
               "criteria": {"min_frac_ml_meets_tol": GATE_MIN_FRAC_ML_MEETS_TOL,
@@ -813,6 +830,9 @@ def main():
         sp.add_argument("--fallback_scale", type=float, default=None,
                         help="if no scale is certified, run the cost comparison at this UNCERTIFIED scale "
                              "(clearly flagged in the report)")
+        sp.add_argument("--split", choices=["random", "grouped"], default="random",
+                        help="train/held-out split for the cost gate. random (pinned): the calibration rows are exchangeable "
+                             "with the locked rows; grouped: region-shift stress test with no guarantee for random rows")
         sp.add_argument("--no_h1_prime", action="store_true",
                         help="skip the H1' variant (no-FTLE model, prediction cost charged, global fixed-dt baseline)")
         model_opts(sp)

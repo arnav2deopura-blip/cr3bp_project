@@ -6,17 +6,24 @@ All "stable" decisions here mean: final position at sim_time within tol_km of
 a DOP853 reference (config.POSITION_TOL_KM by default), the same criterion the
 label_mode="accuracy" data uses.
 
-calibrate_scale_ltt: fixed-sequence testing with binomial tail p-values
-(in the style of Learn-then-Test; verify the construction against the
-original reference before citing it). For a candidate scale s multiplying the
-predicted dt, H_s: P(violation | predicted feasible) > alpha is rejected when
-P(Binomial(n, alpha) <= k) <= delta. Scales are tested from the smallest
-(safest) upward and the chain stops at the first non-rejection, so with
-probability >= 1 - delta the chosen scale has risk <= alpha, PROVIDED the
-calibration orbits are exchangeable with deployment orbits. A grouped/
-regional train-test split breaks exchangeability with the training set, so
-calibrate on a random part of the held-out set (as fit_and_validate_scale_ltt
-does), not on training data.
+calibrate_scale_ltt: Learn-then-Test style certification with binomial tail
+p-values (verify the construction against the original reference before
+citing it). For a candidate scale s multiplying the predicted dt,
+H_s: P(violation | predicted feasible) > alpha is rejected when
+P(Binomial(n, alpha) <= k) <= threshold. A violation is an error above
+tol_km, a collision/escape/non-finite run, or a run stopped by the step cap.
+LTT_METHOD = "bonferroni" (default): every scale on the grid is tested at
+delta / m (m = grid size) and the LARGEST rejected scale is chosen; with
+probability >= 1 - delta every rejected scale has risk <= alpha, with no
+assumption that risk is monotone in the scale. method="fixed_sequence"
+(the earlier rule) tests from the smallest scale up at delta and stops at the
+first non-rejection; it is more powerful if risk is monotone but a single bad
+smallest scale (for instance step-cap failures from a tiny dt over a long
+horizon) then certifies nothing. Both are valid only PROVIDED the calibration
+orbits are exchangeable with deployment orbits: calibrate on rows drawn the
+same way as the evaluation rows and never used for training (run_rigor_suite
+`gate`/`final` use a random split for exactly this reason; a grouped/regional
+split breaks exchangeability with random locked rows).
 """
 from __future__ import annotations
 
@@ -43,6 +50,34 @@ LTT_SCALE_GRID = (0.02, 0.025, 0.03, 0.04, 0.05, 0.065, 0.08, 0.1, 0.125, 0.16, 
                   0.6, 0.8, 1.0)
 DT_MIN = 0.0001
 AUDIT_MAX_STEPS = 4_000_000
+LTT_METHOD = "bonferroni"
+
+
+def ltt_choose(values, p_values, delta, method=LTT_METHOD, m=None):
+    """
+    values: grid values ordered safest-first (ascending scale / dt / rtol); p_values: same order.
+    Returns (chosen or None, certified flags, p-value threshold used).
+    bonferroni: every value tested at delta / m, chosen = the largest certified value.
+    fixed_sequence: tested in order at delta, stopping at the first non-rejection; chosen = the last rejected.
+    """
+    m = m or len(values)
+    if method == "fixed_sequence":
+        flags, stopped = [], False
+        for p in p_values:
+            ok = (not stopped) and p <= delta
+            flags.append(bool(ok))
+            stopped = stopped or not ok
+        chosen = None
+        for v, f in zip(values, flags):
+            if f:
+                chosen = float(v)
+        return chosen, flags, float(delta)
+    if method != "bonferroni":
+        raise ValueError("method must be 'bonferroni' or 'fixed_sequence'")
+    thr = float(delta) / m
+    flags = [bool(p <= thr) for p in p_values]
+    cert = [float(v) for v, f in zip(values, flags) if f]
+    return (max(cert) if cert else None), flags, thr
 
 
 class ReferenceCache:
@@ -183,9 +218,10 @@ def scale_frontier_3d(data, pred, integrators=INTEGRATOR_NAMES, tol_km=None, sca
 
 
 def calibrate_scale_ltt(data, pred, integrator, tol_km=None, alpha=0.05, delta=0.1,
-                        scales=LTT_SCALE_GRID, rows=None, mu=MU, cache=None):
-    chain, chosen = [], None
-    for s in sorted(scales):
+                        scales=LTT_SCALE_GRID, rows=None, mu=MU, cache=None, method=LTT_METHOD):
+    chain = []
+    ordered = sorted(scales)
+    for s in ordered:
         a = position_error_audit_3d(data, pred, tol_km, scale=s, mu=mu, cache=cache,
                                     integrators=(integrator,), rows=rows)
         n = len(a)
@@ -196,22 +232,25 @@ def calibrate_scale_ltt(data, pred, integrator, tol_km=None, alpha=0.05, delta=0
         chain.append({"scale": float(s), "n": n, "violations": k, "violation_rate": k / n, "p_value": p,
                       "incomplete": int((~a["completed"]).sum()),
                       "step_cap": int((a["reason"] == REASON_STEP_CAP).sum())})
-        if p <= delta:
-            chosen = float(s)
-        else:
+        if method == "fixed_sequence" and p > delta:
             break
-    return {"integrator": integrator, "chosen_scale": chosen, "alpha": alpha, "delta": delta, "chain": chain}
+    chosen, flags, thr = ltt_choose([c["scale"] for c in chain], [c["p_value"] for c in chain], delta, method,
+                                    m=len(ordered))
+    for c, f in zip(chain, flags):
+        c["certified"] = f
+    return {"integrator": integrator, "chosen_scale": chosen, "alpha": alpha, "delta": delta, "method": method,
+            "p_threshold": thr, "chain": chain}
 
 
 GLOBAL_DT_GRID = tuple(1e-4 * 2 ** (k / 4) for k in range(50))   # 1e-4 .. ~0.49
 
 
 def calibrate_global_dt_ltt(data, integrator, tol_km=None, alpha=0.05, delta=0.1,
-                            dt_grid=GLOBAL_DT_GRID, rows=None, mu=MU, cache=None):
+                            dt_grid=GLOBAL_DT_GRID, rows=None, mu=MU, cache=None, method=LTT_METHOD):
     """
     ONE fixed step for every orbit (no model, no per-orbit information): the baseline a user
-    without the recommender would have to pick. Same binomial fixed-sequence test as
-    calibrate_scale_ltt, smallest dt first, stopping at the first non-rejection. Every row counts
+    without the recommender would have to pick. Same binomial test and selection rule as
+    calibrate_scale_ltt (Bonferroni over the dt grid by default; the largest certified dt). Every row counts
     (no feasibility gate); a run that collides, escapes or hits the step cap is a violation.
     Rows whose DOP853 reference diverges are skipped, as everywhere else.
     """
@@ -223,8 +262,9 @@ def calibrate_global_dt_ltt(data, integrator, tol_km=None, alpha=0.05, delta=0.1
         rows = np.arange(len(data))
     states = data[STATE_COLS].to_numpy(dtype=float)
     horizons = data["sim_time"].to_numpy(dtype=float)
-    chain, chosen = [], None
-    for dt in sorted(dt_grid):
+    chain = []
+    ordered = sorted(dt_grid)
+    for dt in ordered:
         n = k = incomplete = 0
         for i in rows:
             sol, reached = cache.get(int(i), states[i], horizons[i])
@@ -243,11 +283,14 @@ def calibrate_global_dt_ltt(data, integrator, tol_km=None, alpha=0.05, delta=0.1
         p = float(binom.cdf(k, n, alpha))
         chain.append({"dt": float(dt), "n": n, "violations": k, "violation_rate": k / n, "p_value": p,
                       "incomplete": incomplete})
-        if p <= delta:
-            chosen = float(dt)
-        else:
+        if method == "fixed_sequence" and p > delta:
             break
-    return {"integrator": integrator, "chosen_dt": chosen, "alpha": alpha, "delta": delta, "chain": chain}
+    chosen, flags, thr = ltt_choose([c["dt"] for c in chain], [c["p_value"] for c in chain], delta, method,
+                                    m=len(ordered))
+    for c, f in zip(chain, flags):
+        c["certified"] = f
+    return {"integrator": integrator, "chosen_dt": chosen, "alpha": alpha, "delta": delta, "method": method,
+            "p_threshold": thr, "chain": chain}
 
 
 def fit_and_validate_scale_ltt(data_test, pred_test, tol_km=None, alpha=0.05, delta=0.1,

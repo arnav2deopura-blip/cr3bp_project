@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import t as student_t
 from sklearn.metrics import accuracy_score, r2_score, mean_absolute_error
+from sklearn.model_selection import train_test_split
 
 from .config import MU, POSITION_TOL_KM, PHYSICS_FEATURE_COLUMNS_3D, BASIC_FEATURE_COLUMNS_3D
 from .modeling_3d import (
@@ -192,31 +193,32 @@ def cross_mu_evaluation(datasets, seeds, feature_cols=None, n_estimators=100, n_
 def replication_evaluation(datasets, seeds, feature_cols=None, n_estimators=100, n_bins=5, conf=0.95,
                            model_kw=None):
     """
-    datasets: {name: DataFrame}, SAME mu and settings, generated with different
-    base seeds (independent draws of orbits). kind="within": grouped split
-    inside one dataset. kind="replicate": train on all of dataset A, test on
-    all of independent dataset B -- the number that includes dataset-generation
-    variance. Returns (per_seed, summary_by_pair, summary_across_datasets); the
-    last averages over seeds first and then takes a t-interval over
-    dataset(-pair) means, so it is only as narrow as the number of independent
-    datasets allows (pairs sharing a dataset are not independent: treat it as
-    descriptive, and with 3 datasets the interval will be wide by design).
+    datasets: {name: DataFrame}, SAME mu and settings, generated with different base seeds (independent draws of
+    orbits). Everything is trained and scored the same way so the kinds are comparable:
+      kind="within":         train on a random 70% of dataset A, test on the other 30% of A (same distribution).
+      kind="replicate":      the SAME model (trained on A's 70%), tested on every row of an independent dataset B.
+                             replicate - within is therefore the dataset-to-dataset effect (generation variance), not a
+                             difference in split type or training size.
+      kind="within_grouped": a region-shift reference (grouped split inside A, as in the other commands); reported for
+                             context only, NOT comparable with the two kinds above.
+    Returns (per_seed, summary_by_pair, summary_across_datasets). The across-dataset summary averages over seeds first
+    and then takes a t-interval over dataset(-pair) means; kind="replicate_minus_within" is the paired difference per
+    SOURCE dataset (mean over seeds and targets), with one value per dataset, so with 3 datasets its interval is wide
+    by design. Pairs sharing a dataset are not independent: treat the pair-level summaries as descriptive.
     """
     if feature_cols is None:
         feature_cols = _default_feature_cols(datasets)
     rows = []
     for seed in seeds:
-        for name, d in datasets.items():
-            tr, te = create_grouped_split_3d(d, test_size=0.3, random_state=seed, n_bins=n_bins)
-            models = fit_hurdle_models(d, feature_cols, tr, random_state=seed, n_estimators=n_estimators,
-                                       **(model_kw or {}))
-            test = d.iloc[te].reset_index(drop=True)
-            r = {"kind": "within", "source": name, "target": name, "seed": seed}
-            r.update(metrics_from_prediction(test, predict_hurdle(models, test)))
-            rows.append(r)
         for src, ds in datasets.items():
-            models = fit_hurdle_models(ds, feature_cols, np.arange(len(ds)), random_state=seed,
-                                       n_estimators=n_estimators, **(model_kw or {}))
+            tr, te = train_test_split(np.arange(len(ds)), test_size=0.3, random_state=seed)
+            tr, te = np.sort(tr), np.sort(te)
+            models = fit_hurdle_models(ds, feature_cols, tr, random_state=seed, n_estimators=n_estimators,
+                                       **(model_kw or {}))
+            within = ds.iloc[te].reset_index(drop=True)
+            r = {"kind": "within", "source": src, "target": src, "seed": seed}
+            r.update(metrics_from_prediction(within, predict_hurdle(models, within)))
+            rows.append(r)
             for tgt, dt in datasets.items():
                 if tgt == src:
                     continue
@@ -224,6 +226,13 @@ def replication_evaluation(datasets, seeds, feature_cols=None, n_estimators=100,
                 r = {"kind": "replicate", "source": src, "target": tgt, "seed": seed}
                 r.update(metrics_from_prediction(test, predict_hurdle(models, test)))
                 rows.append(r)
+            trg, teg = create_grouped_split_3d(ds, test_size=0.3, random_state=seed, n_bins=n_bins)
+            models_g = fit_hurdle_models(ds, feature_cols, trg, random_state=seed, n_estimators=n_estimators,
+                                         **(model_kw or {}))
+            test_g = ds.iloc[teg].reset_index(drop=True)
+            r = {"kind": "within_grouped", "source": src, "target": src, "seed": seed}
+            r.update(metrics_from_prediction(test_g, predict_hurdle(models_g, test_g)))
+            rows.append(r)
     per_seed = pd.DataFrame(rows)
     by_pair = _summarize(per_seed, ["kind", "source", "target"], conf)
     across = []
@@ -233,6 +242,13 @@ def replication_evaluation(datasets, seeds, feature_cols=None, n_estimators=100,
         for col in metric_cols:
             mean, lo, hi, n = mean_ci(pair_means[col], conf, _bounds_for(col))
             across.append({"kind": kind, "metric": col, "mean": mean, "ci_lo": lo, "ci_hi": hi, "n_pairs": n})
+    w = per_seed[per_seed["kind"] == "within"].groupby("source")[metric_cols].mean()
+    rp = per_seed[per_seed["kind"] == "replicate"].groupby("source")[metric_cols].mean()
+    diff = (rp - w).dropna(how="all")
+    for col in metric_cols:
+        mean, lo, hi, n = mean_ci(diff[col], conf, None)
+        across.append({"kind": "replicate_minus_within", "metric": col, "mean": mean, "ci_lo": lo, "ci_hi": hi,
+                       "n_pairs": n})
     return per_seed, by_pair, pd.DataFrame(across)
 
 

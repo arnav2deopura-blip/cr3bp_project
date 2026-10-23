@@ -54,6 +54,7 @@ import pandas as pd
 
 from scipy.stats import binom
 
+from .audit_3d import ltt_choose, LTT_METHOD
 from .config import MU, POSITION_TOL_KM, du_km_for_mu
 from .physics_3d import (
     INTEGRATORS_3D,
@@ -78,15 +79,35 @@ def _final_pos_error_km(prev, curr, t_prev, t_actual, sim_time, ref_pos, du_km):
     return float(np.linalg.norm(final_pos - ref_pos)) * du_km
 
 
+# An adaptive solve that needs more than this many right-hand-side evaluations is abandoned (about a minute with the Python
+# RHS). Orbits that pass very close to a body can need tens of millions at tight rtol, which stalled the comparison for hours.
+# _run_adaptive then returns None: a violation during rtol calibration, and the orbit is skipped (n_skipped) in the comparison.
+MAX_ADAPTIVE_NFEV = 2_000_000
+ADAPTIVE_CAP_HITS = {"n": 0}
+
+
+class _NfevCap(Exception):
+    pass
+
+
 def _run_adaptive(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=1e-3):
     from scipy.integrate import solve_ivp
 
+    count = [0]
+
     def rhs(t, y):
+        count[0] += 1
+        if count[0] > MAX_ADAPTIVE_NFEV:
+            raise _NfevCap()
         return cr3bp_derivatives_3d(y.tolist(), mu)
 
     atol = rtol * atol_ratio
     t0 = time.perf_counter()
-    sol = solve_ivp(rhs, (0.0, sim_time), state, method=method, rtol=rtol, atol=atol)
+    try:
+        sol = solve_ivp(rhs, (0.0, sim_time), state, method=method, rtol=rtol, atol=atol)
+    except _NfevCap:
+        ADAPTIVE_CAP_HITS["n"] += 1
+        return None
     wall = time.perf_counter() - t0
     if not sol.success or not np.all(np.isfinite(sol.y[:, -1])):
         return None
@@ -146,13 +167,14 @@ RTOL_GRID_CAL = tuple(10.0 ** e for e in np.arange(-12.0, -1.9, 0.5))
 
 def calibrate_adaptive_rtol(data_cal, mu: float = MU, method: str = "RK45", tol_km: float | None = None,
                             alpha: float = 0.05, delta: float = 0.1, rtol_grid=RTOL_GRID_CAL,
-                            max_rows: int = 300, random_state: int = 42, atol_ratio: float = 1e-3):
+                            max_rows: int = 300, random_state: int = 42, atol_ratio: float = 1e-3,
+                            method_ltt: str = LTT_METHOD):
     """
     Choose ONE rtol for an adaptive solver without per-orbit knowledge of the
-    truth: tightest -> loosest, reject H_rtol "violation rate > alpha" when
-    P(Binomial(n, alpha) <= k) <= delta, stop at the first non-rejection (same
-    fixed-sequence construction as audit_3d.calibrate_scale_ltt, whose
-    exchangeability caveat applies equally here). A run that fails or exceeds
+    truth: reject H_rtol "violation rate > alpha" when
+    P(Binomial(n, alpha) <= k) <= threshold, with the same selection rule as
+    audit_3d.calibrate_scale_ltt (Bonferroni over the rtol grid by default; the
+    loosest certified rtol), whose exchangeability caveat applies equally here. A run that fails or exceeds
     tol_km counts as a violation. data_cal must be held-out rows with
     ftle_nan/reference_divergent already removed. Returns a dict; chosen_rtol is
     None if even the tightest rtol is not certified.
@@ -168,9 +190,11 @@ def calibrate_adaptive_rtol(data_cal, mu: float = MU, method: str = "RK45", tol_
         truth, reached = reference_trajectory_dense_3d(state, T, mu, rtol=TRUTH_RTOL, atol=TRUTH_ATOL)
         if reached:
             items.append((state, T, truth.sol(T)[:3]))
-    chain, chosen = [], None
-    for rtol in sorted(rtol_grid):
+    chain = []
+    ordered = sorted(rtol_grid)
+    for rtol in ordered:
         k = 0
+        hits0 = ADAPTIVE_CAP_HITS["n"]
         for state, T, ref_pos in items:
             res = _run_adaptive(state, T, ref_pos, rtol, mu, method, atol_ratio)
             if res is None or res["err_km"] > tol_km:
@@ -179,13 +203,16 @@ def calibrate_adaptive_rtol(data_cal, mu: float = MU, method: str = "RK45", tol_
         if n == 0:
             break
         p = float(binom.cdf(k, n, alpha))
-        chain.append({"rtol": float(rtol), "n": n, "violations": k, "violation_rate": k / n, "p_value": p})
-        if p <= delta:
-            chosen = float(rtol)
-        else:
+        chain.append({"rtol": float(rtol), "n": n, "violations": k, "violation_rate": k / n, "p_value": p,
+                      "capped": ADAPTIVE_CAP_HITS["n"] - hits0})
+        if method_ltt == "fixed_sequence" and p > delta:
             break
-    return {"method": method, "chosen_rtol": chosen, "alpha": alpha, "delta": delta,
-            "n_cal": len(items), "tol_km": tol_km, "chain": chain}
+    chosen, flags, thr = ltt_choose([c["rtol"] for c in chain], [c["p_value"] for c in chain], delta, method_ltt,
+                                    m=len(ordered))
+    for c, f in zip(chain, flags):
+        c["certified"] = f
+    return {"method": method, "chosen_rtol": chosen, "alpha": alpha, "delta": delta, "ltt_method": method_ltt,
+            "p_threshold": thr, "n_cal": len(items), "tol_km": tol_km, "chain": chain}
 
 
 _COST_RATIO_CACHE = {}
@@ -462,7 +489,8 @@ def matched_accuracy_baseline_3d(
         rows.append(record)
 
     df = pd.DataFrame(rows)
-    summary = {"n_used": len(df), "n_skipped": n_skipped}
+    summary = {"n_used": len(df), "n_skipped": n_skipped, "adaptive_nfev_cap": MAX_ADAPTIVE_NFEV,
+               "adaptive_cap_hits_total": ADAPTIVE_CAP_HITS["n"]}
     if len(df) == 0:
         return df, summary
     summary["tol_km"] = tol_km

@@ -1,4 +1,4 @@
-# Pre-registration (DRAFT -- edit, then freeze before running `gate` / `final`)
+# Pre-registration (FROZEN 2026-10-23; later changes only as dated entries under "Deviations")
 
 Pass this file with `--prereg PREREGISTRATION.md`; its SHA-256 is stored in each report. Anything you change
 after seeing results must be listed under "Deviations" at the bottom, with the date.
@@ -7,7 +7,7 @@ Freeze mechanics: there is no git here. `freeze_snapshot.py snapshot` hashes eve
 `FREEZE.json` (date, code hash, SHA-256 of everything above "## Deviations", SHA-256 of the data CSVs). After the seal,
 `run_rigor_suite_3d.py final` refuses to run if the code or the text above "## Deviations" has changed.
 
-Frozen on: `<<DATE>>`. Student: `<<NAME>>`. Code snapshot SHA-256: `<<CODE_SHA256>>`.
+Frozen on: `2026-10-23`. Student: `Arnav Deopura`. Code snapshot SHA-256: `79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1`.
 
 ## Data and protocol (fixed in advance)
 - Systems: Earth-Moon (mu = 0.01215058535). Optional second system for the cross-mu question: Sun-Earth, generated
@@ -23,6 +23,17 @@ Frozen on: `<<DATE>>`. Student: `<<NAME>>`. Code snapshot SHA-256: `<<CODE_SHA25
   `--regressor rf` is allowed only as a labelled sensitivity run (the CLI prints a warning). Quantile 0.1 confirmed; it was chosen
   before any tuning and has not been tuned. Because the regressor aims low on purpose, R^2 against the oracle step and selection accuracy
   are lower than for RF and are not comparable to earlier RF results.
+- Certification (ML step scale, global fixed step, adaptive rtol; alpha = 0.05, delta = 0.1): for every value g on a pre-specified grid,
+  one-sided binomial test of "violation rate > alpha" with p = P(Binomial(n, alpha) <= observed violations); g is certified if
+  p <= delta / m (Bonferroni over the m grid values, no monotonicity assumption); the LARGEST certified g is used. A violation is an error
+  above the tolerance, a collision, an escape, a non-finite result, or a run stopped by the 4,000,000-step cap. Grids: scales
+  `LTT_SCALE_GRID` (18 values, 0.02-1.0), global steps `GLOBAL_DT_GRID` (50 values, 1e-4-0.49), adaptive rtol 1e-12-1e-2 in half decades.
+  An adaptive (RK45/DOP853) solve that needs more than 2,000,000 right-hand-side evaluations is abandoned: it counts as a violation while
+  calibrating the rtol, and in the cost comparison the orbit is skipped (counted in `n_skipped`; `adaptive_cap_hits_total` is reported).
+  Without this cap a single orbit with a very close approach stalled a test comparison for over an hour.
+- Splits: `gate` and `final` train on a random 70% of the development rows (`--split random`, pinned) and calibrate on rows from the
+  held-out 30%, so calibration rows are drawn like the locked rows and never used for training. `--split grouped` is a stress test only.
+  Other commands keep the grouped (region-shift) split, which answers a different question.
 - Datasets (label pipeline version 3, SeedSequence seeding; SHA-256 recorded in each run's manifest and in `FREEZE.json`):
   - Earth-Moon, 20,000 orbits each, base seeds 12 (primary: development plus the locked set), 13 and 15 (replication):
     `data/cr3bp_3d_training_data_accuracy_monotone_seed{12,13,15}.csv`
@@ -51,12 +62,15 @@ but with (i) a model trained WITHOUT the FTLE feature (same regressor and quanti
 - H1'a (vs adaptive): against RK45 and DOP853, both the per-orbit oracle rtol ("_spec") and the calibrated rtol ("_cal").
   Supported only if all four comparisons pass.
 - H1'b (vs global fixed step): against the best SINGLE fixed step per integrator (RK4, leapfrog), certified on the same
-  calibration rows with the same alpha/delta (smallest step first, binomial fixed-sequence test; a collision, escape or step-cap
-  run counts as a violation). Supported only if both comparisons pass.
-If any comparison in a part cannot be evaluated (e.g. an rtol or step cannot be certified) that part is reported
-NOT_FULLY_EVALUATED, not supported. The original H1 is still run and reported unchanged. H1 and H1' are reported together.
+  calibration rows with the same alpha/delta and the same certification rule as the ML scales (see "Certification"; a collision,
+  escape or step-cap run counts as a violation). Supported only if both comparisons pass.
+A part (and H1 itself) is supported only if EVERY comparison in it was evaluated and passed. If any evaluated comparison fails it is
+reported as not supported (with the number of comparisons that could not be evaluated, e.g. because an rtol or step could not be
+certified). If none fails but at least one could not be evaluated it is reported NOT_FULLY_EVALUATED, never as supported on a subset.
+The original H1 is still run and reported with its original comparisons. H1 and H1' are reported together.
 
-H2 (safety). The certified scales (alpha = 0.05, delta = 0.1) give a violation rate <= 5% on the locked audit rows;
+H2 (safety). The certified scales (alpha = 0.05, delta = 0.1, rule under "Certification", calibrated on rows exchangeable with the
+locked rows) give a violation rate <= 5% on the locked audit rows;
 report the Clopper-Pearson interval, and the spread of the chosen scale over calibration repeats (`audit --ltt_repeats`).
 
 H3 (is FTLE needed). In `ablate`, FTLE is "needed" if the paired 95% interval of the change in `rk4_r2_uncens`
@@ -83,7 +97,9 @@ leapfrog 2, RK4 4). No pass/fail threshold; deviations are findings.
 - Development rows only (every command run with `--locked data/locked_test_set.json` so locked rows are excluded): H3 (`ablate`),
   H4 and the calibration-stability part of H2 (`audit`), H5 (`errmodel`), H6 (`crash`), H7 (`convergence`), `proxy`, and `gate`.
 - Replication and cross-mu: `replicate` (seeds 12, 13, 15) and `mu` (seed 12 vs the Sun-Earth seed 14); `--locked` removes the locked rows of the
-  seed-12 dataset from these.
+  seed-12 dataset from these. `replicate` trains on a random 70% of dataset A and reports "within" (the other 30% of A) next to "replicate"
+  (the same model on every row of independent dataset B); `replicate_minus_within` is the dataset-to-dataset effect. The grouped
+  (region-shift) score is reported separately as `within_grouped` and is not comparable with the other two.
 
 ## Run plan (all from this folder with the base conda python; pinned arguments, defaults otherwise)
 ```
@@ -111,6 +127,14 @@ Defaults that matter: `--seed 42`, `--n_estimators 150`, `--alpha 0.05`, `--delt
 All of H1-H7, including negative results; the number of orbits skipped in each comparison; Euler as a negative control.
 
 ## Deviations (date, what, why)
+- 2026-10-23 (before the freeze): replaced the fixed-sequence-from-the-smallest-value certification with Bonferroni over the grid (largest
+  certified value), for the ML scales, the global fixed step and the adaptive rtol alike. Why: the earlier rule stopped at the first
+  non-rejection, and step-cap runs counted as violations make the smallest scale the worst one (leapfrog 2.7% step-cap failures at scale
+  0.02 in a 300-row test; 5-13% in the previous run), so nothing could be certified. Cost: each value needs p <= 0.1/m, a small loss of power.
+  Also before the freeze: `gate`/`final` now use a random train/held-out split (the grouped split put the calibration rows in different
+  regions than the random locked rows); `replicate` compares like with like; the original H1 verdict can no longer be "competitive" on a subset
+  of its comparisons. A failed comparison now outranks missing ones in both H1 and H1'.
+  Also before the freeze: adaptive solves are capped at 2,000,000 RHS evaluations (see Certification).
 - 2026-10-23 (before the freeze): corrected the wording of H1 and the Data section to match the implemented cost basis. The earlier draft said
   H1 includes "prediction cost", but the code (`ml_total_evals_equiv`) only ever charged the FTLE feature; prediction cost is charged only in
   H1' (`ml_total_evals_equiv_pred`). Also removed the "accuracy (secondary)" dataset (never generated; H4 uses `audit --dense`), and filled in

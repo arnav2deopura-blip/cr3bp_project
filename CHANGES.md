@@ -85,3 +85,16 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
   directory), warns if a custom path would escape the guard, and tells you to pass `--locked` from then on. `--lock_frac` help corrected
   (the lock is always a random subset of all rows, default 0.25).
 - Not a security boundary: reading the CSV directly (pandas) or a lock stored elsewhere is not detected.
+
+# 2026-10-23: certification rule, exchangeable calibration, replicate, strict verdicts
+- `audit_3d.py`: `ltt_choose`, `LTT_METHOD = "bonferroni"`. `calibrate_scale_ltt` and `calibrate_global_dt_ltt` (and `calibrate_adaptive_rtol` in
+  `fair_baseline_3d.py`) test every grid value at delta/m and pick the largest certified one; `method="fixed_sequence"` keeps the old rule.
+  Chain entries gain `certified`; results gain `method` and `p_threshold`.
+- `run_rigor_suite_3d.py`: `gate`/`final` get `--split {random,grouped}` (default random) so calibration rows are exchangeable with the random
+  locked rows; reports record `split`. `_judge_group` is used by H1 as well as H1': a failed comparison outranks unevaluated ones, no win on a subset.
+- `rigor_3d.replication_evaluation`: "within" (random 70/30 inside A), "replicate" (same model on B), "within_grouped" (old region-shift score),
+  and a `replicate_minus_within` paired summary per source dataset.
+- `PREREGISTRATION.md`: Certification and Splits bullets, H1/H1' verdict wording, replicate description, dated deviation entry.
+- `fair_baseline_3d.py`: adaptive solves are abandoned after `MAX_ADAPTIVE_NFEV` = 2,000,000 RHS evaluations (`_run_adaptive` returns None; a violation in
+  rtol calibration, a skipped orbit in the comparison). Found because a `gate --split grouped` test ran for 1.5+ hours inside an adaptive solve; with the cap
+  it finished. Summaries report `adaptive_nfev_cap` and `adaptive_cap_hits_total`; calibration chain entries report `capped`.

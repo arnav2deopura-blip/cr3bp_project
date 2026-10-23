@@ -1,0 +1,13 @@
+{
+  "sealed_utc": "2026-10-23T23:00:16.153894+00:00",
+  "prereg_file": "PREREGISTRATION.md",
+  "prereg_body_sha256": "7d2d0bd1ec531e9b38756a588dbe68a2f53a6c525d1553661eb60d6385d7ff90",
+  "prereg_full_sha256": "508af5b1330a8c3ce7d3e89ab183f4e2ac716e76154d582e059e0aad0fad7223",
+  "code_combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1",
+  "data_sha256": {
+    "data/cr3bp_3d_training_data_accuracy_monotone_seed12.csv": "15bc463aa6dd2caf8b325ff13120e94a4f52635a35228327c50b547256e0532e",
+    "data/cr3bp_3d_training_data_accuracy_monotone_seed13.csv": "38fb401b9f3807979869a82ac97ecbea553d9e9ba79fd936fadbf1c8240660d6",
+    "data/cr3bp_3d_training_data_accuracy_monotone_seed15.csv": "7de9acef8b5872086fc3d3c3a2da1f5bf38751ff7e394e7b8e82d167c1899a61",
+    "data/cr3bp_3d_training_mu_0.000003_accuracy_monotone_seed14.csv": "1a39b6e40b66d5a3ca414ac300f292ddaf8ad5bcf2003d808efe1ae4fbd295fb"
+  }
+}
