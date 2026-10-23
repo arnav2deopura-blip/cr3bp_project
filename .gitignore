@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+*.nbi
+*.nbc
+.claude/settings.local.json
