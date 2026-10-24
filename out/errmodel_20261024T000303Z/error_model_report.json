@@ -1,0 +1,48 @@
+{
+  "args": {
+    "cmd": "errmodel",
+    "data": "data/cr3bp_3d_training_data_accuracy_monotone_seed12.csv",
+    "tol_km": 100.0,
+    "seed": 42,
+    "n_estimators": 150,
+    "out_dir": "out/errmodel_20261024T000303Z",
+    "no_run_dir": false,
+    "locked": "data/locked_test_set.json",
+    "ignore_lock": false,
+    "prereg": "PREREGISTRATION.md",
+    "n_orbits": 300,
+    "alpha_em": 0.1,
+    "fn": "<function cmd_errmodel at 0x10ab60040>",
+    "freeze_info": {
+      "sealed": true,
+      "sealed_utc": "2026-10-23T23:00:16.153894+00:00",
+      "problems": [],
+      "code_combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1"
+    }
+  },
+  "n_train_orbits": 120,
+  "n_cal_orbits": 90,
+  "n_test_orbits": 90,
+  "summary": {
+    "n_orbits_evaluated": 90,
+    "n_reference_failed": 0,
+    "tol_km": 100.0,
+    "q_log10": 0.95201688200843,
+    "alpha": 0.1,
+    "coverage": 0.9555555555555556,
+    "n_covered": 86,
+    "violations": 15,
+    "violation_rate": 0.1744186046511628,
+    "violation_ci95": [
+      0.1010376217134008,
+      0.27130919384326213
+    ],
+    "median_ml_evals": 752.0,
+    "median_ml_over_RK45_spec_evals": 3.71588785046729,
+    "median_ml_total_over_RK45_spec_evals": 159.02142617992223,
+    "frac_ml_total_cheaper_than_RK45_spec": 0.0,
+    "median_ml_over_DOP853_spec_evals": 4.4665676077265974,
+    "median_ml_total_over_DOP853_spec_evals": 195.1750518013313,
+    "frac_ml_total_cheaper_than_DOP853_spec": 0.0
+  }
+}

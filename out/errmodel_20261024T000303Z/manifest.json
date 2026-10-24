@@ -1,0 +1,81 @@
+{
+  "command": "errmodel",
+  "started_utc": "2026-10-24T00:03:03.077530+00:00",
+  "arguments": {
+    "cmd": "errmodel",
+    "data": "data/cr3bp_3d_training_data_accuracy_monotone_seed12.csv",
+    "tol_km": 100.0,
+    "seed": 42,
+    "n_estimators": 150,
+    "out_dir": "out",
+    "no_run_dir": false,
+    "locked": "data/locked_test_set.json",
+    "ignore_lock": false,
+    "prereg": "PREREGISTRATION.md",
+    "n_orbits": 300,
+    "alpha_em": 0.1,
+    "fn": "<function cmd_errmodel at 0x10ab60040>"
+  },
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "python": "3.13.13 | packaged by conda-forge | (main, Apr  8 2026, 02:29:07) [Clang 19.1.7 ]",
+    "numpy": "2.5.1",
+    "pandas": "3.0.5",
+    "scipy": "1.18.0",
+    "sklearn": "1.9.0",
+    "numba": "0.67.0",
+    "joblib": "1.5.3"
+  },
+  "git": {
+    "commit": "912af654445632c222ae51d85fc351d5a253b683",
+    "uncommitted_changes": true
+  },
+  "code": {
+    "combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1",
+    "vs_frozen_snapshot": {
+      "frozen_combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1",
+      "current_combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1",
+      "matches": true,
+      "changed": [],
+      "added": [],
+      "removed": []
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/cr3bp_3d_training_data_accuracy_monotone_seed12.csv",
+      "sha256": "15bc463aa6dd2caf8b325ff13120e94a4f52635a35228327c50b547256e0532e",
+      "metadata": {
+        "mu": 0.01215058535,
+        "system": "earth_moon",
+        "label_pipeline_version": 3,
+        "seeding": "seedsequence",
+        "collision_radius_primary_du": 0.0165738813735692,
+        "collision_radius_secondary_du": 0.004519771071800209,
+        "ejection_radius": 10.0,
+        "label_mode": "accuracy_monotone",
+        "num_orbits": 20000,
+        "base_seed": 12,
+        "ftle_enabled": true,
+        "ftle_method": "variational",
+        "python_version": "3.13.13 | packaged by conda-forge | (main, Apr  8 2026, 02:29:07) [Clang 19.1.7 ]",
+        "numpy_version": "2.5.1",
+        "pandas_version": "3.0.5",
+        "sklearn_version": "1.9.0",
+        "integrator_tolerances": null,
+        "position_tol_km": 100.0,
+        "du_km": 384400.0,
+        "position_tol_du": 0.00026014568158168577,
+        "sim_time_log_range": [
+          0.0,
+          1.301029995663981
+        ],
+        "sampling_weights": {
+          "lagrange": 0.55,
+          "wide": 0.2,
+          "near_moon": 0.25
+        }
+      }
+    }
+  ]
+}

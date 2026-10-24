@@ -1,0 +1,4 @@
+integrator,frac_certified,min_scale,median_scale,max_scale,n_distinct
+euler,0.5,0.02,0.065,0.3,5
+leapfrog,1.0,0.3,0.4,0.5,3
+rk4,1.0,0.5,0.6,0.6,2

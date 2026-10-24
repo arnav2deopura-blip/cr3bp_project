@@ -1,0 +1,7 @@
+feature_set,outcome,n_test_mean,recall_mean
+full,ejection,50.0,0.6561848789508364
+full,primary_collision,147.0,0.9985815602836879
+full,secondary_collision,553.8,0.8684579306368297
+no_ftle,ejection,50.0,0.5697983930962655
+no_ftle,primary_collision,147.0,0.07777391038598716
+no_ftle,secondary_collision,553.8,0.17252297873143746

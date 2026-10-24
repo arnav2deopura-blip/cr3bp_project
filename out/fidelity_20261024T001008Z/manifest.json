@@ -1,0 +1,50 @@
+{
+  "command": "fidelity",
+  "started_utc": "2026-10-24T00:10:08.978543+00:00",
+  "arguments": {
+    "cmd": "fidelity",
+    "tol_km": 100.0,
+    "seed": 42,
+    "n_estimators": 150,
+    "out_dir": "out",
+    "no_run_dir": false,
+    "locked": null,
+    "ignore_lock": false,
+    "prereg": "PREREGISTRATION.md",
+    "target": "-1176",
+    "start": "2023-01-01",
+    "stop": "2023-01-15",
+    "step": "6h",
+    "tu_days": null,
+    "tu_source": "nominal",
+    "max_lag_days": 15.0,
+    "stride": 1,
+    "fn": "<function cmd_fidelity at 0x10f9ffba0>"
+  },
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "packages": {
+    "python": "3.13.13 | packaged by conda-forge | (main, Apr  8 2026, 02:29:07) [Clang 19.1.7 ]",
+    "numpy": "2.5.1",
+    "pandas": "3.0.5",
+    "scipy": "1.18.0",
+    "sklearn": "1.9.0",
+    "numba": "0.67.0",
+    "joblib": "1.5.3"
+  },
+  "git": {
+    "commit": "912af654445632c222ae51d85fc351d5a253b683",
+    "uncommitted_changes": true
+  },
+  "code": {
+    "combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1",
+    "vs_frozen_snapshot": {
+      "frozen_combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1",
+      "current_combined_sha256": "79a6455ddef80ac312af267d14d952d3facb3e9c6b6f0c7dd752b794c61968e1",
+      "matches": true,
+      "changed": [],
+      "added": [],
+      "removed": []
+    }
+  },
+  "inputs": []
+}
