@@ -1,0 +1,50 @@
+{
+  "n_base": 300,
+  "eps_levels": [
+    1e-09,
+    1e-07,
+    1e-05
+  ],
+  "clones": 16,
+  "per_eps": {
+    "1e-09": {
+      "median_sigma_dex": 0.0,
+      "p90_sigma_dex": 0.0,
+      "median_flip_rate": 0.0,
+      "spearman_lambdaT_sigma": [
+        null,
+        null,
+        null,
+        291
+      ],
+      "median_abs_resid_over_sigma": null,
+      "share_resid_below_sigma": 0.0
+    },
+    "1e-07": {
+      "median_sigma_dex": 0.0,
+      "p90_sigma_dex": 0.0,
+      "median_flip_rate": 0.0,
+      "spearman_lambdaT_sigma": [
+        0.125253342885147,
+        0.08152725323573164,
+        0.20138668418021355,
+        291
+      ],
+      "median_abs_resid_over_sigma": 52.363373869797826,
+      "share_resid_below_sigma": 0.0
+    },
+    "1e-05": {
+      "median_sigma_dex": 0.0,
+      "p90_sigma_dex": 0.0,
+      "median_flip_rate": 0.0,
+      "spearman_lambdaT_sigma": [
+        0.4312670602824411,
+        0.3408083589892344,
+        0.5136767072194262,
+        291
+      ],
+      "median_abs_resid_over_sigma": 31.877900640659906,
+      "share_resid_below_sigma": 0.0033333333333333335
+    }
+  }
+}

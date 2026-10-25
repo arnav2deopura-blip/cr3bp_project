@@ -76,8 +76,11 @@ def load_partb(path, mu=MU):
 
 
 def split_rows(U, n_cal, n_eval, seed):
+    """n_eval <= 0 means every row that is not a calibration row (used with a frozen model: no training slice)."""
     perm = np.random.RandomState(seed).permutation(len(U))
     cal = np.sort(perm[:n_cal])
+    if n_eval <= 0:
+        return np.array([], dtype=int), cal, np.sort(perm[n_cal:])
     ev = np.sort(perm[n_cal:n_cal + n_eval])
     train = np.sort(perm[n_cal + n_eval:])
     return train, cal, ev
@@ -94,9 +97,16 @@ def cmd_policy(a):
     U = pb.usable_rows(d).reset_index(drop=True)
     U = fs.add_derived(U)
     train, cal, ev = split_rows(U, a.n_cal, a.n_eval, a.seed)
-    feats = pb.FEATS_FTLE if a.features == "ftle" else pb.FEATS_STATE
+    feats = {"ftle": pb.FEATS_FTLE, "oracle": pb.FEATS_ORACLE}.get(a.features, pb.FEATS_STATE)
+    import joblib
+    if a.frozen_policy:
+        frozen = joblib.load(os.path.join(a.frozen_policy, "policy.joblib"))
+        models, feats = frozen["models"], frozen["features"]
+        print(f"FROZEN model from {a.frozen_policy} (features {len(feats)}); scales and rtols are re-calibrated on this dataset",
+              flush=True)
     print(f"usable {len(U)}; train {len(train)}, calibration {len(cal)}, evaluation {len(ev)}; features={a.features}", flush=True)
-    models = pb.fit_policy_models(U, train, features=feats, quantile=a.quantile, seed=a.seed)
+    if not a.frozen_policy:
+        models = pb.fit_policy_models(U, train, features=feats, quantile=a.quantile, seed=a.seed)
     cal_df = U.iloc[cal].reset_index(drop=True)
     ev_df = U.iloc[ev].reset_index(drop=True)
     cal_pred = predict_hurdle(models, cal_df)
@@ -435,10 +445,12 @@ def main():
     common(sp)
     sp.add_argument("--n_cal", type=int, default=2000)
     sp.add_argument("--n_eval", type=int, default=3000)
-    sp.add_argument("--features", choices=["state", "ftle"], default="state")
+    sp.add_argument("--features", choices=["state", "ftle", "oracle"], default="state")
     sp.add_argument("--quantile", type=float, default=pb.PINNED_QUANTILE)
     sp.add_argument("--no_spec", action="store_true")
     sp.add_argument("--guard_lock", action="store_true")
+    sp.add_argument("--frozen_policy", default=None, help="policy run folder whose fitted models are used unchanged "
+                    "(no training; use with --n_eval 0 to evaluate on every non-calibration row)")
     sp.set_defaults(fn=cmd_policy)
 
     sp = sub.add_parser("decompose")

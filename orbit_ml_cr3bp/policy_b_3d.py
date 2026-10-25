@@ -31,6 +31,9 @@ from .physics_3d import (EVALS_PER_STEP_3D, INTEGRATORS_3D, integrate_endpoint_3
 FEATS_STATE = ["x", "y", "z", "vx", "vy", "vz", "sim_time", "jacobi_3d", "r1_3d", "r2_3d", "r1_r2_ratio_3d",
                "c_minus_c_l1_3d"]
 FEATS_FTLE = FEATS_STATE + ["ftle_3d"]
+# E3b upper bound only ("not deployable": every one of these needs the whole trajectory, i.e. a full integration)
+FEATS_ORACLE = FEATS_FTLE + ["min_r1", "min_r2", "t_min_r2", "n_flyby", "tau_min", "delta_phys", "n_transit_l1", "n_transit_l2",
+                             "frac_near_secondary"]
 CANDIDATES = ("rk4", "leapfrog")
 METHODS = ("RK45", "DOP853")
 ALPHA = 0.05
@@ -59,15 +62,17 @@ def fit_policy_models(data, train_idx, features=FEATS_STATE, quantile=PINNED_QUA
 
 
 def certify_scale_lazy(cal, pred, integrator, tol_km=POSITION_TOL_KM, alpha=ALPHA, delta=DELTA, grid=LTT_SCALE_GRID,
-                       mu=MU, cache=None):
+                       mu=MU, cache=None, n_tests=None, rows=None):
     """Largest scale on `grid` whose one-sided binomial test of 'violation rate > alpha' rejects at delta/m. Scanning from the
-    largest scale down and stopping at the first rejection is the same selection as the full Bonferroni chain."""
+    largest scale down and stopping at the first rejection is the same selection as the full Bonferroni chain.
+    n_tests: total number of tests the Bonferroni split is shared with (grid size x number of groups for a Mondrian scheme);
+    default = len(grid)."""
     cache = cache or ReferenceCache(mu)
-    m = len(grid)
+    m = n_tests or len(grid)
     thr = delta / m
     chain = []
     for s in sorted(grid, reverse=True):
-        a = position_error_audit_3d(cal, pred, tol_km, scale=s, mu=mu, cache=cache, integrators=(integrator,))
+        a = position_error_audit_3d(cal, pred, tol_km, scale=s, mu=mu, cache=cache, integrators=(integrator,), rows=rows)
         n = len(a)
         if n == 0:
             break
@@ -260,18 +265,22 @@ def _orbit_job(a):
 def policy_choice(pred, scales, i, candidates=CANDIDATES):
     """Cost-normalized choice among candidate integrators for orbit position i using SCALED predicted dts.
     Returns (integrator | None, raw dt of the choice, scaled dt)."""
-    dts = {}
+    dts, scs = {}, {}
     for k in candidates:
         sc = scales.get(k)
         if sc is None or not pred[k]["feasible"][i]:
             continue
+        sc_i = float(sc[i]) if np.ndim(sc) else float(sc)   # a scalar per integrator, or one value per row (Mondrian schemes)
+        if not np.isfinite(sc_i):
+            continue
         d = float(pred[k]["dt"][i])
         if np.isfinite(d) and d > 0:
-            dts[k] = d * float(sc)
+            dts[k] = d * sc_i
+            scs[k] = sc_i
     choice, _ = cost_normalized_choice(dts)
     if choice is None:
         return None, float("nan"), float("nan")
-    return choice, dts[choice] / float(scales[choice]), dts[choice]
+    return choice, dts[choice] / scs[choice], dts[choice]
 
 
 def evaluate_orbits(df, pred, scales, rtols=None, do_spec=True, tol_km=POSITION_TOL_KM, mu=MU, n_jobs=8,

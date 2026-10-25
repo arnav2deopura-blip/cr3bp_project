@@ -1,0 +1,265 @@
+{
+  "c_pred": 1288.3245090063917,
+  "alternatives": [
+    {
+      "alternative": "1_global",
+      "n": 3000,
+      "violations": 119,
+      "violation_rate": 0.03966666666666667,
+      "violation_ci95": [
+        0.03296823227301627,
+        0.047280619094904885
+      ],
+      "deferred_share": 0.0,
+      "mean_cost": 15196.138115393065,
+      "median_cost": 2697.324509006392,
+      "geomean_cost": 4410.259034312327,
+      "median_cost_over_RK45_spec": 26.212651868117767,
+      "share_cheaper_than_RK45_spec": 0.0,
+      "median_cost_over_RK45_cal": 9.455158633476788,
+      "share_cheaper_than_RK45_cal": 0.0,
+      "median_cost_over_RK45_eqr": 11.486266467265507,
+      "share_cheaper_than_RK45_eqr": 0.0,
+      "violation_rate_by_regime": {
+        "I": 0.03219315895372234,
+        "II": 0.0,
+        "III": 0.061366806136680614,
+        "IV": 0.04404145077720207,
+        "V": 0.031914893617021274
+      },
+      "violation_rate_by_r2_band": {
+        "0.05-0.17": 0.027932960893854747,
+        "0.17-0.8": 0.012864493996569469,
+        "<0.05": 0.15625,
+        ">0.8": 0.0044444444444444444
+      },
+      "scales": {
+        "rk4": 0.5,
+        "leapfrog": 0.5
+      }
+    },
+    {
+      "alternative": "2_mondrian_regime",
+      "n": 3000,
+      "violations": 73,
+      "violation_rate": 0.024333333333333332,
+      "violation_ci95": [
+        0.019120808593789316,
+        0.03049934904329282
+      ],
+      "deferred_share": 0.0,
+      "mean_cost": 20760.874560253404,
+      "median_cost": 3633.324509006392,
+      "geomean_cost": 5588.372562820006,
+      "median_cost_over_RK45_spec": 33.21192065923618,
+      "share_cheaper_than_RK45_spec": 0.0,
+      "median_cost_over_RK45_cal": 11.49417680177924,
+      "share_cheaper_than_RK45_cal": 0.0,
+      "median_cost_over_RK45_eqr": 13.965543374550538,
+      "share_cheaper_than_RK45_eqr": 0.0,
+      "violation_rate_by_regime": {
+        "I": 0.022132796780684104,
+        "II": 0.0,
+        "III": 0.030683403068340307,
+        "IV": 0.031088082901554404,
+        "V": 0.02127659574468085
+      },
+      "violation_rate_by_r2_band": {
+        "0.05-0.17": 0.01675977653631285,
+        "0.17-0.8": 0.008576329331046312,
+        "<0.05": 0.0954861111111111,
+        ">0.8": 0.0022222222222222222
+      },
+      "groups": {
+        "rk4": {
+          "I+II": {
+            "n": 401,
+            "violations": 3,
+            "scale": 0.5
+          },
+          "III+IV": {
+            "n": 753,
+            "violations": 19,
+            "scale": 0.3
+          },
+          "V": {
+            "n": 846,
+            "violations": 18,
+            "scale": 0.3
+          }
+        },
+        "leapfrog": {
+          "I+II": {
+            "n": 384,
+            "violations": 5,
+            "scale": 0.4
+          },
+          "III+IV": {
+            "n": 752,
+            "violations": 19,
+            "scale": 0.3
+          },
+          "V": {
+            "n": 846,
+            "violations": 24,
+            "scale": 0.4
+          }
+        }
+      }
+    },
+    {
+      "alternative": "3_dispersion_bins",
+      "n": 3000,
+      "violations": 71,
+      "violation_rate": 0.023666666666666666,
+      "violation_ci95": [
+        0.01852903160452214,
+        0.029759611637459202
+      ],
+      "deferred_share": 0.0,
+      "mean_cost": 27627.90149773975,
+      "median_cost": 4049.324509006392,
+      "geomean_cost": 6383.152132251003,
+      "median_cost_over_RK45_spec": 38.11249843632609,
+      "share_cheaper_than_RK45_spec": 0.0,
+      "median_cost_over_RK45_cal": 12.897351048138383,
+      "share_cheaper_than_RK45_cal": 0.0,
+      "median_cost_over_RK45_eqr": 15.64330824426037,
+      "share_cheaper_than_RK45_eqr": 0.0,
+      "violation_rate_by_regime": {
+        "I": 0.03822937625754527,
+        "II": 0.0,
+        "III": 0.023709902370990237,
+        "IV": 0.02072538860103627,
+        "V": 0.020516717325227963
+      },
+      "violation_rate_by_r2_band": {
+        "0.05-0.17": 0.0223463687150838,
+        "0.17-0.8": 0.009433962264150943,
+        "<0.05": 0.08506944444444445,
+        ">0.8": 0.0033333333333333335
+      },
+      "groups": {
+        "rk4": {
+          "b0": {
+            "n": 500,
+            "violations": 8,
+            "scale": 0.6
+          },
+          "b1": {
+            "n": 500,
+            "violations": 10,
+            "scale": 0.5
+          },
+          "b2": {
+            "n": 500,
+            "violations": 9,
+            "scale": 0.25
+          },
+          "b3": {
+            "n": 500,
+            "violations": 9,
+            "scale": 0.16
+          }
+        },
+        "leapfrog": {
+          "b0": {
+            "n": 496,
+            "violations": 10,
+            "scale": 0.6
+          },
+          "b1": {
+            "n": 495,
+            "violations": 7,
+            "scale": 0.4
+          },
+          "b2": {
+            "n": 495,
+            "violations": 11,
+            "scale": 0.2
+          },
+          "b3": {
+            "n": 496,
+            "violations": 9,
+            "scale": 0.2
+          }
+        }
+      }
+    },
+    {
+      "alternative": "3b_label_conformal",
+      "n": 3000,
+      "violations": 190,
+      "violation_rate": 0.06333333333333334,
+      "violation_ci95": [
+        0.05488035950743848,
+        0.07264960048290058
+      ],
+      "deferred_share": 0.0,
+      "mean_cost": 10481.665434273295,
+      "median_cost": 2229.324509006392,
+      "geomean_cost": 3639.6840522295806,
+      "median_cost_over_RK45_spec": 22.934168688022694,
+      "share_cheaper_than_RK45_spec": 0.0,
+      "median_cost_over_RK45_cal": 8.327574448944654,
+      "share_cheaper_than_RK45_cal": 0.0,
+      "median_cost_over_RK45_eqr": 10.06566937028689,
+      "share_cheaper_than_RK45_eqr": 0.0,
+      "violation_rate_by_regime": {
+        "I": 0.09054325955734406,
+        "II": 0.023809523809523808,
+        "III": 0.09483960948396095,
+        "IV": 0.04922279792746114,
+        "V": 0.0425531914893617
+      },
+      "violation_rate_by_r2_band": {
+        "0.05-0.17": 0.0446927374301676,
+        "0.17-0.8": 0.024871355060034305,
+        "<0.05": 0.22743055555555555,
+        ">0.8": 0.015555555555555555
+      },
+      "scales": {
+        "rk4": 0.6791467183762768,
+        "leapfrog": 0.7054201255370226
+      }
+    },
+    {
+      "alternative": "4_abstain_to_adaptive",
+      "n": 3000,
+      "violations": 97,
+      "violation_rate": 0.03233333333333333,
+      "violation_ci95": [
+        0.02629671791044457,
+        0.03930291057811384
+      ],
+      "deferred_share": 0.20733333333333334,
+      "mean_cost": 11033.785411521032,
+      "median_cost": 1927.3245090063917,
+      "geomean_cost": 3077.897399454841,
+      "median_cost_over_RK45_spec": 19.406332253468438,
+      "share_cheaper_than_RK45_spec": 0.0,
+      "median_cost_over_RK45_cal": 6.846622545031959,
+      "share_cheaper_than_RK45_cal": 0.0,
+      "median_cost_over_RK45_eqr": 8.36323035182096,
+      "share_cheaper_than_RK45_eqr": 0.0,
+      "violation_rate_by_regime": {
+        "I": 0.04225352112676056,
+        "II": 0.0,
+        "III": 0.04184100418410042,
+        "IV": 0.025906735751295335,
+        "V": 0.02735562310030395
+      },
+      "violation_rate_by_r2_band": {
+        "0.05-0.17": 0.04189944134078212,
+        "0.17-0.8": 0.016295025728987993,
+        "<0.05": 0.10243055555555555,
+        ">0.8": 0.0044444444444444444
+      },
+      "scales": {
+        "rk4": 0.6,
+        "leapfrog": 0.5
+      },
+      "dispersion_threshold_dex": 0.5321002064549122
+    }
+  ]
+}
