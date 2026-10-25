@@ -1,0 +1,21 @@
+{
+  "command": "decompose",
+  "utc": "20261025T214300Z",
+  "args": {
+    "cmd": "decompose",
+    "ledger": "out_b/policy_20261025T213540Z/ledger.csv",
+    "out_dir": "out_b",
+    "tol_km": 100.0,
+    "fn": "<function cmd_decompose at 0x16d5f2b60>"
+  },
+  "git_commit": "852730f8ba2f7db4d1b0c95f23907cab7790637c",
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "argv": [
+    "run_failure_study_3d.py",
+    "decompose",
+    "--ledger",
+    "out_b/policy_20261025T213540Z/ledger.csv",
+    "--out_dir",
+    "out_b"
+  ]
+}

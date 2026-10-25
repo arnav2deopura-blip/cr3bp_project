@@ -189,18 +189,22 @@ def classify(led, comparator, tol_km=TOL_KM, sigma_eps=None, ood_flag=None):
     cls[ok] = "ml-win"
     cls[ok & led[col].isna()] = "no-comparator"
     loss = ok & led[col].notna() & (led["C_ml_tot"] > led[col])
-    cls[loss] = "cost-loss:" + dec.loc[loss, "dominant"].astype(str)
+    cls[loss] = "cost-loss:" + dec.loc[loss, "dominant"].fillna("undecomposed").astype(str)
     cls[viol] = "violation:unattributed"
+    # the policy picked an integrator for which NO step >= dt_min meets the tolerance (hurdle classifier said feasible): there is
+    # no over-prediction to measure against a label, so it is its own class (a classifier error, not a step-size error)
+    infeasible = viol & led["dstar_chosen"].isna()
+    cls[infeasible] = "violation:infeasible-choice"
     if sigma_eps is not None:
         r = led["over_pred"]
-        info = viol & (sigma_eps >= r)
+        info = viol & ~infeasible & (sigma_eps >= r)
         cls[info] = "violation:information"
         if ood_flag is not None:
-            epi = viol & ~info & ood_flag.fillna(False)
+            epi = viol & ~infeasible & ~info & ood_flag.fillna(False)
             cls[epi] = "violation:epistemic"
-            cls[viol & ~info & ~ood_flag.fillna(False)] = "violation:calibration"
+            cls[viol & ~infeasible & ~info & ~ood_flag.fillna(False)] = "violation:calibration"
         else:
-            cls[viol & ~info] = "violation:unattributed"
+            cls[viol & ~infeasible & ~info] = "violation:unattributed"
     cls[abst] = "abstain"
     cls[f0lab & ~f0ref] = "F0-label"
     cls[f0ref] = "F0-ref"

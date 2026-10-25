@@ -90,7 +90,7 @@ def _cal_job(a):
 
 
 def certify_rtol_lazy(cal, method, tol_km=POSITION_TOL_KM, alpha=ALPHA, delta=DELTA, grid=RTOL_GRID_B, mu=MU,
-                      equal_risk_target=None, n_jobs=1, items=None):
+                      equal_risk_target=None, n_jobs=1, items=None, refine_steps=4):
     """Loosest certified rtol (scanning from the loosest value, stopping at the first rejection) and, if
     equal_risk_target is given, the loosest rtol whose realized violation rate on the calibration rows is <= that target
     (scanning continues, if needed, until it is found). `items` = precomputed [(state, T, ref_pos)] to share between methods."""
@@ -120,6 +120,26 @@ def certify_rtol_lazy(cal, method, tol_km=POSITION_TOL_KM, alpha=ALPHA, delta=DE
                 eqr = float(rtol)
             if chosen is not None and (equal_risk_target is None or eqr is not None):
                 break
+        # equal-risk refinement: the grid is half a decade wide, so bisect (log10) between the loosest grid value that meets the
+        # target and the next looser one that does not, keeping the loosest rtol whose realized rate on the rows is <= target
+        if equal_risk_target is not None and eqr is not None and refine_steps > 0:
+            tighter = [c for c in chain if c["rtol"] == eqr][0]
+            looser = [c for c in chain if c["rtol"] > eqr]
+            if looser and looser[-1]["violation_rate"] > equal_risk_target:
+                lo, hi = math.log10(eqr), math.log10(min(c["rtol"] for c in looser))
+                for _ in range(refine_steps):
+                    mid = 0.5 * (lo + hi)
+                    jobs = [(st, T, rp, 10.0 ** mid, mu, method, tol_km) for st, T, rp in items]
+                    out = pool.map(_cal_job, jobs, chunksize=max(1, len(jobs) // (6 * n_jobs))) if pool else \
+                        [_cal_job(j) for j in jobs]
+                    k = int(sum(o[0] for o in out))
+                    chain.append({"rtol": 10.0 ** mid, "n": len(items), "violations": k, "violation_rate": k / len(items),
+                                  "p_value": float(binom.cdf(k, len(items), alpha)), "certified": None, "refine": True})
+                    if k / len(items) <= equal_risk_target:
+                        lo = mid
+                        eqr = 10.0 ** mid
+                    else:
+                        hi = mid
     finally:
         if pool:
             pool.close()

@@ -185,6 +185,8 @@ def comparator_summary(led, comp, tol_km):
     ok = dec["total"].notna()
     rep["n_decomposed"] = int(ok.sum())
     rep["decomposition_median_dex"] = {t: fs.bootstrap_ci(dec.loc[ok, t]) for t in ("P", "S", "Q", "K", "O", "R", "total")}
+    # means are additive (P+S+Q+K+O+R = total exactly); medians of the terms do not add up to the median total
+    rep["decomposition_mean_dex"] = {t: fs.bootstrap_ci(dec.loc[ok, t], stat=np.mean) for t in ("P", "S", "Q", "K", "O", "R", "total")}
     tot = dec.loc[ok, ["P", "S", "Q", "K", "O"]].clip(lower=0).sum(axis=1)
     rep["positive_term_share_of_gap"] = {t: float((dec.loc[ok, t].clip(lower=0) / tot.replace(0, np.nan)).mean())
                                          for t in ("P", "S", "Q", "K", "O")}
@@ -244,6 +246,180 @@ def cmd_decompose(a):
     print("wrote", out)
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# E1: reference validity map
+# ---------------------------------------------------------------------------------------------------------------------
+
+def _e1_job(a):
+    from scipy.integrate import solve_ivp
+    from orbit_ml_cr3bp.physics_3d import (reference_trajectory_dense_3d, _cr3bp_derivatives_3d_numba)
+    from orbit_ml_cr3bp.config import collision_radii, EJECTION_RADIUS, du_km_for_mu
+    rid, state, T = a
+    state = np.asarray(state, dtype=float)
+    out = {"row_id": rid}
+    sol, reached = reference_trajectory_dense_3d(list(state), T, MU)
+    out["ref_reached"] = bool(reached)
+    out["ref_event"] = int(getattr(sol, "reference_event", 0))
+    out["ref_t_end"] = float(sol.t[-1])
+    cr1, cr2 = collision_radii(MU)
+    n = [0]
+
+    def rhs(t, y):
+        n[0] += 1
+        if n[0] > 3_000_000:
+            raise RuntimeError("cap")
+        return _cr3bp_derivatives_3d_numba(y, MU)
+
+    def e1(t, y):
+        return np.sqrt((y[0] + MU) ** 2 + y[1] ** 2 + y[2] ** 2) - cr1
+    e1.terminal, e1.direction = True, -1
+
+    def e2(t, y):
+        return np.sqrt((y[0] + MU - 1.0) ** 2 + y[1] ** 2 + y[2] ** 2) - cr2
+    e2.terminal, e2.direction = True, -1
+
+    def e3(t, y):
+        return np.sqrt(y[0] ** 2 + y[1] ** 2 + y[2] ** 2) - EJECTION_RADIUS
+    e3.terminal, e3.direction = True, 1
+    try:
+        rad = solve_ivp(rhs, (0.0, T), state, method="Radau", rtol=1e-12, atol=1e-12, events=[e1, e2, e3])
+    except RuntimeError:
+        out["radau_capped"] = True
+        return out
+    out["radau_capped"] = False
+    r_reached = bool(rad.t[-1] >= T - 1e-9)
+    ev = 0
+    if not r_reached:
+        ev = 9
+        for i, te in enumerate(rad.t_events):
+            if len(te) > 0:
+                ev = i + 1
+                break
+    out["radau_reached"] = r_reached
+    out["radau_event"] = ev
+    out["radau_t_end"] = float(rad.t[-1])
+    if reached and r_reached:
+        out["diff_km"] = float(np.linalg.norm(sol.sol(T)[:3] - rad.y[:3, -1])) * du_km_for_mu(MU)
+    return out
+
+
+def cmd_e1(a):
+    from multiprocessing import Pool
+    out = make_run_dir(a.out_dir, "e1", a)
+    d, _ = load_partb(a.data)
+    ok = d[~d["ftle_nan"] & ~d["reference_divergent"]]
+    bad = d[~d["ftle_nan"] & d["reference_divergent"] & (d["reference_outcome"] != "initial_inside_body")]
+    rng = np.random.RandomState(a.seed)
+    pick_ok = ok.iloc[rng.choice(len(ok), size=min(a.n_ok, len(ok)), replace=False)]
+    pick_bad = bad.iloc[rng.choice(len(bad), size=min(a.n_doomed, len(bad)), replace=False)]
+    sel = pd.concat([pick_ok, pick_bad])
+    jobs = [(int(r.row_id), [r.x, r.y, r.z, r.vx, r.vy, r.vz], float(r.sim_time)) for r in sel.itertuples()]
+    with Pool(a.n_jobs) as pool:
+        res = pd.DataFrame(pool.map(_e1_job, jobs, chunksize=2))
+    res = res.merge(sel[["row_id", "sim_time", "reference_divergent", "reference_outcome", "ref_check_km", "min_r2",
+                         "jacobi_3d", "orbit_label"]], on="row_id")
+    res.to_csv(os.path.join(out, "e1_orbits.csv"), index=False)
+    tol = a.tol_km
+    comp = res[res["ref_reached"] & res["radau_reached"].fillna(False).astype(bool)]
+    rep = {"n_usable_sampled": int(len(pick_ok)), "n_doomed_sampled": int(len(pick_bad)),
+           "radau_capped": int(res["radau_capped"].sum()),
+           "usable_pairs_compared": int(len(comp)),
+           "diff_km_quantiles": {q: float(comp["diff_km"].quantile(q)) for q in (0.5, 0.9, 0.99, 1.0)} if len(comp) else {},
+           "f0_ref_threshold_km": 0.1 * tol, "n_f0_ref": int((comp["diff_km"] > 0.1 * tol).sum()),
+           "frac_within_1km": float((comp["diff_km"] <= 1.0).mean()) if len(comp) else None,
+           "usable_orbits_where_radau_disagrees_on_outcome": int(((res["ref_reached"]) & (~res["radau_reached"].fillna(True).astype(bool))).sum()),
+           "doomed_orbits_where_radau_reaches_horizon": int(((~res["ref_reached"]) & (res["radau_reached"].fillna(False).astype(bool))).sum()),
+           "doomed_event_agreement": float((res.loc[~res["ref_reached"], "ref_event"] == res.loc[~res["ref_reached"], "radau_event"]).mean())
+           if (~res["ref_reached"]).any() else None,
+           "doomed_t_end_abs_diff_median": float((res.loc[~res["ref_reached"], "ref_t_end"] - res.loc[~res["ref_reached"], "radau_t_end"]).abs().median())
+           if (~res["ref_reached"]).any() else None}
+    save_json(rep, os.path.join(out, "e1_report.json"))
+    print(json.dumps(proto.json_safe(rep), indent=1))
+    print("wrote", out)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# E3a: label sensitivity to tiny initial-condition perturbations (the information floor)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def _clone_state(state, eps, rng):
+    """Random perturbation: position part of norm eps (DU), velocity part of norm eps (DU/TU), uniform directions."""
+    dp = rng.normal(size=3)
+    dv = rng.normal(size=3)
+    dp = eps * dp / np.linalg.norm(dp)
+    dv = eps * dv / np.linalg.norm(dv)
+    return np.asarray(state, dtype=float) + np.concatenate([dp, dv])
+
+
+def _e3a_job(a):
+    from orbit_ml_cr3bp.data_3d import label_orbit_accuracy_3d
+    rid, state, T, eps, n_clones, seed = a
+    rng = np.random.RandomState(seed)
+    rows = []
+    for c in range(n_clones):
+        st = _clone_state(state, eps, rng)
+        lab = label_orbit_accuracy_3d(list(st), T, MU, tol_km=POSITION_TOL_KM, monotone=True, ceiling_mode="physical")
+        rows.append({"row_id": rid, "eps": eps, "clone": c, "diverged": bool(lab["reference_divergent"]),
+                     "dt_rk4": lab["dt_rk4"], "dt_leapfrog": lab["dt_leapfrog"],
+                     "rk4_ok": lab["rk4_reason"] == 0, "leapfrog_ok": lab["leapfrog_reason"] == 0})
+    return rows
+
+
+def cmd_e3a(a):
+    from multiprocessing import Pool
+    out = make_run_dir(a.out_dir, "e3a", a)
+    led = pd.read_csv(a.ledger)
+    led["cell"] = fs.assign_cells(led)
+    rng = np.random.RandomState(a.seed)
+    picks = []
+    for cell, g in led.groupby("cell"):
+        picks.append(g.iloc[rng.choice(len(g), size=min(a.per_cell, len(g)), replace=False)])
+    base = pd.concat(picks)
+    print(f"{len(base)} base orbits from {led['cell'].nunique()} cells; {a.clones} clones x {len(a.eps)} eps", flush=True)
+    jobs = []
+    for r in base.itertuples():
+        for j, eps in enumerate(a.eps):
+            jobs.append((int(r.row_id), [r.x, r.y, r.z, r.vx, r.vy, r.vz], float(r.sim_time), float(eps), a.clones,
+                         int(a.seed * 1_000_003 + r.row_id * 7 + j)))
+    t0 = time.time()
+    rows = []
+    with Pool(a.n_jobs) as pool:
+        for k, rr in enumerate(pool.imap_unordered(_e3a_job, jobs, chunksize=2)):
+            rows.extend(rr)
+            if (k + 1) % 200 == 0:
+                print(f"  {k + 1}/{len(jobs)} {time.time() - t0:.0f}s", flush=True)
+    cl = pd.DataFrame(rows)
+    cl.to_csv(os.path.join(out, "e3a_clones.csv"), index=False)
+    recs = []
+    for (rid, eps), g in cl.groupby(["row_id", "eps"]):
+        rec = {"row_id": rid, "eps": eps, "n_clones": len(g), "flip_rate": float(g["diverged"].mean())}
+        for k in ("rk4", "leapfrog"):
+            gg = g[(~g["diverged"]) & g[f"{k}_ok"]]
+            v = np.log10(gg[f"dt_{k}"])
+            rec[f"sigma_{k}"] = float(v.std(ddof=1)) if len(v) >= 3 else np.nan
+            rec[f"n_{k}"] = int(len(v))
+            rec[f"median_dt_{k}"] = float(gg[f"dt_{k}"].median()) if len(gg) else np.nan
+        recs.append(rec)
+    sig = pd.DataFrame(recs)
+    sig = sig.merge(led[["row_id", "cell", "regime", "lambda_T", "sim_time", "min_r2", "ml_integrator", "ml_raw_dt", "dstar_chosen",
+                         "violation", "over_pred"]], on="row_id", how="left")
+    sig["sigma_chosen"] = np.where(sig["ml_integrator"] == "rk4", sig["sigma_rk4"], sig["sigma_leapfrog"])
+    sig["abs_resid_dex"] = np.abs(np.log10(sig["ml_raw_dt"] / sig["dstar_chosen"]))
+    sig.to_csv(os.path.join(out, "e3a_sigma.csv"), index=False)
+    rep = {"n_base": int(base["row_id"].nunique()), "eps_levels": a.eps, "clones": a.clones, "per_eps": {}}
+    for eps, g in sig.groupby("eps"):
+        s = g["sigma_chosen"].dropna()
+        rho = fs.spearman_bootstrap(g["lambda_T"], g["sigma_chosen"])
+        rep["per_eps"][str(eps)] = {
+            "median_sigma_dex": float(s.median()), "p90_sigma_dex": float(s.quantile(0.9)),
+            "median_flip_rate": float(g["flip_rate"].median()), "spearman_lambdaT_sigma": rho,
+            "median_abs_resid_over_sigma": float((g["abs_resid_dex"] / g["sigma_chosen"]).replace([np.inf, -np.inf], np.nan).median()),
+            "share_resid_below_sigma": float((g["abs_resid_dex"] <= g["sigma_chosen"]).mean())}
+    save_json(rep, os.path.join(out, "e3a_report.json"))
+    print(json.dumps(proto.json_safe(rep), indent=1))
+    print("wrote", out)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -270,6 +446,22 @@ def main():
     sp.add_argument("--out_dir", default="out_b")
     sp.add_argument("--tol_km", type=float, default=POSITION_TOL_KM)
     sp.set_defaults(fn=cmd_decompose)
+
+    sp = sub.add_parser("e1")
+    common(sp)
+    sp.add_argument("--n_ok", type=int, default=600)
+    sp.add_argument("--n_doomed", type=int, default=300)
+    sp.set_defaults(fn=cmd_e1)
+
+    sp = sub.add_parser("e3a")
+    sp.add_argument("--ledger", required=True)
+    sp.add_argument("--out_dir", default="out_b")
+    sp.add_argument("--seed", type=int, default=7)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.add_argument("--per_cell", type=int, default=10)
+    sp.add_argument("--clones", type=int, default=16)
+    sp.add_argument("--eps", type=float, nargs="+", default=[1e-9, 1e-7, 1e-5])
+    sp.set_defaults(fn=cmd_e3a)
 
     a = p.parse_args()
     a.fn(a)
