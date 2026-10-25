@@ -39,8 +39,14 @@ def load_policy_dir(a):
     cal_ids = set(pd.read_csv(os.path.join(pdir, "cal_rows.csv"), low_memory=False)["row_id"])
     # row_id in the policy run is the position in the USABLE frame U (reset_index) -- see cmd_policy: U is rebuilt there and
     # row_id re-assigned inside evaluate_orbits from df["row_id"], which load_partb set on the FULL frame. Use that same id.
-    train = U[U["row_id"].isin(train_ids)].reset_index(drop=True)
     cal = U[U["row_id"].isin(cal_ids)].reset_index(drop=True)
+    if getattr(a, "train_data", None):      # frozen-model runs: the model's training rows live in another dataset
+        dt, _ = load_partb(a.train_data)
+        Ut = fs.add_derived(pb.usable_rows(dt).reset_index(drop=True))
+        tids = set(pd.read_csv(os.path.join(a.train_policy_dir, "train_row_ids.csv"))["row_id"])
+        train = Ut[Ut["row_id"].isin(tids)].reset_index(drop=True)
+    else:
+        train = U[U["row_id"].isin(train_ids)].reset_index(drop=True)
     rep = json.load(open(os.path.join(pdir, "policy_report.json")))
     return U, train, cal, led, rep
 
@@ -136,7 +142,8 @@ def _summarize_alt(name, ev, res, c_pred, comp_cols, tol_km, deferred=None, defe
         out[f"share_cheaper_than_{cc}"] = float(np.nanmean(np.where(viol, np.nan, (cost < ev[f"{cc}_nfev"].to_numpy()).astype(float))))
     for by in ("regime", "r2_band"):
         out[f"violation_rate_by_{by}"] = {str(g): float(viol[r[by] == g].mean()) for g in sorted(r[by].dropna().unique())}
-    return out, viol
+    orb = pd.DataFrame({"row_id": r["row_id"].to_numpy(), "viol": viol.to_numpy(), "cost": np.asarray(cost, dtype=float)})
+    return out, orb
 
 
 def cmd_e5(a):
@@ -167,9 +174,10 @@ def cmd_e5(a):
     comp_cols = ["RK45_spec", "RK45_cal", "RK45_eqr"]
     # --- 1. global scale (the policy as deployed)
     res = pb.evaluate_orbits(led, ev_pred, scales, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs, progress=False)
-    o, v = _summarize_alt("1_global", led, res, c_pred, comp_cols, a.tol_km)
+    o, orb = _summarize_alt("1_global", led, res, c_pred, comp_cols, a.tol_km)
     o["scales"] = scales
     alts.append(o)
+    orb.to_csv(os.path.join(out, f"e5_orbits_{o['alternative']}.csv"), index=False)
     # --- 2. Mondrian by Hill regime (merged to >= n_min calibration rows per group and integrator)
     order = ["I", "II", "III", "IV", "V"]
     cs, es, grp_rep = {}, {}, {}
@@ -179,9 +187,10 @@ def cmd_e5(a):
         eg = np.array([mp.get(g, "none") for g in led["regime"]])
         cs[k], es[k], grp_rep[k] = _group_scales(cal, cal_pred, led, ev_pred, k, cg, eg, cache, a.tol_km)
     res = pb.evaluate_orbits(led, ev_pred, es, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs, progress=False)
-    o, v = _summarize_alt("2_mondrian_regime", led, res, c_pred, comp_cols, a.tol_km)
+    o, orb = _summarize_alt("2_mondrian_regime", led, res, c_pred, comp_cols, a.tol_km)
     o["groups"] = grp_rep
     alts.append(o)
+    orb.to_csv(os.path.join(out, f"e5_orbits_{o['alternative']}.csv"), index=False)
     # --- 3. scale as a function of the model's own predicted dispersion (4 equal-count bins of the calibration dispersion)
     cs, es, grp_rep = {}, {}, {}
     for k in cands:
@@ -192,9 +201,10 @@ def cmd_e5(a):
         eg = np.array([f"b{int(np.searchsorted(edges, x))}" for x in disp_ev[k]])
         cs[k], es[k], grp_rep[k] = _group_scales(cal, cal_pred, led, ev_pred, k, cg, eg, cache, a.tol_km)
     res = pb.evaluate_orbits(led, ev_pred, es, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs, progress=False)
-    o, v = _summarize_alt("3_dispersion_bins", led, res, c_pred, comp_cols, a.tol_km)
+    o, orb = _summarize_alt("3_dispersion_bins", led, res, c_pred, comp_cols, a.tol_km)
     o["groups"] = grp_rep
     alts.append(o)
+    orb.to_csv(os.path.join(out, f"e5_orbits_{o['alternative']}.csv"), index=False)
     # --- 3b. split-conformal on the label (no re-integration): scale = 1 / q_(1-alpha) of d_hat / d*  on calibration rows
     sc_conf = {}
     for k in cands:
@@ -204,9 +214,10 @@ def cmd_e5(a):
         level = min(1.0, np.ceil((n + 1) * (1 - 0.05)) / n)
         sc_conf[k] = float(min(1.0, 1.0 / np.quantile(ratio, level)))
     res = pb.evaluate_orbits(led, ev_pred, sc_conf, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs, progress=False)
-    o, v = _summarize_alt("3b_label_conformal", led, res, c_pred, comp_cols, a.tol_km)
+    o, orb = _summarize_alt("3b_label_conformal", led, res, c_pred, comp_cols, a.tol_km)
     o["scales"] = sc_conf
     alts.append(o)
+    orb.to_csv(os.path.join(out, f"e5_orbits_{o['alternative']}.csv"), index=False)
     # --- 4. abstention: defer the most dispersed 20 % (by the least dispersed feasible candidate) to adaptive RK45 at the cal rtol
     dmin_cal = np.min(np.vstack([disp_cal[k] for k in cands]), axis=0)
     dmin_ev = np.min(np.vstack([disp_ev[k] for k in cands]), axis=0)
@@ -220,11 +231,12 @@ def cmd_e5(a):
     res = pb.evaluate_orbits(led, ev_pred, sc_abs, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs, progress=False)
     ad_cost = 1.0 + c_pred + led["RK45_cal_nfev"].to_numpy()
     ad_viol = ~led["RK45_cal_ok"].fillna(False).astype(bool).to_numpy()
-    o, v = _summarize_alt("4_abstain_to_adaptive", led, res, c_pred, comp_cols, a.tol_km, deferred=defer,
+    o, orb = _summarize_alt("4_abstain_to_adaptive", led, res, c_pred, comp_cols, a.tol_km, deferred=defer,
                           defer_costs=ad_cost, defer_viol=ad_viol)
     o["scales"] = sc_abs
     o["dispersion_threshold_dex"] = thr
     alts.append(o)
+    orb.to_csv(os.path.join(out, f"e5_orbits_{o['alternative']}.csv"), index=False)
     tab = pd.DataFrame([{k: v for k, v in o.items() if not isinstance(v, (dict, list))} for o in alts])
     tab.to_csv(os.path.join(out, "e5_alternatives.csv"), index=False)
     save_json({"c_pred": c_pred, "alternatives": alts}, os.path.join(out, "e5_report.json"))
@@ -354,6 +366,104 @@ def cmd_e10(a):
     print("wrote", out)
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# E11: what the model is good for -- a deployable gate, and ML as a cost predictor for batching adaptive solves
+# ---------------------------------------------------------------------------------------------------------------------
+
+def _gate_cells(led, min_n=50):
+    """Deployable cells = Hill regime x horizon band (both known from the initial state; min r2 is NOT known before integrating).
+    Merged by the same hierarchical rule as the study cells: base cell if n >= min_n, else 'regime|h*', else 'pooled-small'."""
+    base = led["regime"].astype(str) + "|" + led["h_band"].astype(str)
+    n = base.map(base.value_counts())
+    lab = pd.Series(np.where(n >= min_n, base, None), index=led.index, dtype=object)
+    rest = lab.isna()
+    g2 = led["regime"].astype(str) + "|h*"
+    n2 = g2[rest].map(g2[rest].value_counts())
+    lab[rest & (n2.reindex(led.index) >= min_n)] = g2[rest & (n2.reindex(led.index) >= min_n)]
+    lab[lab.isna()] = "pooled-small"
+    return lab
+
+
+def cmd_e11(a):
+    out = make_run_dir(a.out_dir, "e11", a)
+    gate = pd.read_csv(a.gate_ledger, low_memory=False)
+    lock = pd.read_csv(a.lock_ledger, low_memory=False)
+    ad = a.adaptive
+    gate["gcell"] = _gate_cells(gate)
+    # a lock orbit takes its cell label from the gate ledger's cell set (same regime/horizon -> same label); unseen -> pooled-small
+    lab_map = {(r, h): c for r, h, c in zip(gate["regime"], gate["h_band"], gate["gcell"])}
+    lock["gcell"] = [lab_map.get((r, h), lab_map.get((r, "h*"), "pooled-small")) for r, h in zip(lock["regime"], lock["h_band"])]
+    rows, detail = [], {}
+    for om in a.overheads:
+        oh = om + 1.0      # + one acceleration-sized computation for the cheap state features
+        g = gate[gate["meets_tol"]]
+        win = (g["ml_evals"] + oh < g[f"{ad}_cal_nfev"])
+        viol = gate.groupby("gcell")["violation"].mean()
+        share = win.groupby(g["gcell"]).mean().reindex(viol.index).fillna(0.0)
+        n_c = gate.groupby("gcell").size()
+        gated = [c for c in viol.index if share[c] >= a.min_win_share and viol[c] <= a.alpha and n_c[c] >= 50 and c != "pooled-small"]
+        use_ml = lock["gcell"].isin(gated)
+        ml_cost = lock["ml_evals"] + oh
+        ml_viol = lock["violation"] | ~lock["has_choice"]
+        ad_cost = lock[f"{ad}_eqr_nfev"]
+        ad_viol = ~lock[f"{ad}_eqr_ok"].fillna(False).astype(bool)
+        cost = np.where(use_ml, ml_cost, ad_cost)
+        v = np.where(use_ml, ml_viol, ad_viol)
+        # compare with pure adaptive at the equal-risk rtol, and with its per-orbit oracle (unattainable)
+        base_cost, base_v = ad_cost, ad_viol
+        ok = ~np.isnan(cost) & ~np.isnan(base_cost.to_numpy())
+        rows.append({"overhead_rhs_equiv": om, "gated_cells": len(gated), "share_routed_to_ml": float(use_ml.mean()),
+                     "gated_violation_rate": float(np.mean(v)), "adaptive_eqr_violation_rate": float(base_v.mean()),
+                     "total_cost_gated_over_adaptive_eqr": float(np.nansum(cost[ok]) / np.nansum(base_cost.to_numpy()[ok])),
+                     "median_cost_gated_over_adaptive_eqr": float(np.nanmedian(cost[ok] / base_cost.to_numpy()[ok])),
+                     "total_cost_gated_over_adaptive_spec": float(np.nansum(cost[ok]) / np.nansum(lock[f"{ad}_spec_nfev"].to_numpy()[ok])),
+                     "ml_win_share_on_routed": float((ml_cost[use_ml] < ad_cost[use_ml]).mean()) if use_ml.any() else float("nan")})
+        detail[str(om)] = {"gated": gated}
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "e11_gate.csv"), index=False)
+    save_json({"adaptive": ad, "table": rows, "gated_cells": detail, "min_win_share": a.min_win_share, "alpha": a.alpha},
+              os.path.join(out, "e11_report.json"))
+    print(tab.round(4).to_string())
+    print("wrote", out)
+
+
+def cmd_e11b(a):
+    from scipy.stats import spearmanr
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    from orbit_ml_cr3bp.ensemble_regime_3d import _batch_cost
+    out = make_run_dir(a.out_dir, "e11b", a)
+    tr = pd.read_csv(a.train_ledger, low_memory=False)
+    te = pd.read_csv(a.test_ledger, low_memory=False)
+    col = f"{a.adaptive}_cal_nfev"
+    tr, te = tr[tr[col].notna()], te[te[col].notna()]
+    reg = HistGradientBoostingRegressor(random_state=0).fit(tr[xb.FEATS_STATE].to_numpy(dtype=float), np.log10(tr[col].to_numpy(dtype=float)))
+    pred = reg.predict(te[xb.FEATS_STATE].to_numpy(dtype=float))
+    true = te[col].to_numpy(dtype=float)
+    rho = float(spearmanr(pred, true).statistic)
+    rng = np.random.RandomState(0)
+    rows = []
+    for B in a.batch_sizes:
+        ideal = true.sum()
+        uns = np.mean([_batch_cost(true[rng.permutation(len(true))], B) for _ in range(200)])
+        srt_pred = _batch_cost(true[np.argsort(pred)], B)
+        srt_orac = _batch_cost(np.sort(true), B)
+        rows.append({"batch_size": B, "n": int(len(true)), "lane_eff_unsorted": float(ideal / uns), "lane_eff_sorted_by_prediction": float(ideal / srt_pred),
+                     "lane_eff_sorted_oracle": float(ideal / srt_orac), "cost_ratio_pred_sorted_over_unsorted": float(srt_pred / uns)})
+    # the same exercise for the fixed-step integration count of the ML policy, which is known BEFORE launch (the sort key is exact)
+    ml = te["ml_evals"].to_numpy(dtype=float)
+    for B in a.batch_sizes:
+        ml_ok = ~np.isnan(ml)
+        uns = np.mean([_batch_cost(ml[ml_ok][rng.permutation(int(ml_ok.sum()))], B) for _ in range(200)])
+        rows.append({"batch_size": B, "n": int(ml_ok.sum()), "what": "ML fixed-step counts (exactly known before launch)",
+                     "lane_eff_unsorted": float(ml[ml_ok].sum() / uns), "lane_eff_sorted_exact": float(ml[ml_ok].sum() / _batch_cost(np.sort(ml[ml_ok]), B))})
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "e11b_lane_efficiency.csv"), index=False)
+    save_json({"spearman_pred_true_log_nfev": rho, "n_train": int(len(tr)), "n_test": int(len(te)), "rows": rows}, os.path.join(out, "e11b_report.json"))
+    print("Spearman(predicted, true adaptive nfev) =", round(rho, 3))
+    print(tab.round(3).to_string())
+    print("wrote", out)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -365,6 +475,8 @@ def main():
         sp.add_argument("--seed", type=int, default=42)
         sp.add_argument("--tol_km", type=float, default=POSITION_TOL_KM)
         sp.add_argument("--n_jobs", type=int, default=8)
+        sp.add_argument("--train_data", default=None, help="dataset holding the (frozen) model's training rows")
+        sp.add_argument("--train_policy_dir", default=None, help="policy folder of that model (train_row_ids.csv)")
 
     sp = sub.add_parser("e4")
     common(sp)
@@ -388,6 +500,24 @@ def main():
     sp = sub.add_parser("e10")
     common(sp)
     sp.set_defaults(fn=cmd_e10)
+
+    sp = sub.add_parser("e11")
+    sp.add_argument("--gate_ledger", required=True)
+    sp.add_argument("--lock_ledger", required=True)
+    sp.add_argument("--out_dir", default="out_b")
+    sp.add_argument("--adaptive", default="DOP853")
+    sp.add_argument("--overheads", type=float, nargs="+", default=[0.0, 10.0, 50.0, 200.0, 1000.0])
+    sp.add_argument("--min_win_share", type=float, default=0.5)
+    sp.add_argument("--alpha", type=float, default=0.05)
+    sp.set_defaults(fn=cmd_e11)
+
+    sp = sub.add_parser("e11b")
+    sp.add_argument("--train_ledger", required=True)
+    sp.add_argument("--test_ledger", required=True)
+    sp.add_argument("--out_dir", default="out_b")
+    sp.add_argument("--adaptive", default="DOP853")
+    sp.add_argument("--batch_sizes", type=int, nargs="+", default=[32, 128])
+    sp.set_defaults(fn=cmd_e11b)
 
     a = p.parse_args()
     a.fn(a)

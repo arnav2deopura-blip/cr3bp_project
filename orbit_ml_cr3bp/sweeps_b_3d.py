@@ -39,13 +39,15 @@ def _job(a, horizons, mu, tol_km):
 
 
 def horizon_sweep(source_csv, out_csv, n_ics=2600, horizons=HORIZONS, seed=0, mu=MU, tol_km=POSITION_TOL_KM, n_jobs=8,
-                  require_longest=True):
+                  require_longest=True, pool_row_ids=None):
     """Pick n_ics usable initial states of `source_csv` (seeded shuffle), relabel each at every horizon, and keep the ICs whose
     reference reaches the longest horizon (so every kept IC appears at every T). Returns the DataFrame written to out_csv."""
     d = pd.read_csv(source_csv, low_memory=False)
     for c in ("ftle_nan", "reference_divergent"):
         d[c] = d[c].map({True: True, False: False, "True": True, "False": False}).fillna(False).astype(bool)
     u = d[~d["ftle_nan"] & ~d["reference_divergent"]]
+    if pool_row_ids is not None:     # row_id = position in the source CSV; e.g. the rows a frozen model never trained on
+        u = u[u.index.isin(set(int(i) for i in pool_row_ids))]
     pick = u.iloc[np.random.RandomState(seed).choice(len(u), size=min(n_ics, len(u)), replace=False)]
     jobs = [(int(i), [r[c] for c in STATE_COLS], r["orbit_label"]) for i, r in zip(pick.index, pick.to_dict("records"))]
     rows = []

@@ -97,6 +97,8 @@ def cmd_policy(a):
     U = pb.usable_rows(d).reset_index(drop=True)
     U = fs.add_derived(U)
     train, cal, ev = split_rows(U, a.n_cal, a.n_eval, a.seed)
+    if a.frozen_calibration:       # the deployed policy (model, scales, rtols) is used exactly as it was; every row is evaluated
+        cal, train, ev = np.array([], dtype=int), np.array([], dtype=int), np.arange(len(U))
     feats = {"ftle": pb.FEATS_FTLE, "oracle": pb.FEATS_ORACLE}.get(a.features, pb.FEATS_STATE)
     import joblib
     if a.frozen_policy:
@@ -109,30 +111,37 @@ def cmd_policy(a):
         models = pb.fit_policy_models(U, train, features=feats, quantile=a.quantile, seed=a.seed)
     cal_df = U.iloc[cal].reset_index(drop=True)
     ev_df = U.iloc[ev].reset_index(drop=True)
-    cal_pred = predict_hurdle(models, cal_df)
+    cal_pred = predict_hurdle(models, cal_df) if len(cal_df) else None
     ev_pred = predict_hurdle(models, ev_df)
 
     # --- certified ML scales (lazy scan = the same "largest certified" value as the full Bonferroni chain)
     cache = ReferenceCache(MU)
     scale_rep, scales = {}, {}
-    for k in pb.CANDIDATES:
+    if a.frozen_calibration:
+        scales = dict(frozen["scales"])
+        rtols = {tuple(k.split("|")): v for k, v in frozen["rtols"].items()}
+        cal_rate, rtol_rep, scale_rep = float("nan"), {}, {}
+        print(f"  FROZEN calibration: scales {scales}; rtols {rtols}", flush=True)
+    for k in ([] if a.frozen_calibration else pb.CANDIDATES):
         r = pb.certify_scale_lazy(cal_df, cal_pred, k, tol_km=a.tol_km, mu=MU, cache=cache)
         scale_rep[k] = r
         scales[k] = r["chosen_scale"]
         print(f"  scale[{k}] = {r['chosen_scale']}  (n={r['n']}, violations={r['violations']})", flush=True)
 
     # --- realized violation rate of the deployed policy on the calibration rows (target for the equal-risk adaptive rtol)
-    cal_res = pb.evaluate_orbits(cal_df, cal_pred, scales, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs,
+    cal_res = None if a.frozen_calibration else pb.evaluate_orbits(cal_df, cal_pred, scales, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs,
                                  progress=False)
-    cal_ok = cal_res["ml_ok"].fillna(False).astype(bool) & (cal_res["ml_err_km"] <= a.tol_km)
-    has = cal_res["ml_integrator"].notna()
-    cal_rate = float(1.0 - cal_ok[has].mean()) if has.any() else float("nan")
-    print(f"  deployed-policy violation rate on calibration rows: {cal_rate:.4f} (n={int(has.sum())})", flush=True)
+    if not a.frozen_calibration:
+        cal_ok = cal_res["ml_ok"].fillna(False).astype(bool) & (cal_res["ml_err_km"] <= a.tol_km)
+        has = cal_res["ml_integrator"].notna()
+        cal_rate = float(1.0 - cal_ok[has].mean()) if has.any() else float("nan")
+        print(f"  deployed-policy violation rate on calibration rows: {cal_rate:.4f} (n={int(has.sum())})", flush=True)
 
     # --- adaptive rtols on the SAME calibration rows (equal n_cal, equal grid size)
-    items = pb.reference_items(cal_df, MU)
-    rtols, rtol_rep = {}, {}
-    for m in pb.METHODS:
+    items = None if a.frozen_calibration else pb.reference_items(cal_df, MU)
+    if not a.frozen_calibration:
+        rtols, rtol_rep = {}, {}
+    for m in ([] if a.frozen_calibration else pb.METHODS):
         r = pb.certify_rtol_lazy(cal_df, m, tol_km=a.tol_km, mu=MU, equal_risk_target=cal_rate, n_jobs=a.n_jobs, items=items)
         rtol_rep[m] = r
         rtols[(m, "cal")] = r["chosen_rtol"]
@@ -143,7 +152,8 @@ def cmd_policy(a):
     res = pb.evaluate_orbits(ev_df, ev_pred, scales, rtols=rtols, do_spec=not a.no_spec, tol_km=a.tol_km, n_jobs=a.n_jobs)
     cp = measure_prediction_cost(models, ev_df, pb.CANDIDATES, MU)
     raw = pb.candidate_raw_predictions(ev_df, ev_pred)
-    led = fs.build_ledger(ev_df, res.merge(raw, on="row_id"), cp["evals_equiv"], c_feat=1.0, tol_km=a.tol_km)
+    c_pred = cp["evals_equiv"] if a.c_pred_fixed is None else a.c_pred_fixed   # pinned in the pre-registration (wall time is noisy)
+    led = fs.build_ledger(ev_df, res.merge(raw, on="row_id"), c_pred, c_feat=1.0, tol_km=a.tol_km)
     led.to_csv(os.path.join(out, "ledger.csv"), index=False)
     cal_df.assign(split="cal").to_csv(os.path.join(out, "cal_rows.csv"), index=False)
     pd.Series(U.iloc[train]["row_id"].to_numpy()).to_csv(os.path.join(out, "train_row_ids.csv"), index=False, header=["row_id"])
@@ -152,7 +162,7 @@ def cmd_policy(a):
                  "features": feats, "quantile": a.quantile}, os.path.join(out, "policy.joblib"))
     rep = {"args": vars(a), "n_usable": int(len(U)), "n_train": int(len(train)), "n_cal": int(len(cal)), "n_eval": int(len(ev)),
            "scales": scales, "scale_chains": {k: v["chain"] for k, v in scale_rep.items()},
-           "cal_policy_violation_rate": cal_rate, "rtol_calibration": rtol_rep, "prediction_cost": cp,
+           "cal_policy_violation_rate": cal_rate, "rtol_calibration": rtol_rep, "prediction_cost": cp, "c_pred_used": c_pred,
            "risk_ledger": fs.risk_ledger(led, a.tol_km), "wall_seconds": time.time() - t_start}
     save_json(rep, os.path.join(out, "policy_report.json"))
     print(json.dumps(proto.json_safe(rep["risk_ledger"]), indent=1))
@@ -449,6 +459,10 @@ def main():
     sp.add_argument("--quantile", type=float, default=pb.PINNED_QUANTILE)
     sp.add_argument("--no_spec", action="store_true")
     sp.add_argument("--guard_lock", action="store_true")
+    sp.add_argument("--c_pred_fixed", type=float, default=None, help="charge this model-inference cost (RHS-equivalents per orbit) "
+                    "instead of the measured one")
+    sp.add_argument("--frozen_calibration", action="store_true", help="with --frozen_policy: also reuse its certified scales "
+                    "and adaptive rtols (no calibration split); every row is an evaluation row")
     sp.add_argument("--frozen_policy", default=None, help="policy run folder whose fitted models are used unchanged "
                     "(no training; use with --n_eval 0 to evaluate on every non-calibration row)")
     sp.set_defaults(fn=cmd_policy)

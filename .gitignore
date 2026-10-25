@@ -4,3 +4,7 @@ __pycache__/
 *.nbi
 *.nbc
 .claude/settings.local.json
+
+# Part B working data and run folders (outputs worth keeping are copied to part_b/results)
+data_b/
+out_b/

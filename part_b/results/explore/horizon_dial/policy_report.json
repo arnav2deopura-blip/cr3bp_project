@@ -1,0 +1,51 @@
+{
+  "args": {
+    "cmd": "policy",
+    "data": "data_b/sweeps/hsweep_explore.csv",
+    "out_dir": "out_b",
+    "seed": 42,
+    "tol_km": 100.0,
+    "n_jobs": 5,
+    "n_cal": 0,
+    "n_eval": 0,
+    "features": "state",
+    "quantile": 0.1,
+    "no_spec": false,
+    "guard_lock": false,
+    "c_pred_fixed": 1128.0,
+    "frozen_calibration": true,
+    "frozen_policy": "out_b/policy_20261025T213540Z",
+    "fn": "<function cmd_policy at 0x145a66980>"
+  },
+  "n_usable": 11770,
+  "n_train": 0,
+  "n_cal": 0,
+  "n_eval": 11770,
+  "scales": {
+    "rk4": 0.5,
+    "leapfrog": 0.5
+  },
+  "scale_chains": {},
+  "cal_policy_violation_rate": null,
+  "rtol_calibration": {},
+  "prediction_cost": {
+    "sec_per_orbit": 9.634250029921531e-05,
+    "evals_equiv": 1360.0706284512225,
+    "sec_per_rhs": 7.08363950252533e-08,
+    "n_rows": 1000
+  },
+  "c_pred_used": 1128.0,
+  "risk_ledger": {
+    "n_policy_runs": 11770,
+    "n_violations": 518,
+    "violation_rate": 0.04401019541206457,
+    "n_diverged": 23,
+    "abstain_rate": 0.0,
+    "median_err_over_tol": 9.22296681189944,
+    "p90_err_over_tol": 2160.795070198379,
+    "cvar90_err_over_tol": 10911.78286499876,
+    "max_err_over_tol": 37699.44222387508,
+    "catastrophic_share": 0.49292929292929294
+  },
+  "wall_seconds": 693.5628910064697
+}
