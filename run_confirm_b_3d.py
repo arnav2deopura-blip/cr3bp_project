@@ -38,7 +38,7 @@ EXPLORE_DATA = "data_b/cr3bp_3d_training_data_accuracy_monotone_seed21.csv"
 EXPLORE_POLICY = "out_b/policy_20261025T213540Z"
 TARGETS = {
     "confirm": {"data": "data_b/cr3bp_3d_training_data_accuracy_monotone_seed22.csv", "out": "out_b/confirm"},
-    "lock": {"data": "data_b/cr3bp_3d_training_data_accuracy_monotone_seed23.csv", "out": "out_b/confirm"},
+    "lock": {"data": "data_b/cr3bp_3d_training_data_accuracy_monotone_seed23.csv", "out": "out_b/lock"},
     "dry": {"data": EXPLORE_DATA, "out": "out_b/dry"},
 }
 

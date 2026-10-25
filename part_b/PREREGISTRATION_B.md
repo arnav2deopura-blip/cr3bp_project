@@ -137,4 +137,9 @@ Each confirmatory step runs once per target (`run_confirm_b_3d.py`; log `confirm
 dated entry below.
 
 ## Deviations
-(none yet)
+- 2026-10-25, before any confirmatory step had run and before any D_confirm / D_lock outcome had been looked at (the CSVs were generated, not
+  analysed): the first seal (`FREEZE_B.v1.json`, git a4d0339) was replaced. Two code-only changes: (1) `run_confirm_b_3d.py` wrote the D_lock
+  outputs into the same folder as the D_confirm outputs, so `_latest(..., "policy")` would have returned the D_lock policy when the cost predictor
+  (E11b) and the tests were looking for the D_confirm one; D_lock now has its own folder (`out_b/lock`). (2) `make_figures_b.py` gained three
+  presentation functions (horizon dial, step-over, information floor), which read run outputs and compute nothing that enters a test. The text
+  above "## Deviations" is unchanged (same SHA-256 as in the first seal).
