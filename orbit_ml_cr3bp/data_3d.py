@@ -10,6 +10,10 @@ import pandas as pd
 
 from .config import (
     MU,
+    REFERENCE_RTOL,
+    REFERENCE_ATOL,
+    REFERENCE_MAX_STEP,
+    DT_CEILING_PHYSICAL_ABS,
     CHUNK_SIZE,
     N_WORKERS,
     FTLE_ENABLED,
@@ -39,16 +43,26 @@ from .physics_3d import (
     initial_inside_body,
     REFERENCE_EVENT_NAMES,
     REASON_REFERENCE_DIVERGENT,
+    REASON_OK,
+    EVALS_PER_STEP_3D,
 )
 from .search_3d import (
     find_dt_for_integrator_cr3bp_3d,
     find_dt_for_integrator_accuracy_3d,
     find_dt_for_integrator_accuracy_monotone_3d,
     _dt_upper_bound_3d,
+    label_dt_max,
+)
+from .diagnostics_3d import (
+    DIAGNOSTIC_COLUMNS,
+    DIAGNOSTICS_VERSION,
+    trajectory_diagnostics_3d,
 )
 
 LABEL_PIPELINE_VERSION = 3
+LABEL_PIPELINE_VERSION_V4 = 4
 ACCURACY_LABEL_MODES = ("accuracy", "accuracy_monotone")
+PIPELINES = ("legacy", "v4")
 
 
 def extract_features_3d(state, mu=MU, sim_time: float | None = None):
@@ -105,19 +119,21 @@ def label_orbit_3d(state, sim_time, mu=MU):
     }
 
 
-def _divergent_label(state, mu, outcome):
+def _divergent_label(state, mu, outcome, sim_time=None, ceiling_mode="legacy"):
     return {
         "dt_euler": np.nan, "dt_rk4": np.nan, "dt_leapfrog": np.nan,
         "euler_censored": False, "rk4_censored": False, "leapfrog_censored": False,
         "euler_reason": REASON_REFERENCE_DIVERGENT, "rk4_reason": REASON_REFERENCE_DIVERGENT,
         "leapfrog_reason": REASON_REFERENCE_DIVERGENT,
         "euler_drift": float("nan"), "rk4_drift": float("nan"), "leapfrog_drift": float("nan"),
-        "dt_ceiling": _dt_upper_bound_3d(state, mu), "C0": jacobi_constant_3d(state, mu),
+        "dt_ceiling": label_dt_max(state, sim_time, mu, ceiling_mode) if ceiling_mode == "physical"
+        else _dt_upper_bound_3d(state, mu), "C0": jacobi_constant_3d(state, mu),
         "reference_divergent": True, "reference_outcome": outcome,
     }
 
 
-def label_orbit_accuracy_3d(state, sim_time, mu=MU, tol_km=None, monotone=False):
+def label_orbit_accuracy_3d(state, sim_time, mu=MU, tol_km=None, monotone=False, ceiling_mode="legacy",
+                            diagnostics=False):
     """
     Accuracy-based labeling: "stable" means the integrator's own final
     position at sim_time lands within tol_km (config.POSITION_TOL_KM if not
@@ -155,17 +171,21 @@ def label_orbit_accuracy_3d(state, sim_time, mu=MU, tol_km=None, monotone=False)
     string; they are KEPT in the CSV so a crash/escape classifier can be trained
     and evaluated (outcome_3d.py) rather than silently dropped.
     """
+    ceiling_mode = ceiling_mode or "legacy"
     if initial_inside_body(state, mu):
-        return _divergent_label(state, mu, "initial_inside_body")
+        return _divergent_label(state, mu, "initial_inside_body", sim_time, ceiling_mode)
 
     sol, reached = reference_trajectory_dense_3d(state, sim_time, mu)
+    diag = trajectory_diagnostics_3d(sol, state, mu, du_km_for_mu(mu), with_emp=reached, with_check=reached) \
+        if diagnostics else {}
 
     if not reached:
         event = int(getattr(sol, "reference_event", 9))
-        return _divergent_label(state, mu, REFERENCE_EVENT_NAMES.get(event, "solver_failure"))
+        lab = _divergent_label(state, mu, REFERENCE_EVENT_NAMES.get(event, "solver_failure"), sim_time, ceiling_mode)
+        lab.update(diag)
+        return lab
 
-    dt_max = _dt_upper_bound_3d(state, mu)
-    dt_max = max(dt_max, 0.005)
+    dt_max = label_dt_max(state, sim_time, mu, ceiling_mode)
     reference = (sol, reached)
     search = find_dt_for_integrator_accuracy_monotone_3d if monotone else find_dt_for_integrator_accuracy_3d
 
@@ -175,7 +195,7 @@ def label_orbit_accuracy_3d(state, sim_time, mu=MU, tol_km=None, monotone=False)
                  tol_km=tol_km, reference=reference, return_details=True)
     r_l = search("leapfrog", state, sim_time, mu, dt_max=dt_max,
                  tol_km=tol_km, reference=reference, return_details=True)
-    return {
+    return {**diag,
         "dt_euler": r_e["dt"], "dt_rk4": r_r["dt"], "dt_leapfrog": r_l["dt"],
         "euler_censored": r_e["censored"], "rk4_censored": r_r["censored"], "leapfrog_censored": r_l["censored"],
         "euler_reason": r_e["reason"], "rk4_reason": r_r["reason"], "leapfrog_reason": r_l["reason"],
@@ -212,7 +232,10 @@ def _sample_orbit_for_generation(mu, label_mode):
         return generate_3d_orbit(mu=mu, sampling_mode="near_moon", return_label=True)
 
 
-def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jacobi", tol_km=None):
+def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jacobi", tol_km=None, pipeline="legacy"):
+    """pipeline="legacy": label_pipeline_version 3 behaviour exactly. pipeline="v4" (Part B): physical step ceiling, per-orbit
+    physics diagnostics, success = the search's own reason code (Issue 15) instead of dt > dt_min."""
+    v4 = pipeline == "v4"
     seed32 = int(np.random.SeedSequence([int(base_seed), int(idx)]).generate_state(1)[0])
     np.random.seed(seed32)
     random.seed(seed32)
@@ -244,14 +267,20 @@ def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jaco
 
     if label_mode in ACCURACY_LABEL_MODES:
         labels = label_orbit_accuracy_3d(state, sim_time, mu, tol_km=tol_km,
-                                         monotone=(label_mode == "accuracy_monotone"))
+                                         monotone=(label_mode == "accuracy_monotone"),
+                                         ceiling_mode="physical" if v4 else "legacy", diagnostics=v4)
     else:
         labels = label_orbit_3d(state, sim_time, mu)
     row.update(labels)
 
-    success_e = int(labels["dt_euler"] > 0.0001)
-    success_r = int(labels["dt_rk4"] > 0.0001)
-    success_l = int(labels["dt_leapfrog"] > 0.0001)
+    if v4:
+        success_e = int(labels["euler_reason"] == REASON_OK)
+        success_r = int(labels["rk4_reason"] == REASON_OK)
+        success_l = int(labels["leapfrog_reason"] == REASON_OK)
+    else:
+        success_e = int(labels["dt_euler"] > 0.0001)
+        success_r = int(labels["dt_rk4"] > 0.0001)
+        success_l = int(labels["dt_leapfrog"] > 0.0001)
     row["euler_success"] = success_e
     row["rk4_success"] = success_r
     row["leapfrog_success"] = success_l
@@ -269,6 +298,7 @@ def generate_3d_training_dataset(
     tol_km: float | None = None,
     base_seed: int = 12345,
     tol_du: float | None = None,
+    pipeline: str = "legacy",
 ) -> tuple[pd.DataFrame, dict, dict]:
     """
     label_mode="jacobi" (default): unchanged original behavior --
@@ -304,6 +334,10 @@ def generate_3d_training_dataset(
     """
     if label_mode not in ("jacobi",) + ACCURACY_LABEL_MODES:
         raise ValueError("label_mode must be 'jacobi', 'accuracy' or 'accuracy_monotone'")
+    if pipeline not in PIPELINES:
+        raise ValueError(f"pipeline must be one of {PIPELINES}")
+    if pipeline == "v4" and label_mode not in ACCURACY_LABEL_MODES:
+        raise ValueError("pipeline 'v4' needs an accuracy label mode")
     if tol_du is not None and tol_km is None:
         tol_km = float(tol_du) * du_km_for_mu(mu)
 
@@ -322,7 +356,7 @@ def generate_3d_training_dataset(
     usable_count = 0
     combo_counts = {combo: 0 for combo in product([0, 1], repeat=3)}
     worker_func = partial(generate_one_3d_training_orbit, mu=mu, label_mode=label_mode, tol_km=tol_km,
-                          base_seed=base_seed)
+                          base_seed=base_seed, pipeline=pipeline)
 
     with Pool(processes=n_workers) as pool:
         results = pool.imap_unordered(worker_func, range(num_orbits), chunksize=chunk_size)
@@ -347,7 +381,7 @@ def generate_3d_training_dataset(
                    "euler_drift", "rk4_drift", "leapfrog_drift",
                    "dt_ceiling", "C0", "ftle_nan", "reference_divergent",
                    "reference_outcome", "ftle_status", "ftle_t_frac"]
-    extra_cols = ["orbit_label", "orbit_idx", "mu", "du_km", "tol_km"]
+    extra_cols = ["orbit_label", "orbit_idx", "mu", "du_km", "tol_km"] + list(DIAGNOSTIC_COLUMNS)
 
     all_cols = basic_cols + phys_cols + target_cols + success_cols + status_cols + extra_cols
     existing_cols = [c for c in all_cols if c in df.columns]
@@ -386,7 +420,8 @@ def generate_3d_training_dataset(
     metadata = {
         "mu": mu,
         "system": system_params(mu)["name"],
-        "label_pipeline_version": LABEL_PIPELINE_VERSION,
+        "label_pipeline_version": LABEL_PIPELINE_VERSION_V4 if pipeline == "v4" else LABEL_PIPELINE_VERSION,
+        "pipeline": pipeline,
         "seeding": "seedsequence",
         "collision_radius_primary_du": r1_crash,
         "collision_radius_secondary_du": r2_crash,
@@ -414,6 +449,13 @@ def generate_3d_training_dataset(
         metadata.update({
             "integrator_tolerances": INTEGRATOR_TOLERANCES_3D,
             "sim_time_log_range": [SIM_TIME_LOG_MIN, SIM_TIME_LOG_MAX],
+        })
+    if pipeline == "v4":
+        metadata.update({
+            "ceiling_mode": "physical", "dt_ceiling_abs": DT_CEILING_PHYSICAL_ABS,
+            "reference_rtol": REFERENCE_RTOL, "reference_atol": REFERENCE_ATOL, "reference_max_step": REFERENCE_MAX_STEP,
+            "diagnostics_version": DIAGNOSTICS_VERSION, "evals_per_step": dict(EVALS_PER_STEP_3D),
+            "success_definition": "search reason == REASON_OK",
         })
     meta_fname = fname.replace(".csv", "_metadata.json")
     with open(meta_fname, "w") as f:

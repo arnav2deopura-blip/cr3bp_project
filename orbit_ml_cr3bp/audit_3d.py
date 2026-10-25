@@ -42,7 +42,7 @@ from .physics_3d import (
     REASON_STEP_CAP,
 )
 from .search_3d import (find_dt_for_integrator_accuracy_3d, find_dt_for_integrator_accuracy_monotone_3d,
-                        _dt_upper_bound_3d)
+                        _dt_upper_bound_3d, label_dt_max)
 
 INTEGRATOR_NAMES = ("euler", "rk4", "leapfrog")
 STATE_COLS = ["x", "y", "z", "vx", "vy", "vz"]
@@ -409,6 +409,70 @@ def dense_sweep_accuracy_3d(data, tol_km=None, integrator="rk4", num_samples=200
                         "monotone_relative_error": abs(monotone_dt - dense_dt) / max(dense_dt, 1e-9),
                         "non_monotone": non_monotone})
     return pd.DataFrame(records)
+
+
+def dense_sweep_log_3d(data, tol_km=None, integrators=("rk4", "leapfrog"), num_samples=200, ratio=2.0 ** (1.0 / 16.0),
+                       mu=MU, random_state=42, ceiling_mode="physical", rows=None):
+    """
+    Part B replacement for dense_sweep_accuracy_3d (Issue 2). The old sweep was a LINEAR grid of 150 points from 1e-4 to
+    the ceiling (spacing ~3e-3 TU at a 0.5 ceiling): it could not see any step below ~3e-3, returned DT_MIN when only the
+    first point passed, and so judged monotonicity only for easy orbits. Here the grid is geometric (ratio 2^(1/16), 4x finer
+    than the label's own 2^(1/4) grid) from DT_MIN to the label ceiling, for every requested integrator.
+
+    Per (orbit, integrator): dense_dt (largest passing grid point), monotone_dt (the label search at the same ceiling),
+    non_monotone (a pass at a larger dt than some fail anywhere on the grid), and fails_in_label_window (fails among grid
+    points in [monotone_dt/4, monotone_dt], the range the label claims to certify). Bands are decades of dense_dt.
+    """
+    if tol_km is None:
+        tol_km = POSITION_TOL_KM
+    if rows is None:
+        rows = np.random.RandomState(random_state).choice(len(data), size=min(num_samples, len(data)), replace=False)
+    states = data[STATE_COLS].to_numpy(dtype=float)
+    horizons = data["sim_time"].to_numpy(dtype=float)
+    cache = ReferenceCache(mu)
+    records = []
+    for i in rows:
+        sol, reached = cache.get(int(i), states[i], horizons[i])
+        if not reached:
+            continue
+        state = list(states[i])
+        T = float(horizons[i])
+        ref_pos = sol.sol(T)[:3]
+        top = label_dt_max(state, T, mu, ceiling_mode)
+        n = int(np.floor(np.log(top / DT_MIN) / np.log(ratio))) + 1
+        grid = np.sort(top * ratio ** (-np.arange(max(n, 1))))
+        for integ in integrators:
+            ok = np.array([(lambda e: e is not None and e <= tol_km)(
+                final_position_error_km(integ, state, float(dt), T, ref_pos, mu)[0]) for dt in grid])
+            label = find_dt_for_integrator_accuracy_monotone_3d(integ, state, T, mu, tol_km=tol_km,
+                                                                reference=(sol, reached), dt_max=top)
+            fails = np.where(~ok)[0]
+            non_monotone = bool(len(fails) > 0 and ok[fails[0] + 1:].any())
+            dense_dt = float(grid[ok].max()) if ok.any() else float("nan")
+            win = (grid >= label / 4.0 - 1e-15) & (grid <= label + 1e-15)
+            records.append({"orbit_row": int(i), "integrator": integ, "sim_time": T, "ceiling": top,
+                            "monotone_dt": float(label), "dense_dt": dense_dt,
+                            "dense_over_label": dense_dt / label if np.isfinite(dense_dt) and label > 0 else float("nan"),
+                            "non_monotone": non_monotone, "n_grid": int(len(grid)),
+                            "n_fail": int(len(fails)), "fails_in_label_window": int((~ok[win]).sum()),
+                            "n_window": int(win.sum()),
+                            "band": float(np.floor(np.log10(label))) if label > 0 else float("nan")})
+    return pd.DataFrame(records)
+
+
+def summarize_dense_sweep_log(dn):
+    """Non-monotone fraction and label-window failures overall and by integrator and by decade of the label."""
+    out = {}
+    for key, g in [("all", dn)] + [(f"integrator={k}", v) for k, v in dn.groupby("integrator")] + \
+            [(f"band=1e{int(b)}", v) for b, v in dn.groupby("band") if np.isfinite(b)]:
+        n = int(len(g))
+        k = int(g["non_monotone"].sum()) if n else 0
+        lo, hi = clopper_pearson(k, n)
+        kw = int((g["fails_in_label_window"] > 0).sum()) if n else 0
+        out[key] = {"n": n, "frac_non_monotone": k / n if n else float("nan"), "ci95": [lo, hi],
+                    "frac_label_window_has_fail": kw / n if n else float("nan"),
+                    "median_dense_over_label": float(g["dense_over_label"].median()) if n else float("nan")}
+    return out
 
 
 def summarize_dense_sweep(dn):

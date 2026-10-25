@@ -55,19 +55,20 @@ import pandas as pd
 from scipy.stats import binom
 
 from .audit_3d import ltt_choose, LTT_METHOD
-from .config import MU, POSITION_TOL_KM, du_km_for_mu
+from .config import MU, POSITION_TOL_KM, REFERENCE_RTOL, REFERENCE_ATOL, du_km_for_mu
 from .physics_3d import (
     INTEGRATORS_3D,
     EVALS_PER_STEP_3D,
-    cr3bp_derivatives_3d,
+    _cr3bp_derivatives_3d_numba,
     integrate_endpoint_3d,
     reference_trajectory_dense_3d,
     compute_ftle_3d_variational_details,
     step_rk4_3d,
 )
 
-TRUTH_RTOL = 1e-13
-TRUTH_ATOL = 1e-13
+# One truth everywhere (Part B, Issue 3): the cost comparison, the labels and the audits all use config.REFERENCE_*.
+TRUTH_RTOL = REFERENCE_RTOL
+TRUTH_ATOL = REFERENCE_ATOL
 
 
 def _final_pos_error_km(prev, curr, t_prev, t_actual, sim_time, ref_pos, du_km):
@@ -90,29 +91,38 @@ class _NfevCap(Exception):
     pass
 
 
-def _run_adaptive(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=1e-3):
+def _run_adaptive_ex(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=1e-3):
+    """(result | None, capped). capped is True when the solve was abandoned at MAX_ADAPTIVE_NFEV (so a parallel worker can
+    report it; the module-level ADAPTIVE_CAP_HITS counter is per process)."""
     from scipy.integrate import solve_ivp
 
     count = [0]
+    state = np.asarray(state, dtype=np.float64)
 
     def rhs(t, y):
         count[0] += 1
         if count[0] > MAX_ADAPTIVE_NFEV:
             raise _NfevCap()
-        return cr3bp_derivatives_3d(y.tolist(), mu)
+        return _cr3bp_derivatives_3d_numba(y, mu)
 
     atol = rtol * atol_ratio
     t0 = time.perf_counter()
     try:
         sol = solve_ivp(rhs, (0.0, sim_time), state, method=method, rtol=rtol, atol=atol)
     except _NfevCap:
-        ADAPTIVE_CAP_HITS["n"] += 1
-        return None
+        return None, True
     wall = time.perf_counter() - t0
     if not sol.success or not np.all(np.isfinite(sol.y[:, -1])):
-        return None
+        return None, False
     err = float(np.linalg.norm(sol.y[:3, -1] - ref_pos)) * du_km_for_mu(mu)
-    return {"rtol": rtol, "nfev": int(sol.nfev), "wall_time": wall, "err_km": err}
+    return {"rtol": rtol, "nfev": int(sol.nfev), "wall_time": wall, "err_km": err}, False
+
+
+def _run_adaptive(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=1e-3):
+    res, capped = _run_adaptive_ex(state, sim_time, ref_pos, rtol, mu, method, atol_ratio)
+    if capped:
+        ADAPTIVE_CAP_HITS["n"] += 1
+    return res
 
 
 def scipy_matched_accuracy(
@@ -163,12 +173,22 @@ def scipy_matched_accuracy(
 
 
 RTOL_GRID_CAL = tuple(10.0 ** e for e in np.arange(-12.0, -1.9, 0.5))
+# Part B (Issue 7): the same number of grid values (18) as the ML scale grid audit_3d.LTT_SCALE_GRID, so the Bonferroni
+# threshold delta/m is the same for the adaptive rtol and the ML scale. 1e-12 .. 1e-3.
+RTOL_GRID_B = tuple(10.0 ** e for e in np.linspace(-12.0, -3.0, 18))
+
+
+def _cal_job(args):
+    state, T, ref_pos, rtol, mu, method, atol_ratio, tol_km = args
+    res, capped = _run_adaptive_ex(state, T, ref_pos, rtol, mu, method, atol_ratio)
+    bad = res is None or res["err_km"] > tol_km
+    return bool(bad), bool(capped), (None if res is None else res["nfev"])
 
 
 def calibrate_adaptive_rtol(data_cal, mu: float = MU, method: str = "RK45", tol_km: float | None = None,
                             alpha: float = 0.05, delta: float = 0.1, rtol_grid=RTOL_GRID_CAL,
                             max_rows: int = 300, random_state: int = 42, atol_ratio: float = 1e-3,
-                            method_ltt: str = LTT_METHOD):
+                            method_ltt: str = LTT_METHOD, n_jobs: int = 1):
     """
     Choose ONE rtol for an adaptive solver without per-orbit knowledge of the
     truth: reject H_rtol "violation rate > alpha" when
@@ -192,27 +212,48 @@ def calibrate_adaptive_rtol(data_cal, mu: float = MU, method: str = "RK45", tol_
             items.append((state, T, truth.sol(T)[:3]))
     chain = []
     ordered = sorted(rtol_grid)
-    for rtol in ordered:
-        k = 0
-        hits0 = ADAPTIVE_CAP_HITS["n"]
-        for state, T, ref_pos in items:
-            res = _run_adaptive(state, T, ref_pos, rtol, mu, method, atol_ratio)
-            if res is None or res["err_km"] > tol_km:
-                k += 1
-        n = len(items)
-        if n == 0:
-            break
-        p = float(binom.cdf(k, n, alpha))
-        chain.append({"rtol": float(rtol), "n": n, "violations": k, "violation_rate": k / n, "p_value": p,
-                      "capped": ADAPTIVE_CAP_HITS["n"] - hits0})
-        if method_ltt == "fixed_sequence" and p > delta:
-            break
+    pool = None
+    if n_jobs > 1:
+        from multiprocessing import Pool
+        pool = Pool(processes=n_jobs)
+    try:
+        for rtol in ordered:
+            jobs = [(st, T, rp, float(rtol), mu, method, atol_ratio, tol_km) for st, T, rp in items]
+            if pool is not None:
+                out = pool.map(_cal_job, jobs, chunksize=max(1, len(jobs) // (4 * n_jobs)))
+            else:
+                out = [_cal_job(j) for j in jobs]
+            k = int(sum(o[0] for o in out))
+            capped = int(sum(o[1] for o in out))
+            ADAPTIVE_CAP_HITS["n"] += capped
+            n = len(items)
+            if n == 0:
+                break
+            p = float(binom.cdf(k, n, alpha))
+            chain.append({"rtol": float(rtol), "n": n, "violations": k, "violation_rate": k / n, "p_value": p,
+                          "capped": capped,
+                          "mean_nfev": float(np.mean([o[2] for o in out if o[2] is not None])) if any(
+                              o[2] is not None for o in out) else float("nan")})
+            if method_ltt == "fixed_sequence" and p > delta:
+                break
+    finally:
+        if pool is not None:
+            pool.close()
+            pool.join()
     chosen, flags, thr = ltt_choose([c["rtol"] for c in chain], [c["p_value"] for c in chain], delta, method_ltt,
                                     m=len(ordered))
     for c, f in zip(chain, flags):
         c["certified"] = f
     return {"method": method, "chosen_rtol": chosen, "alpha": alpha, "delta": delta, "ltt_method": method_ltt,
             "p_threshold": thr, "n_cal": len(items), "tol_km": tol_km, "chain": chain}
+
+
+def equal_risk_rtol(chain, target_rate: float):
+    """Equal-realized-risk adaptive baseline (Part B, Issue 7): the loosest rtol on the calibration chain whose realized
+    violation rate is <= target_rate (the ML policy's realized rate on the same rows). The adaptive solver is then asked for
+    the same *observed* safety as the ML policy rather than a certified bound. Returns None if no rtol qualifies."""
+    ok = [c for c in chain if c["violation_rate"] <= target_rate]
+    return max((c["rtol"] for c in ok), default=None)
 
 
 _COST_RATIO_CACHE = {}
@@ -299,8 +340,14 @@ def matched_accuracy_baseline_3d(
     charge_prediction: bool = False,
     global_dt: dict | None = None,
     adaptive_spec_cache: dict | None = None,
+    count_ml_divergence: bool = False,
 ):
     """
+    count_ml_divergence (Part B, Issue 6; default False keeps the Part A behaviour): an ML run that collides, escapes, goes
+    non-finite or hits the step cap is recorded as a violation (ml_meets_tol False, ml_diverged True, ml_err_km NaN) instead of
+    being skipped. Cost columns are not defined for such a row and every cost ratio is computed only over rows that met the
+    tolerance, so the fraction meeting the tolerance (frac_ml_meets_tol) is the number that changes.
+
     dt_scale: None (use predicted dt as is), a float, or a dict
     {integrator: float | None} multiplying each integrator's predicted dt
     before it is used (e.g. the outcome-calibrated scales from
@@ -393,7 +440,13 @@ def matched_accuracy_baseline_3d(
             INTEGRATORS_3D[choice], state, dt_pred, sim_time, mu, 4_000_000)
         ml_wall = time.perf_counter() - t0
         if not ok:
-            n_skipped += 1
+            if count_ml_divergence:
+                rows.append({"orbit_idx": idx, "sim_time": sim_time, "ml_integrator": choice, "ml_dt": dt_pred,
+                             "ml_scale": dt_pred / float(pred[choice]["dt"][0]), "ml_err_km": float("nan"),
+                             "ml_meets_tol": False, "ml_diverged": True, "ml_reason": int(_reason),
+                             "ml_evals": float("nan"), "ml_wall_time": ml_wall, "ml_predict_wall_time": predict_wall})
+            else:
+                n_skipped += 1
             continue
         ml_err_km = _final_pos_error_km(prev, curr, t_prev, t_actual, sim_time, ref_pos, du_km)
         n_steps = int(math.ceil(t_actual / dt_pred - 1e-9))
@@ -493,6 +546,9 @@ def matched_accuracy_baseline_3d(
                "adaptive_cap_hits_total": ADAPTIVE_CAP_HITS["n"]}
     if len(df) == 0:
         return df, summary
+    if "ml_diverged" in df.columns:
+        df["ml_diverged"] = df["ml_diverged"].fillna(False).astype(bool)
+        summary["n_ml_diverged"] = int(df["ml_diverged"].sum())
     summary["tol_km"] = tol_km
     summary["candidate_integrators"] = list(candidate_integrators)
     summary["frac_ml_meets_tol"] = float(df["ml_meets_tol"].mean())
@@ -510,7 +566,7 @@ def matched_accuracy_baseline_3d(
             if col not in df.columns:
                 continue
             if suffix == "":
-                d = df
+                d = df[~df["ml_diverged"]] if "ml_diverged" in df.columns else df
             elif suffix == "_spec":
                 d = df[df["ml_meets_tol"]]
             else:

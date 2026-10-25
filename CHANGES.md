@@ -98,3 +98,15 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
 - `fair_baseline_3d.py`: adaptive solves are abandoned after `MAX_ADAPTIVE_NFEV` = 2,000,000 RHS evaluations (`_run_adaptive` returns None; a violation in
   rtol calibration, a skipped orbit in the comparison). Found because a `gate --split grouped` test ran for 1.5+ hours inside an adaptive solve; with the cap
   it finished. Summaries report `adaptive_nfev_cap` and `adaptive_cap_hits_total`; calibration chain entries report `capped`.
+
+# 2026-10-25: Part B, Phase 0 (failure-study plan; Part A is untouched, see part_b/PART_B_LOG.md)
+- `config.py`: `REFERENCE_RTOL/ATOL` 1e-11 -> 1e-13 (one truth; `REFERENCE_RTOL_V3` keeps the old value), `DT_CEILING_PHYSICAL_ABS = 2.0`.
+- `search_3d.py`: `_dt_upper_bound_3d(state, mu, sim_time, mode)` with `mode in {"legacy", "physical"}`, `label_dt_max`; the monotone search takes `ceiling_mode`.
+- `data_3d.py` / `generate_3d_data.py`: `--pipeline {legacy,v4}`. v4 = physical ceiling, per-orbit diagnostics (`diagnostics_3d.py`), success by reason code,
+  `label_pipeline_version: 4` plus the settings in the metadata. `legacy` reproduces the sealed labels exactly (tested on 24 orbits).
+- `physics_3d.py`: leapfrog endpoint kernel reuses the end-of-step acceleration (bit-identical results); `EVALS_PER_STEP_3D["leapfrog"]` 2 -> 1 (`EVALS_PER_STEP_3D_V3` keeps 2);
+  the reference RHS calls the numba function directly (same numbers, faster).
+- `fair_baseline_3d.py`: `TRUTH_* = REFERENCE_*`; faster adaptive RHS; `calibrate_adaptive_rtol(n_jobs=)`, `RTOL_GRID_B` (18 values), `equal_risk_rtol`;
+  `matched_accuracy_baseline_3d(count_ml_divergence=)`.
+- `audit_3d.py`: `dense_sweep_log_3d`, `summarize_dense_sweep_log` (geometric grid; replaces the linear sweep for Part B).
+- `tests/test_phase0.py`: 9 checks. `freeze_snapshot.py check` now reports the code as changed relative to the Part A seal (expected).

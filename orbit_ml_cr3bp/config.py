@@ -163,9 +163,21 @@ ACCURACY_SIM_TIME_LOG_MAX = 1.301029995663981   # log10(20) -> 20 TU
 # DOP853 reference-trajectory tolerances (physics_3d.reference_trajectory_dense_3d).
 # Tighter than INTEGRATOR_TOLERANCES_3D's role in the old search -- this is a
 # ground-truth trajectory, not a stability threshold.
-REFERENCE_RTOL = 1e-11
-REFERENCE_ATOL = 1e-11
+# PART B (label_pipeline_version 4): ONE truth everywhere. Part A labelled and audited against 1e-11 while the
+# cost comparison used fair_baseline_3d.TRUTH_RTOL = 1e-13 (Issue 3 of the failure-study plan). A 400-orbit
+# pilot found the two final positions within 0.04 km of each other on every orbit, at identical wall time
+# (max_step, not rtol, sets the cost), so the tighter value is now the single truth. Datasets with
+# label_pipeline_version <= 3 were labelled at 1e-11.
+REFERENCE_RTOL = 1e-13
+REFERENCE_ATOL = 1e-13
 REFERENCE_MAX_STEP = 0.01
+REFERENCE_RTOL_V3 = 1e-11
+
+# PART B step ceiling (label_pipeline_version 4). Part A's ceiling, max(0.005, min(0.5, 0.3 * r2^1.5)), was
+# computed from the INITIAL r2 only and did not depend on mu; it pinned 46% of the RK4 labels at the ceiling
+# (censored). The ceiling only bounds the search from above, so it can be generous: 2 TU is above the RK4
+# absolute-stability limit in the rotating frame (~1.4 TU), and it is clipped at the horizon (one step).
+DT_CEILING_PHYSICAL_ABS = 2.0
 
 # Sampling-mode mixture used by data_3d.generate_one_3d_training_orbit when
 # label_mode="accuracy". Replaces the old "mixed" mode's fixed 80/20

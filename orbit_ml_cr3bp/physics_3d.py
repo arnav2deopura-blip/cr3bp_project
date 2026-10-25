@@ -133,6 +133,40 @@ def _step_leapfrog_symplectic_3d_numba(state, dt, mu):
     return np.array([x, y, z, px + y, py - x, pz])
 
 
+@njit(cache=True)
+def _step_leapfrog_fsal_3d_numba(state, dt, mu, Ux, Uy, Uz):
+    """Same arithmetic as _step_leapfrog_symplectic_3d_numba, but the acceleration at the START of the step is passed in
+    (it is the acceleration at the END of the previous step: the position is the same floating-point value) and the one
+    at the end is returned. One new acceleration evaluation per step instead of two; results are bit-identical."""
+    x, y, z, vx, vy, vz = state
+    px = vx - y
+    py = vy + x
+    pz = vz
+
+    px += 0.5 * dt * Ux
+    py += 0.5 * dt * Uy
+    pz += 0.5 * dt * Uz
+
+    c = math.cos(dt)
+    s = math.sin(dt)
+    wr = x + px * dt
+    wi = y + py * dt
+    x = wr * c + wi * s
+    y = -wr * s + wi * c
+    pxn = px * c + py * s
+    pyn = -px * s + py * c
+    px = pxn
+    py = pyn
+    z = z + pz * dt
+
+    Ux, Uy, Uz = _accel_3d_numba(x, y, z, mu)
+    px += 0.5 * dt * Ux
+    py += 0.5 * dt * Uy
+    pz += 0.5 * dt * Uz
+
+    return np.array([x, y, z, px + y, py - x, pz]), Ux, Uy, Uz
+
+
 # -----------------------------------------------------------------------------
 # Numba versions of max_jacobi_drift for each integrator
 #
@@ -375,13 +409,15 @@ def _integrate_endpoint_leapfrog_numba(state, dt, limit_t, mu, max_steps, collis
     t_prev = 0.0
     t = 0.0
     steps = 0
+    # first-same-as-last: the acceleration at the end of a step is the one the next step starts with (1 eval/step)
+    Ux, Uy, Uz = _accel_3d_numba(curr[0], curr[1], curr[2], mu)
     while t < limit_t and steps < max_steps:
         h = dt
         last = False
         if t + dt >= limit_t - 1e-12:
             h = limit_t - t
             last = True
-        s_new = _step_leapfrog_symplectic_3d_numba(curr, h, mu)
+        s_new, Ux, Uy, Uz = _step_leapfrog_fsal_3d_numba(curr, h, mu, Ux, Uy, Uz)
         xn, yn, zn = s_new[0], s_new[1], s_new[2]
         vxn, vyn, vzn = s_new[3], s_new[4], s_new[5]
         r1n = math.sqrt((xn + mu)**2 + yn*yn + zn*zn)
@@ -890,7 +926,7 @@ def reference_trajectory_dense_3d(
         cr1 = cr2 = float(collision_radius)
 
     def rhs(t, y):
-        return cr3bp_derivatives_3d(y.tolist(), mu)
+        return _cr3bp_derivatives_3d_numba(y, mu)
 
     def _event_collision1(t, y):
         return math.sqrt((y[0] + mu)**2 + y[1]**2 + y[2]**2) - cr1
@@ -1015,4 +1051,7 @@ INTEGRATORS_3D: dict[str, Integrator3D] = {
     "leapfrog": step_leapfrog_symplectic_3d,
 }
 
-EVALS_PER_STEP_3D = {"euler": 1, "rk4": 4, "leapfrog": 2}
+# Right-hand-side (force) evaluations per step. Leapfrog is 1 since the endpoint kernel reuses the end-of-step acceleration
+# as the next step's first kick (FSAL). Part A (label_pipeline_version <= 3) charged 2; EVALS_PER_STEP_3D_V3 keeps that.
+EVALS_PER_STEP_3D = {"euler": 1, "rk4": 4, "leapfrog": 1}
+EVALS_PER_STEP_3D_V3 = {"euler": 1, "rk4": 4, "leapfrog": 2}

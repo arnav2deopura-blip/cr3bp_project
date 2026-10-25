@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .config import MU, INTEGRATOR_TOLERANCES_3D, POSITION_TOL_KM, du_km_for_mu
+from .config import MU, INTEGRATOR_TOLERANCES_3D, POSITION_TOL_KM, DT_CEILING_PHYSICAL_ABS, du_km_for_mu
 from .physics_3d import (
     INTEGRATORS_3D,
     max_jacobi_drift_3d,
@@ -16,10 +16,27 @@ from .physics_3d import (
 )
 
 
-def _dt_upper_bound_3d(state, mu=MU):
+CEILING_MODES = ("legacy", "physical")
+
+
+def _dt_upper_bound_3d(state, mu=MU, sim_time=None, mode="legacy"):
+    """Upper end of the dt search. mode="legacy" (label_pipeline_version <= 3, kept so Part A is reproducible):
+    max(0.001, min(0.5, 0.3 * r2^1.5)) from the initial r2 only. mode="physical" (version 4): a mu-independent
+    bound, min(sim_time, DT_CEILING_PHYSICAL_ABS); callers on the legacy path still apply their own max(., 0.005)."""
+    if mode == "physical":
+        cap = float(DT_CEILING_PHYSICAL_ABS)
+        return float(min(sim_time, cap)) if sim_time is not None else cap
+    if mode != "legacy":
+        raise ValueError(f"ceiling mode must be one of {CEILING_MODES}")
     r2 = radius_to_primary_3d(state, 2, mu)
     local_time = r2 ** 1.5
     return max(0.001, min(0.5, 0.3 * local_time))
+
+
+def label_dt_max(state, sim_time, mu=MU, mode="legacy"):
+    """The dt_max a label search actually starts from (legacy applies the 0.005 floor as before)."""
+    ub = _dt_upper_bound_3d(state, mu, sim_time, mode)
+    return ub if mode == "physical" else max(ub, 0.005)
 
 
 def find_dt_for_integrator_cr3bp_3d(
@@ -314,12 +331,13 @@ def find_dt_for_integrator_accuracy_monotone_3d(
     grid_ratio: float = 2.0 ** 0.25,
     window: int = 8,
     n_refine: int = 6,
+    ceiling_mode: str = "legacy",
 ):
     if tol_km is None:
         tol_km = POSITION_TOL_KM
     step_func = INTEGRATORS_3D[integrator_name]
     if dt_max is None:
-        dt_max = max(_dt_upper_bound_3d(state, mu), 0.005)
+        dt_max = label_dt_max(state, sim_time, mu, ceiling_mode)
     if reference is None:
         sol, reached = reference_trajectory_dense_3d(state, sim_time, mu)
     else:

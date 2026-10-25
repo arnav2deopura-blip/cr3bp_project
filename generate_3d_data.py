@@ -45,6 +45,10 @@ def main():
     parser.add_argument("--base_seed", type=int, default=12345,
                          help="Seed offset; use different values to generate independent datasets "
                               "(output file gets a _seed<N> suffix when not 12345)")
+    parser.add_argument("--pipeline", type=str, default="legacy", choices=["legacy", "v4"],
+                         help="'legacy' = label_pipeline_version 3 exactly (Part A). 'v4' = Part B: physical step ceiling "
+                              "(2 TU, clipped at the horizon), reference rtol 1e-13, per-orbit physics diagnostics, "
+                              "success defined by the search's reason code.")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -66,6 +70,7 @@ def main():
         tol_km=args.tol_km,
         base_seed=args.base_seed,
         tol_du=args.tol_du,
+        pipeline=args.pipeline,
     )
 
     print(f"\nUsable orbits: {combo_report['usable_count']} / {combo_report['num_candidates']}")
