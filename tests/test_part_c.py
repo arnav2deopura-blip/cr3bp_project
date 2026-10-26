@@ -105,6 +105,25 @@ def test_fixed_sequence_false_certification_rate_is_at_most_delta():
             assert rate <= delta + slack, (rule, lo, hi, rate)
 
 
+def test_fast_fixed_sequence_matches_the_exact_rule_on_monotone_risk():
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    grid = pc.FIXED_SEQ_GRID
+    rng = np.random.RandomState(2)
+    n, alpha, delta = 800, 0.05, 0.1
+    calls = []
+    for rep in range(300):
+        lo, hi = rng.uniform(0.005, 0.04), rng.uniform(0.05, 0.2)
+        risk = dict(zip(sorted(grid), _risk_curve(grid, lo, hi)))
+        # a monotone realization: sort the binomial draws so that violations never decrease with the scale
+        ks = dict(zip(sorted(grid), np.sort(rng.binomial(n, [risk[s] for s in sorted(grid)]))))
+        a = pc.certify_sequence(lambda s: (int(ks[s]), n), grid, alpha, delta, "fixed_sequence")
+        c = []
+        b = pc.certify_sequence(lambda s: (calls.append(1) or int(ks[s]), n), grid, alpha, delta, "fixed_sequence_fast")
+        assert a["chosen_scale"] == b["chosen_scale"], (a["chosen_scale"], b["chosen_scale"])
+        assert len(b["chain"]) <= 7
+    assert np.mean(calls) < 7
+
+
 def test_fixed_sequence_stops_at_first_non_rejection():
     from orbit_ml_cr3bp import policy_c_3d as pc
     grid = (0.1, 0.2, 0.3, 0.4)
@@ -561,6 +580,38 @@ def test_compiled_policy_structured_target_and_single_model_and_sundman():
     assert (chs == 0).all() and np.allclose(dts, 10 ** pc.predict_raw_c(ms, te)["rk4s"]["logdt"], rtol=1e-12)
     sz = cps.size()
     assert sz["rk4"]["n_trees"] == 30 and sz["leapfrog"] is None
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# C9: doomed orbits
+# ---------------------------------------------------------------------------------------------------------------------
+
+def test_doomed_event_type_time_and_agreement_rules_on_a_synthetic_collision():
+    from orbit_ml_cr3bp import doomed_3d as dd
+    from orbit_ml_cr3bp.physics_3d import reference_trajectory_dense_3d
+    mu = 0.01215058535
+    tol_du = 100.0 / 384400.0
+    st = np.array([1 - mu - 0.10, 0.0, 0.0, 0.5, 0.0, 0.0])          # straight at the Moon
+    sol, reached = reference_trajectory_dense_3d(list(st), 10.0, mu)
+    assert not reached and sol.reference_event == 2
+    t_ref = float(sol.t[-1])
+    coarse = dd.run_until_event("rk4", st, 2e-3, 10.0, mu)
+    fine = dd.run_until_event("rk4", st, 1e-5, 10.0, mu)
+    for r in (coarse, fine):
+        assert r["event"] == 2 and r["finite"]
+    ac, af = dd.agreement(coarse, 2, t_ref, tol_du), dd.agreement(fine, 2, t_ref, tol_du)
+    assert ac["same_type"] and ac["relaxed"] and not ac["strict"]       # one coarse step cannot hit the time to 1e-4 TU
+    assert af["strict"] and af["relaxed"]
+    assert abs(fine["t_last_good"] - t_ref) < 2e-5
+    # an orbit that misses the Moon: no event, no agreement
+    miss = dd.run_until_event("rk4", np.array([1 - mu - 0.10, 0.0, 0.0, 0.0, 0.3, 0.0]), 1e-2, 0.5, mu)
+    assert miss["event"] == 0 and not dd.agreement(miss, 2, t_ref, tol_du)["same_type"]
+    # the physical flag on the same state: osculating periapsis about the secondary is inside the Moon and reached soon
+    from orbit_ml_cr3bp.osculating_3d import osc_features, OSC_FEATURE_COLS
+    f, _ = osc_features(st[None, :], np.array([10.0]), mu)
+    osc = {c: f[:, i] for i, c in enumerate(OSC_FEATURE_COLS)}
+    f1, f2, anyf = dd.crash_flag_physical(osc, 10.0, mu)
+    assert f2[0] and anyf[0]
 
 
 def main():

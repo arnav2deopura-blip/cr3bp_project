@@ -107,3 +107,43 @@ the 10-RHS gate by themselves. Two findings change the plan's candidate list: (1
 (10 trees), 0.30 to 0.23 (25), 0.21 to 0.17 (50), 0.12 to 0.10 (300) (`part_c/results/c3/structured_target.py`); it is now an option (`structured=True`, also in the compiled policy) and is decided on D_select. (2) A policy that needs a single regressor
 (RK4 alone, or the Sundman-time regressor of Track 3) costs about a third of the two-regressor-plus-gate policy, which is what brings the tree models near the gate. **Gate status: M0 is at about 12 on the loaded machine, the smallest structured tree models
 about 12-13 per single regressor; whether any model is eligible at <= 10 is decided with the idle-machine measurement.**
+
+## 3. C4: the Sundman-time RK4 and its pilot (2026-10-26; exploratory; outputs in `part_c/results/c4`)
+
+**Code.** `sundman_3d.py` (RK4 on the augmented 7-vector with g = 1/(1/tau_1 + 1/tau_2 + 1/tau_c), landing on T by finishing in physical time as the plan describes), `physics_3d.py` (a registry marker `Rk4sStep`, `INTEGRATORS_3D["rk4s"]`,
+`EVALS_PER_STEP_3D["rk4s"] = 4`), `search_3d.find_dt_for_integrator_accuracy_monotone_3d(step_func=...)`, `data_3d` pipeline v5 (v4 + `dt_rk4s`, `rk4s_success`, `rk4s_censored`, `rk4s_reason`, counted `rk4s_evals`,
+`sampling_branch`, the 13 periapsis columns, optional `--sampling_weights`, `--tau_c`). Tests (`tests/test_part_c.py`): lands exactly on T and the evaluation count equals an independent pure-Python statement of the algorithm
+(one extra evaluation, the k1 of the landing decision, whose value the first landing step reuses); with g = 1 it is classical RK4 to 1e-13 and 4 x ceil(T / ds) evaluations; the convergence slope is 4 (median over 10 smooth orbits, range 3.6-4.4);
+g shrinks by more than 20x at 0.01 DU from the Moon. Two decisions made while writing it: (i) a step that would overshoot T is discarded and the run finishes in physical time (its 4 evaluations stay counted); (ii) the v5 sampler weights
+are recorded so enriched rows can be re-weighted (natural rows 1, enriched rows p_natural / p_enriched per branch).
+
+**Pilot (seed 9101, 2,000 orbits, 1,602 usable, tau_c = 2, 100 km; `run_part_c_3d.py sundman_pilot`).** Oracle = the largest fictitious step that meets the tolerance, cost counted.
+
+| comparator | oracle Sundman cheaper | oracle fixed physical step cheaper | median paradigm gap Sundman / fixed (dex) | Spearman(log delta_phys, gap): Sundman / fixed |
+|---|---|---|---|---|
+| RK45-spec | **49.5 %** | 24.4 % | 0.00 / +0.18 | **0.17** [0.13, 0.22] / 0.92; OLS slope 0.03 / 0.89 |
+| DOP853-spec | 43.5 % | 26.2 % | +0.03 / +0.26 | 0.32 / 0.92 |
+| RK45-cal (Part B certified rtol) | 96.5 % | 65.5 % | -0.39 / -0.23 | 0.68 / 0.92 |
+| RK45-eqr | 90.3 % | 60.4 % | -0.30 / -0.15 | 0.67 / 0.92 |
+| DOP853-cal / eqr | 82.7 % / 78.7 % | 53.4 % / 50.0 % | -0.25 / -0.20 | 0.52 / 0.53 |
+
+**GO under the rule of plan 6.5** (>= 40 % vs RK45-spec: 49.5 %; Spearman lower by >= 0.3: 0.92 -> 0.17). The time transformation removes the dependence of the paradigm gap on the timescale range (T1's mechanism): the gap no longer grows with log delta_phys
+(slope 0.89 -> 0.03). By deployable cell the gain is largest where Part B's gap was largest: regime I at horizons 3-8 TU, oracle fixed-step median 6,782 evaluations against RK45-spec 1,862 and Sundman 1,450.
+The oracle is not the policy: it needs the label. What is left for the ML is a target that varies far less: log10 ds* has a standard deviation of 0.32 dex (the physical step: 0.91 dex), and on 1,100 training orbits a 25-tree depth-3 model
+reaches 0.146 dex median error with the periapsis features (0.205 without), 0.093 with 100 trees depth 5. A single global certified ds (no ML; fixed sequence on half the orbits, ds = 0.067) is cheaper than RK45-cal on only 10.7 % of orbits and violates 1.1 %,
+so the ML has room to add value (C5).
+
+**Label acceptance (plan 6.3), reported as it is.** Censored: 0 %. Slope: 4 (unit test). **Non-monotone in ds on the dense log sweep (200 orbits, 81 grid points from 1e-4 to 4): 9 / 200 = 4.5 % [2.1, 8.4] (tau_c = 1: 6 %): the criterion "< 2 %" is NOT met.**
+Label-window failures (a failing step inside [label/4, label], the range the label claims to certify): 2.0 % (borderline against the 2 % criterion, which it does not meet strictly). 11 of the 12 non-monotone orbits (tau_c = 1) have the largest passing grid
+point within 18 % of the label; one has a lucky pass at 5x. The consequence for the policy is limited because its safety is certified end to end on the runs it actually makes, but it is a stated limitation of the Sundman label and goes into the pre-registration.
+This deviates from the plan's acceptance, which asked for < 2 %; I proceed because 6.5 (the go rule) does not include it.
+
+**tau_c.** Oracle cheaper than RK45-spec on 39.6 / 45.9 / 49.5 % for tau_c = 0.5 / 1 / 2 (the plan's grid); extending the grid: 51.6 / 52.8 / 52.6 % for 4 / 8 / 16 while the share against RK45-cal falls from 96.5 to 91.4 %.
+**tau_c = 2** (best in the plan's grid; the gain beyond it is <= 3 points and trades against cal). The consequence for C3(a) (> 50 % against RK45-spec): the pilot value is 49.5 %, a coin flip; the pre-registration says so.
+
+**Arm F (D_explore, state + periapsis features, RK4 only, no leapfrog, fixed sequence): scale 0.80, violation 4.5 %, median integration cost 472 (E, with the leapfrog gate: 520), integration-only cheaper than RK45-cal 47.7 %, eqr 42.0 %.**
+Leapfrog costs more than it gains once the certificate is end to end, so the physical-time policy of Track 2 is RK4 only unless D_select says otherwise.
+
+**Data generation (C6).** v5 costs 0.215 s per orbit single-process against 0.152 for v4 (1.4x; the plan's "> 2x" cut does not apply): D_select 20,000 orbits (seed 42) took 25 minutes on a loaded machine.
+Started: D_train 100,000 (seed 41), D_train_enriched 20,000 (seed 141, weights 0.2933 / 0.1067 / 0.6), D_confirm_C 20,000 (seed 43), D_lock_C 5,000 (seed 44), all tau_c = 2, accuracy_monotone, 100 km, `data_c/`.
+No pipeline file (`data_3d`, `sundman_3d`, `osculating_3d`, `physics_3d`, `search_3d`, `diagnostics_3d`, `config`) is edited while generation runs.

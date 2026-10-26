@@ -271,6 +271,28 @@ def certify_sequence(violations_at, grid, alpha=ALPHA, delta=DELTA, rule="fixed_
                 break
             chosen = float(s)
         thr = delta
+    elif rule == "fixed_sequence_fast":
+        # SELECTION-SET SHORTCUT, not a certificate: assumes the rejections form a prefix of the sorted grid (risk increasing in the
+        # scale), finds its end by bisection (about log2(m) tests instead of up to m) and returns the same value the exact fixed
+        # sequence returns whenever that assumption holds. The confirmatory certificate uses the exact rule.
+        g = sorted(grid)
+
+        def rej(i):
+            k, n = violations_at(g[i])
+            p = float(binom.cdf(k, n, alpha)) if n else 1.0
+            chain.append({"scale": float(g[i]), "n": int(n), "violations": int(k), "violation_rate": k / n if n else float("nan"),
+                          "p_value": p, "certified": bool(p <= delta)})
+            return p <= delta
+        if rej(0):
+            lo, hi = 0, len(g)          # g[lo] rejected; g[hi] (virtual) failed
+            while hi - lo > 1:
+                mid = (lo + hi) // 2
+                if rej(mid):
+                    lo = mid
+                else:
+                    hi = mid
+            chosen = float(g[lo])
+        thr = delta
     elif rule == "bonferroni":
         m = n_tests or len(grid)
         thr = delta / m
@@ -452,3 +474,65 @@ def evaluate_orbits_c(df, choice_idx, raw_dt, scale, rtols=None, do_spec=True, t
     out["ml_steps"] = np.nan
     out.loc[(choice_idx < 0) & ~abstain, ["ml_ok", "ml_err_km", "ml_evals"]] = [False, np.nan, np.nan]
     return out.merge(res_ad, on="row_id", how="left")
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# selection harness (plan 8.1: every choice is made on D_select, split 50/50 into a calibration and an evaluation fold)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def split_folds(n, seed=42):
+    perm = np.random.RandomState(seed).permutation(n)
+    return np.sort(perm[: n // 2]), np.sort(perm[n // 2:])
+
+
+def importance_weights(branch, natural=None, enriched=None, is_enriched=None):
+    """Training weights for the natural population: natural rows 1; rows from the enriched sampler p_natural(branch) / p_enriched(branch)
+    (so both halves of D_train are unbiased for the natural mixture)."""
+    nat = natural or {"lagrange": 0.55, "wide": 0.20, "near_moon": 0.25}
+    enr = enriched or {"lagrange": 0.2933, "wide": 0.1067, "near_moon": 0.6}
+    ratio = {b: nat[b] / enr[b] for b in nat}
+    w = np.ones(len(branch))
+    m = np.asarray(is_enriched, dtype=bool)
+    w[m] = [ratio[b] for b in np.asarray(branch)[m]]
+    return w
+
+
+def evaluate_config(df, ref_pos, pred, cal_idx, eval_idx, candidates=CANDIDATES, tol_km=POSITION_TOL_KM, rule="fixed_sequence",
+                    grid=FIXED_SEQ_GRID, mu=MU, n_jobs=8, guard_g=math.inf, fallback=None, abstain=None, alpha=ALPHA, delta=DELTA):
+    """One selection-set experiment: certify ONE end-to-end scale on the calibration fold, run the deployed policy on the evaluation fold.
+    pred: gate-applied predictions for every row of df (positional). Returns the certificate report and per-orbit arrays of the
+    evaluation fold (ok, err_km, evals, scale). Total costs are formed later (overhead is added when the model costs are pinned)."""
+    sl = lambda idx: {k: {"feasible": v["feasible"][idx], "dt": v["dt"][idx]} for k, v in pred.items()}        # noqa: E731
+    cal, ev = df.iloc[cal_idx].reset_index(drop=True), df.iloc[eval_idx].reset_index(drop=True)
+    pred_cal, pred_ev = sl(cal_idx), sl(eval_idx)
+    ab_cal = None if abstain is None else np.asarray(abstain)[cal_idx]
+    ab_ev = None if abstain is None else np.asarray(abstain)[eval_idx]
+    cert = certify_end_to_end(cal, pred_cal, ref_pos[cal_idx], tol_km=tol_km, alpha=alpha, delta=delta, grid=grid, rule=rule, mu=mu,
+                              n_jobs=n_jobs, candidates=candidates, guard_g=guard_g, fallback=fallback, abstain=ab_cal)
+    s = cert["scale"]
+    if s is None:
+        return {"cert": cert, "scale": None}
+    idx, raw = choose_unscaled(pred_ev, candidates)
+    rows = np.where((idx >= 0) | (ab_ev if ab_ev is not None else False))[0]
+    states = ev[STATE_COLS].to_numpy(dtype=float)
+    T = ev["sim_time"].to_numpy(dtype=float)
+    pool = Pool(n_jobs) if n_jobs > 1 else None
+    try:
+        ok, err, evals, fbk = run_chosen(pool, states, T, ref_pos[eval_idx], idx, raw, s, rows, mu, candidates, guard_g, fallback, ab_ev)
+    finally:
+        if pool is not None:
+            pool.close()
+            pool.join()
+    met = ok & (err <= tol_km)
+    viol = int((~met).sum())
+    lo, hi = clopper_pearson(viol, len(rows))
+    return {"cert": cert, "scale": s, "n_eval": int(len(rows)), "violations": viol, "violation_rate": viol / max(len(rows), 1),
+            "viol_cp95": [lo, hi], "evals": evals, "met": met, "fallback": fbk, "choice": idx[rows], "rows": rows,
+            "median_c_int_met": float(np.median(evals[met])) if met.any() else float("nan"),
+            "mean_log10_c_int_met": float(np.mean(np.log10(np.maximum(evals[met], 1)))) if met.any() else float("nan")}
+
+
+def total_cost_summary(res, overhead, tie_tol=0.02):
+    """Median total cost per orbit that met the tolerance for a given overhead (RHS-equivalents per orbit, features included)."""
+    ev = res["evals"][res["met"]] + overhead
+    return float(np.median(ev)), float(np.mean(np.log10(ev)))

@@ -10,6 +10,11 @@ folder under --out_dir with a manifest.json, as in Part B.
   osc_diag       C2: go / no-go diagnostic of the osculating periapsis features (exploratory, D_explore)
   sundman_pilot  C4: go / no-go pilot of the Sundman-time RK4 (oracle cost against the adaptive comparators, paradigm gap vs timescale
                  range, label quality, tau_c sweep, one global certified ds)
+  freeze_policy  C7: fit the final policy (models + tuned thresholds) on D_train / D_select from a JSON config, write policy_frozen.joblib
+  apply_policy   C8: apply a frozen policy to a new dataset: certify ONE end-to-end scale on n_cal rows, recalibrate the adaptive comparators on the
+                 same rows, evaluate every other usable row, write the ledger (--no_cal: reuse the frozen scale, e.g. on D_lock_C)
+  select         C7: one selection-set experiment per config (fit on D_train, certify one end-to-end scale on the calibration fold of D_select,
+                 run on its evaluation fold); writes per-orbit costs so overheads can be added later
   compile_study  C3: accuracy and single-call cost (RHS-equivalents) of compiled model sizes M0 (linear), M1 (small trees), M2 (300 trees)
 
 Run with the project's conda env:  /Users/arnavdeopura/miniforge3/envs/orbit-ml/bin/python run_part_c_3d.py <command> ...
@@ -636,6 +641,254 @@ def _dense_sweep_rk4s(U, rows, tol_km, mu, n_jobs):
     return pd.DataFrame(recs)
 
 
+def load_c_frame(paths, mu=MU, enriched=None):
+    """v5 datasets (concatenated) -> usable rows with derived columns; returns (frame, weights). `enriched`: set of paths that came from
+    the enriched sampler (their rows get importance weights)."""
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    frames, enr = [], []
+    for k, pth in enumerate(paths):
+        d = pd.read_csv(pth, low_memory=False)
+        for c in ("rk4_censored", "leapfrog_censored", "euler_censored", "ftle_nan", "reference_divergent", "rk4s_censored"):
+            if c in d.columns:
+                d[c] = d[c].map({True: True, False: False, "True": True, "False": False}).fillna(False).astype(bool)
+        meta = proto.read_metadata(pth) or {}
+        if meta.get("label_pipeline_version") != 5:
+            raise ValueError(f"{pth}: label_pipeline_version={meta.get('label_pipeline_version')}; Part C needs 5")
+        d["src"] = k
+        frames.append(d)
+        enr.append(np.full(len(d), bool(enriched and pth in enriched)))
+    D = pd.concat(frames, ignore_index=True)
+    is_enr = np.concatenate(enr)
+    D["row_id"] = np.arange(len(D))
+    keep = pb.usable_rows(D).index.to_numpy()
+    U = fs.add_derived(D.loc[keep].reset_index(drop=True), mu)
+    w = pc.importance_weights(U["sampling_branch"].to_numpy(), is_enriched=is_enr[keep])
+    return U, w
+
+
+def _fit_for_config(cfg, tr, w, feats):
+    """-> (kind, object) with .pred(df) -> raw dict. kinds: 'trees' (models dict) or 'linear' (compiled linear policy)."""
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    from orbit_ml_cr3bp import compiled_model_3d as cm
+    fam = cfg["family"]
+    cands = ("rk4s",) if fam == "sundman" else (("rk4",) if cfg.get("rk4_only") else ("rk4", "leapfrog"))
+    if cfg["cls"] == "trees":
+        size = {"reg_kw": {"max_iter": cfg["n_iter"], "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]},
+                "clf_kw": {"max_iter": max(10, cfg["n_iter"] // 2), "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]}}
+        models = pc.fit_policy_c(tr, feats, quantile=cfg["q"], seed=cfg.get("seed", 42), lf_gate=cfg.get("gate", "none") if "leapfrog" in cands else "none",
+                                 sample_weight=w, structured=cfg.get("structured", False), candidates=cands, **size)
+        return "trees", models
+    raise ValueError(cfg["cls"])
+
+
+def cmd_select(a):
+    import joblib
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    from orbit_ml_cr3bp import compiled_model_3d as cm
+    out = make_run_dir(a.out_dir, "select", a)
+    cfgs = json.load(open(a.configs))
+    Utr, wtr = load_c_frame(a.train, a.mu, enriched=set(a.train_enriched))
+    if a.max_train and len(Utr) > a.max_train:
+        sub = np.random.RandomState(a.seed).choice(len(Utr), a.max_train, replace=False)
+        Utr, wtr = Utr.iloc[sub].reset_index(drop=True), wtr[sub]
+    Usel, _ = load_c_frame([a.select], a.mu)
+    print(f"train {len(Utr)} usable rows, select {len(Usel)}", flush=True)
+    cache_path = os.path.join(os.path.dirname(a.select), "select_ref_final.npy")
+    if os.path.exists(cache_path) and len(np.load(cache_path)) == len(Usel):
+        ref = np.load(cache_path)
+    else:
+        ref = pc.reference_final_positions(Usel, a.mu, a.n_jobs)
+        np.save(cache_path, ref)
+    cal_idx, ev_idx = pc.split_folds(len(Usel), a.seed)
+    fitted, rows = {}, []
+    fb_cache = {}
+    for cfg in cfgs:
+        t0 = time.time()
+        fam = cfg["family"]
+        feats = pc.FEATS_OSC if cfg.get("features", "osc") == "osc" else pb.FEATS_STATE
+        key = json.dumps({k: cfg.get(k) for k in ("family", "cls", "n_iter", "depth", "lr", "structured", "q", "rk4_only", "features", "gate")}, sort_keys=True)
+        if key not in fitted:
+            fitted[key] = _fit_for_config(cfg, Utr, wtr, feats)
+        kind, models = fitted[key]
+        raw = pc.predict_raw_c(models, Usel)
+        pred = pc.apply_gate(raw, p_star=cfg.get("p_star", 0.5), g_star=cfg.get("g_star", 0.0), lf_gate=models["lf_gate"])
+        cands = tuple(models["candidates"])
+        guard_g = math.inf if cfg.get("guard_g") is None else cfg["guard_g"]
+        fallback, abstain = None, None
+        if guard_g < math.inf or cfg.get("abstain_rule", "none") != "none":
+            if "rtol" not in fb_cache:
+                r0 = pb.certify_rtol_lazy(Usel.iloc[cal_idx].reset_index(drop=True), "RK45", tol_km=a.tol_km, mu=a.mu, n_jobs=a.n_jobs)
+                fb_cache["rtol"] = r0["chosen_rtol"]
+            fallback = (fb_cache["rtol"], "RK45")
+            if cfg.get("abstain_rule", "none") != "none":
+                abstain = pc.abstain_flags(Usel, cfg["abstain_rule"], cfg.get("abstain_logtau"))
+        res = pc.evaluate_config(Usel, ref, pred, cal_idx, ev_idx, candidates=cands, tol_km=a.tol_km, rule=cfg.get("rule", "fixed_sequence_fast"),
+                                 grid=pc.FIXED_SEQ_GRID if cfg.get("grid", "fine") == "fine" else pc.pb.LTT_SCALE_GRID, mu=a.mu, n_jobs=a.n_jobs,
+                                 guard_g=guard_g, fallback=fallback, abstain=abstain)
+        row = {"name": cfg["name"], **{k: v for k, v in cfg.items() if k != "name"}, "scale": res["scale"], "fit_plus_run_s": time.time() - t0}
+        if res["scale"] is not None:
+            row.update({k: res[k] for k in ("n_eval", "violations", "violation_rate", "viol_cp95", "median_c_int_met", "mean_log10_c_int_met")})
+            row["cond_risk_cal"] = res["cert"]["conditional_risk"]
+            row["cal_violation_rate"] = res["cert"].get("violation_rate")
+            row["fallback_share"] = float(res["fallback"].mean())
+            np.savez_compressed(os.path.join(out, f"orbits_{cfg['name']}.npz"), evals=res["evals"], met=res["met"], rows=res["rows"],
+                                choice=res["choice"])
+        rows.append(row)
+        print(f"{cfg['name']:28s} scale {row['scale']}  viol {row.get('violation_rate', float('nan')):.4f}  median C_int {row.get('median_c_int_met', float('nan')):.0f}  "
+              f"({row['fit_plus_run_s']:.0f}s)", flush=True)
+        save_json({"rows": rows}, os.path.join(out, "select_rows.json"))
+    pd.DataFrame(rows).to_csv(os.path.join(out, "select_rows.csv"), index=False)
+    print("wrote", out)
+
+
+def _config_features(cfg):
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    return pc.FEATS_OSC if cfg.get("features", "osc") == "osc" else pb.FEATS_STATE
+
+
+def cmd_freeze_policy(a):
+    """Fit the final policy of one family on D_train (weighted), tune its gate on D_select, write the frozen spec."""
+    import joblib
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    out = make_run_dir(a.out_dir, "freeze_policy", a)
+    cfg = json.load(open(a.config))
+    Utr, wtr = load_c_frame(a.train, a.mu, enriched=set(a.train_enriched))
+    Usel, _ = load_c_frame([a.select], a.mu)
+    feats = _config_features(cfg)
+    fam = cfg["family"]
+    cands = ("rk4s",) if fam == "sundman" else (("rk4",) if cfg.get("rk4_only") else ("rk4", "leapfrog"))
+    size = {"reg_kw": {"max_iter": cfg["n_iter"], "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]},
+            "clf_kw": {"max_iter": max(10, cfg["n_iter"] // 2), "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]}}
+    models = pc.fit_policy_c(Utr, feats, quantile=cfg["q"], seed=cfg.get("seed", 42), lf_gate=cfg.get("gate", "none") if "leapfrog" in cands else "none",
+                             sample_weight=wtr, structured=cfg.get("structured", False), candidates=cands, **size)
+    gate = {"lf_gate": models["lf_gate"], "p_star": cfg.get("p_star", 0.5), "g_star": cfg.get("g_star", 0.0)}
+    if "leapfrog" in cands and models["lf_gate"] in ("clf", "censored"):
+        thr, tab = pc.select_gate_threshold(pc.predict_raw_c(models, Usel), Usel, max_rate=cfg.get("gate_budget", 0.005), lf_gate=models["lf_gate"])
+        tab.to_csv(os.path.join(out, "gate_table.csv"), index=False)
+        if thr is None:
+            raise RuntimeError("no gate threshold meets the budget on D_select")
+        gate["p_star" if models["lf_gate"] == "clf" else "g_star"] = thr
+    spec = {"config": cfg, "gate": gate, "features": feats, "candidates": list(cands), "n_train_rows": int(len(Utr)), "n_select_rows": int(len(Usel)),
+            "train_files": a.train, "select_file": a.select,
+            "sha256": {pth: proto.sha256_file(pth) for pth in list(a.train) + [a.select]}}
+    path = os.path.join(out, "policy_frozen.joblib")
+    joblib.dump({"models": models, "spec": spec}, path)
+    spec["model_file_sha256"] = proto.sha256_file(path)
+    save_json(spec, os.path.join(out, "policy_frozen_spec.json"))
+    print(json.dumps(proto.json_safe({k: v for k, v in spec.items() if k not in ("sha256",)}), indent=1))
+    print("wrote", out)
+
+
+def deploy_and_evaluate(cfg, models, gate, cal_df, ev_df, out, a, scale_override=None, rtols_override=None, fallback_override=None):
+    """Certify one end-to-end scale on cal_df (or reuse scale_override), recalibrate the adaptive comparators on the same rows, run the deployed
+    policy and the comparators on ev_df, write the ledger and a summary. Returns (ledger, report)."""
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    from orbit_ml_cr3bp.audit_3d import clopper_pearson
+    cands = tuple(models["candidates"])
+    fam = cfg["family"]
+    raw_ev = pc.predict_raw_c(models, ev_df)
+    pred_ev = pc.apply_gate(raw_ev, p_star=gate["p_star"], g_star=gate["g_star"], lf_gate=models["lf_gate"])
+    ev_idx, ev_raw = pc.choose_unscaled(pred_ev, cands)
+    guard_g = math.inf if cfg.get("guard_g") is None else float(cfg["guard_g"])
+    grid = pc.FIXED_SEQ_GRID if cfg.get("grid", "fine") == "fine" else tuple(pb.LTT_SCALE_GRID)
+    rule = cfg.get("rule", "fixed_sequence")
+    fallback, abstain_ev, abstain_cal = fallback_override, None, None
+    cert, rtols, rtol_rep = None, rtols_override or {}, {}
+    if cal_df is not None and len(cal_df):
+        raw_cal = pc.predict_raw_c(models, cal_df)
+        pred_cal = pc.apply_gate(raw_cal, p_star=gate["p_star"], g_star=gate["g_star"], lf_gate=models["lf_gate"])
+        ref_cal = pc.reference_final_positions(cal_df, a.mu, a.n_jobs)
+        items = pb.reference_items(cal_df, a.mu)
+        if guard_g < math.inf or cfg.get("abstain_rule", "none") != "none":
+            r0 = pb.certify_rtol_lazy(cal_df, "RK45", tol_km=a.tol_km, mu=a.mu, equal_risk_target=None, n_jobs=a.n_jobs, items=items)
+            fallback = (r0["chosen_rtol"], "RK45")
+            print(f"  fallback: RK45 at the certified rtol {fallback[0]}", flush=True)
+        if cfg.get("abstain_rule", "none") != "none":
+            abstain_cal = pc.abstain_flags(cal_df, cfg["abstain_rule"], cfg.get("abstain_logtau"))
+        cert = pc.certify_end_to_end(cal_df, pred_cal, ref_cal, tol_km=a.tol_km, grid=grid, rule=rule, mu=a.mu, n_jobs=a.n_jobs, candidates=cands,
+                                     by_choice=bool(cfg.get("by_choice")), guard_g=guard_g, fallback=fallback, abstain=abstain_cal)
+        print(f"  certified: scale {cert['scale']}; cal violations {cert.get('violations')} of {cert['n_policy_runs']}; "
+              f"conditional {json_brief(cert['conditional_risk'])}", flush=True)
+        if cert["scale"] is None:
+            raise RuntimeError("no scale on the grid is certified")
+        scale = cert["scale"]
+        cal_rate = cert["violation_rate"]
+        for m in pb.METHODS:
+            r = pb.certify_rtol_lazy(cal_df, m, tol_km=a.tol_km, mu=a.mu, equal_risk_target=cal_rate, n_jobs=a.n_jobs, items=items)
+            rtol_rep[m] = r
+            rtols[(m, "cal")] = r["chosen_rtol"]
+            rtols[(m, "eqr")] = r["equal_risk_rtol"]
+            print(f"  {m}: certified rtol {r['chosen_rtol']}, equal-risk rtol {r['equal_risk_rtol']}", flush=True)
+    else:
+        scale = float(scale_override)
+        cal_rate = None
+    if cfg.get("abstain_rule", "none") != "none":
+        abstain_ev = pc.abstain_flags(ev_df, cfg["abstain_rule"], cfg.get("abstain_logtau"))
+    res = pc.evaluate_orbits_c(ev_df, ev_idx, ev_raw, np.full(len(ev_df), scale), rtols=rtols, do_spec=not a.no_spec, tol_km=a.tol_km, mu=a.mu,
+                               n_jobs=a.n_jobs, candidates=cands, guard_g=guard_g, fallback=fallback, abstain=abstain_ev)
+    raw = pb.candidate_raw_predictions(ev_df, pred_ev, candidates=cands) if set(cands) <= set(pc.CANDIDATES) else \
+        pd.DataFrame({"row_id": ev_df["row_id"].to_numpy(), "raw_dt_rk4s": pred_ev["rk4s"]["dt"]})
+    c_pred = float(cfg.get("overhead_rhs", 0.0))
+    led = fs.build_ledger(ev_df, res.merge(raw, on="row_id"), c_pred, c_feat=0.0, tol_km=a.tol_km)
+    if fam == "sundman":
+        led["dstar_chosen"] = np.where(led["ml_integrator"] == "rk4s", led["dt_rk4s"], np.nan)
+        led["cens_chosen"] = np.where(led["ml_integrator"] == "rk4s", led["rk4s_censored"].fillna(False), False)
+        led["C_s_star"] = led["rk4s_evals"]
+    led.to_csv(os.path.join(out, "ledger.csv"), index=False)
+    ok = led["meets_tol"]
+    sumry = {"n_eval": int(len(led)), "scale": scale, "risk_ledger": fs.risk_ledger(led, a.tol_km), "by_integrator": {}}
+    for k in cands:
+        g = led[led["ml_integrator"] == k]
+        if len(g):
+            nb = int(g["violation"].sum())
+            sumry["by_integrator"][k] = {"n": int(len(g)), "share": float(len(g) / len(led)), "violations": nb, "rate": nb / len(g),
+                                         "cp95": list(clopper_pearson(nb, len(g))), "infeasible_choice": int(g["dstar_chosen"].isna().sum())}
+    sumry["fallback_share"] = float(led["ml_fallback"].mean()) if "ml_fallback" in led.columns else 0.0
+    sumry["abstain_share"] = float((led["ml_integrator"] == "adaptive").mean())
+    sumry["median_C_ml_int_met"] = float(led.loc[ok, "C_ml_int"].median())
+    sumry["median_C_ml_tot_met"] = float(led.loc[ok, "C_ml_tot"].median())
+    sumry["mean_log10_C_ml_tot_met"] = float(np.log10(led.loc[ok, "C_ml_tot"]).mean())
+    for comp in fs.COMPARATORS:
+        if f"{comp}_nfev" in led.columns and led[f"{comp}_nfev"].notna().any():
+            m_ = ok & led[f"{comp}_nfev"].notna()
+            w_ = led["meets_tol"] & led[f"{comp}_nfev"].notna() & (led["C_ml_tot"] < led[f"{comp}_nfev"])
+            sumry[f"share_total_cheaper_{comp}"] = float(w_.sum() / led[f"{comp}_nfev"].notna().sum())
+            sumry[f"share_integration_cheaper_{comp}"] = float((led.loc[m_, "C_ml_int"] < led.loc[m_, f"{comp}_nfev"]).mean())
+    return led, {"certificate": cert, "scale": scale, "cal_policy_violation_rate": cal_rate, "rtol_calibration": rtol_rep, "summary": sumry,
+                 "rtols": {f"{m}|{t}": v for (m, t), v in rtols.items()}, "fallback": fallback}
+
+
+def cmd_apply_policy(a):
+    import joblib
+    from run_failure_study_3d import split_rows
+    out = make_run_dir(a.out_dir, "apply_policy", a)
+    t0 = time.time()
+    fz = joblib.load(a.frozen)
+    models, spec = fz["models"], fz["spec"]
+    cfg, gate = dict(spec["config"]), spec["gate"]
+    if a.overhead is not None:
+        cfg["overhead_rhs"] = a.overhead
+    U, _ = load_c_frame([a.data], a.mu)
+    if a.no_cal:
+        cal_df, ev_df = None, U
+    else:
+        _tr, cal, ev = split_rows(U, a.n_cal, 0, a.seed)
+        cal_df, ev_df = U.iloc[cal].reset_index(drop=True), U.iloc[ev].reset_index(drop=True)
+    print(f"usable {len(U)}; calibration {0 if cal_df is None else len(cal_df)}, evaluation {len(ev_df)}; family {cfg['family']}", flush=True)
+    kw = {}
+    if a.no_cal:
+        prev = json.load(open(os.path.join(a.scale_from, "apply_policy_report.json")))
+        kw = {"scale_override": prev["scale"], "rtols_override": {tuple(k.split("|")): v for k, v in prev["rtols"].items()},
+              "fallback_override": tuple(prev["fallback"]) if prev.get("fallback") else None}
+    led, rep = deploy_and_evaluate(cfg, models, gate, cal_df, ev_df, out, a, **kw)
+    if cal_df is not None:
+        cal_df.assign(split="cal")[["row_id"]].to_csv(os.path.join(out, "cal_row_ids.csv"), index=False)
+    save_json({"args": vars(a), "spec": spec, "n_usable": int(len(U)), "n_cal": 0 if cal_df is None else int(len(cal_df)), **rep,
+               "wall_seconds": time.time() - t0}, os.path.join(out, "apply_policy_report.json"))
+    print(json.dumps(proto.json_safe(rep["summary"]), indent=1))
+    print(f"wrote {out}  ({time.time() - t0:.0f}s)")
+
+
 def json_brief(cond):
     return {k: f"{v['violations']}/{v['n']}={v['rate']:.3f}" for k, v in cond.items()}
 
@@ -690,6 +943,43 @@ def main():
     sp.add_argument("--go_share", type=float, default=0.40)
     sp.add_argument("--go_rho_drop", type=float, default=0.30)
     sp.set_defaults(fn=cmd_sundman_pilot)
+
+    sp = sub.add_parser("freeze_policy")
+    sp.add_argument("--config", required=True)
+    sp.add_argument("--train", nargs="+", required=True)
+    sp.add_argument("--train_enriched", nargs="*", default=[])
+    sp.add_argument("--select", required=True)
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.set_defaults(fn=cmd_freeze_policy)
+
+    sp = sub.add_parser("apply_policy")
+    sp.add_argument("--frozen", required=True)
+    sp.add_argument("--data", required=True)
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--n_cal", type=int, default=4000)
+    sp.add_argument("--no_cal", action="store_true")
+    sp.add_argument("--scale_from", default=None, help="with --no_cal: the apply_policy run folder whose scale, rtols and fallback are reused")
+    sp.add_argument("--overhead", type=float, default=None, help="pinned model cost (RHS-equivalents per orbit, features included)")
+    sp.add_argument("--seed", type=int, default=42)
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.add_argument("--tol_km", type=float, default=POSITION_TOL_KM)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.add_argument("--no_spec", action="store_true")
+    sp.set_defaults(fn=cmd_apply_policy)
+
+    sp = sub.add_parser("select")
+    sp.add_argument("--train", nargs="+", required=True, help="v5 CSVs (natural, enriched)")
+    sp.add_argument("--train_enriched", nargs="*", default=[], help="the subset of --train that came from the enriched sampler")
+    sp.add_argument("--select", required=True)
+    sp.add_argument("--configs", required=True, help="JSON list of configs (name, family, cls, n_iter, depth, lr, structured, q, ...)")
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--seed", type=int, default=42)
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.add_argument("--tol_km", type=float, default=POSITION_TOL_KM)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.add_argument("--max_train", type=int, default=0)
+    sp.set_defaults(fn=cmd_select)
 
     sp = sub.add_parser("compile_study")
     sp.add_argument("--data", required=True)
