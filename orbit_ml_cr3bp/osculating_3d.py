@@ -88,41 +88,45 @@ def _periapsis_two_body(rx, ry, rz, vx, vy, vz, GM):
 
 
 @njit(cache=True)
+def osc_row(x, y, z, vx, vy, vz, Ti, mu, out, flags):
+    """The 13 features of one state (written into out[0:13]) and the two fallback flags (flags[0:2])."""
+    GM1 = 1.0 - mu
+    GM2 = mu
+    rH = (mu / 3.0) ** (1.0 / 3.0)
+    tau_hat = np.inf
+    for b in range(2):
+        px = -mu if b == 0 else 1.0 - mu
+        GM = GM1 if b == 0 else GM2
+        rx, ry, rz = x - px, y, z
+        ivx, ivy, ivz = vx - ry, vy + rx, vz
+        rm = max(math.sqrt(rx * rx + ry * ry + rz * rz), 1e-12)
+        rp, tp, e, fl = _periapsis_two_body(rx, ry, rz, ivx, ivy, ivz, GM)
+        rp = max(rp, RP_FLOOR)
+        taup = math.sqrt(rp * rp * rp / GM)
+        reach = 1.0 if tp <= Ti else 0.0
+        tpn = min(tp / Ti, 2.0)
+        logrel = math.log10(rm / rH) if b == 1 else math.log10(rm)
+        o = b * 6
+        out[o + 0] = math.log10(rp)
+        out[o + 1] = math.log10(taup)
+        out[o + 2] = tpn
+        out[o + 3] = reach
+        out[o + 4] = logrel
+        out[o + 5] = e
+        flags[b] = fl
+        tloc = taup if reach > 0.5 else math.sqrt(rm * rm * rm / GM)
+        if tloc < tau_hat:
+            tau_hat = tloc
+    out[12] = math.log10(tau_hat)
+
+
+@njit(cache=True)
 def osc_features_numba(states, T, mu):
     n = states.shape[0]
     out = np.empty((n, 13))
     flags = np.zeros((n, 2))
-    GM1 = 1.0 - mu
-    GM2 = mu
-    rH = (mu / 3.0) ** (1.0 / 3.0)
     for i in range(n):
-        x, y, z, vx, vy, vz = states[i, 0], states[i, 1], states[i, 2], states[i, 3], states[i, 4], states[i, 5]
-        Ti = T[i]
-        tau_hat = np.inf
-        for b in range(2):
-            px = -mu if b == 0 else 1.0 - mu
-            GM = GM1 if b == 0 else GM2
-            rx, ry, rz = x - px, y, z
-            ivx, ivy, ivz = vx - ry, vy + rx, vz
-            rm = max(math.sqrt(rx * rx + ry * ry + rz * rz), 1e-12)
-            rp, tp, e, fl = _periapsis_two_body(rx, ry, rz, ivx, ivy, ivz, GM)
-            rp = max(rp, RP_FLOOR)
-            taup = math.sqrt(rp * rp * rp / GM)
-            reach = 1.0 if tp <= Ti else 0.0
-            tpn = min(tp / Ti, 2.0)
-            logrel = math.log10(rm / rH) if b == 1 else math.log10(rm)
-            o = b * 6
-            out[i, o + 0] = math.log10(rp)
-            out[i, o + 1] = math.log10(taup)
-            out[i, o + 2] = tpn
-            out[i, o + 3] = reach
-            out[i, o + 4] = logrel
-            out[i, o + 5] = e
-            flags[i, b] = fl
-            tloc = taup if reach > 0.5 else math.sqrt(rm * rm * rm / GM)
-            if tloc < tau_hat:
-                tau_hat = tloc
-        out[i, 12] = math.log10(tau_hat)
+        osc_row(states[i, 0], states[i, 1], states[i, 2], states[i, 3], states[i, 4], states[i, 5], T[i], mu, out[i], flags[i])
     return out, flags
 
 

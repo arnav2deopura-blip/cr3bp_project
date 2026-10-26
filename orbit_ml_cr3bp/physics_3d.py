@@ -611,6 +611,21 @@ def step_rk4_3d(state: State3D, dt: float, mu: float = MU) -> State3D:
     new_arr = _step_rk4_3d_numba(arr, dt, mu)
     return new_arr.tolist()
 
+class Rk4sStep:
+    """Registry key of the Sundman-time RK4 (Part C, sundman_3d.py). One fixed step in fictitious time does not exist on its own (the
+    landing on T is done by the endpoint kernel), so instances are identity markers for integrate_endpoint_3d that carry the cap tau_c
+    (None = sundman_3d.SUNDMAN_TAU_C). The step passed to integrate_endpoint_3d is the fictitious step ds."""
+
+    def __init__(self, tau_c=None):
+        self.tau_c = tau_c
+
+    def __call__(self, state, ds, mu=MU):
+        raise NotImplementedError("use integrate_endpoint_3d / sundman_3d.integrate_endpoint_rk4s")
+
+
+step_rk4s_3d = Rk4sStep()
+
+
 def step_leapfrog_symplectic_3d(state: State3D, dt: float, mu: float = MU) -> State3D:
     arr = np.array(state, dtype=np.float64)
     new_arr = _step_leapfrog_symplectic_3d_numba(arr, dt, mu)
@@ -681,6 +696,9 @@ def integrate_endpoint_3d(
         result = _integrate_endpoint_leapfrog_numba(
             np.array(start_state, dtype=np.float64), dt_val, limit_t, mu, max_steps,
             r1_crash, r2_crash, EJECTION_RADIUS)
+    elif isinstance(step_func, Rk4sStep):
+        from .sundman_3d import integrate_endpoint_rk4s
+        result = integrate_endpoint_rk4s(start_state, dt_val, limit_t, mu, max_steps, tau_c=step_func.tau_c)[:6]   # dt_val = ds
     else:
         raise ValueError("Unknown step function; must be one of the 3D integrators.")
     return result
@@ -1049,9 +1067,10 @@ INTEGRATORS_3D: dict[str, Integrator3D] = {
     "euler": step_euler_3d,
     "rk4": step_rk4_3d,
     "leapfrog": step_leapfrog_symplectic_3d,
+    "rk4s": step_rk4s_3d,                  # Part C: RK4 in Sundman time; the step is the fictitious step ds
 }
 
 # Right-hand-side (force) evaluations per step. Leapfrog is 1 since the endpoint kernel reuses the end-of-step acceleration
 # as the next step's first kick (FSAL). Part A (label_pipeline_version <= 3) charged 2; EVALS_PER_STEP_3D_V3 keeps that.
-EVALS_PER_STEP_3D = {"euler": 1, "rk4": 4, "leapfrog": 1}
+EVALS_PER_STEP_3D = {"euler": 1, "rk4": 4, "leapfrog": 1, "rk4s": 4}
 EVALS_PER_STEP_3D_V3 = {"euler": 1, "rk4": 4, "leapfrog": 2}

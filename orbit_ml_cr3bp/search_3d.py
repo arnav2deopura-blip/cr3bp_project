@@ -332,10 +332,12 @@ def find_dt_for_integrator_accuracy_monotone_3d(
     window: int = 8,
     n_refine: int = 6,
     ceiling_mode: str = "legacy",
+    step_func=None,
 ):
     if tol_km is None:
         tol_km = POSITION_TOL_KM
-    step_func = INTEGRATORS_3D[integrator_name]
+    if step_func is None:
+        step_func = INTEGRATORS_3D[integrator_name]
     if dt_max is None:
         dt_max = label_dt_max(state, sim_time, mu, ceiling_mode)
     if reference is None:

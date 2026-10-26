@@ -8,6 +8,9 @@ folder under --out_dir with a manifest.json, as in Part B.
   policy_c       Part C policy on one dataset: fit, tune the leapfrog gate on a selection slice, certify ONE end-to-end scale on the
                  calibration slice, evaluate on the evaluation slice, write the ledger (same columns as Part B's)
   osc_diag       C2: go / no-go diagnostic of the osculating periapsis features (exploratory, D_explore)
+  sundman_pilot  C4: go / no-go pilot of the Sundman-time RK4 (oracle cost against the adaptive comparators, paradigm gap vs timescale
+                 range, label quality, tau_c sweep, one global certified ds)
+  compile_study  C3: accuracy and single-call cost (RHS-equivalents) of compiled model sizes M0 (linear), M1 (small trees), M2 (300 trees)
 
 Run with the project's conda env:  /Users/arnavdeopura/miniforge3/envs/orbit-ml/bin/python run_part_c_3d.py <command> ...
 """
@@ -15,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import time
@@ -28,7 +32,7 @@ from orbit_ml_cr3bp.config import MU, POSITION_TOL_KM  # noqa: E402
 from orbit_ml_cr3bp import failure_study_3d as fs  # noqa: E402
 from orbit_ml_cr3bp import policy_b_3d as pb  # noqa: E402
 from orbit_ml_cr3bp import protocol_3d as proto  # noqa: E402
-from run_failure_study_3d import make_run_dir, save_json  # noqa: E402
+from run_failure_study_3d import make_run_dir, save_json, _ols_slope  # noqa: E402
 
 
 def read_ledger(path):
@@ -218,26 +222,41 @@ def cmd_policy_c(a):
     # --- end-to-end certification on the calibration rows
     grid = pc.FIXED_SEQ_GRID if a.grid == "fine" else tuple(__import__("orbit_ml_cr3bp.audit_3d", fromlist=["x"]).LTT_SCALE_GRID)
     ref_cal = pc.reference_final_positions(cal_df, a.mu, a.n_jobs)
+    guard_g = math.inf if a.guard_g is None else a.guard_g
+    fallback, abstain_cal, abstain_ev = None, None, None
+    items = pb.reference_items(cal_df, a.mu)
+    rtols, rtol_rep = {}, {}
+    if not math.isinf(guard_g) or a.abstain_rule != "none":
+        # the adaptive fallback must exist BEFORE the policy is certified: certified rtol of RK45 on the same calibration rows
+        r0 = pb.certify_rtol_lazy(cal_df, "RK45", tol_km=a.tol_km, mu=a.mu, equal_risk_target=None, n_jobs=a.n_jobs, items=items)
+        fallback = (r0["chosen_rtol"], "RK45")
+        print(f"  fallback: RK45 at the certified rtol {fallback[0]}", flush=True)
+        if a.abstain_rule != "none":
+            abstain_cal = pc.abstain_flags(cal_df, a.abstain_rule, a.abstain_logtau)
+            abstain_ev = pc.abstain_flags(ev_df, a.abstain_rule, a.abstain_logtau)
     cert = pc.certify_end_to_end(cal_df, pred_cal, ref_cal, tol_km=a.tol_km, grid=grid, rule=a.rule, mu=a.mu, n_jobs=a.n_jobs,
-                                 by_choice=a.by_choice)
+                                 by_choice=a.by_choice, guard_g=guard_g, fallback=fallback, abstain=abstain_cal)
     print(f"  certified: scale {cert['scale']} by-choice {cert['scales_by_choice']}; cal violations {cert.get('violations')} of "
           f"{cert['n_policy_runs']}; conditional {json_brief(cert['conditional_risk'])}", flush=True)
     if cert["scale"] is None and not a.by_choice:
         raise RuntimeError("no scale on the grid is certified")
-    scales = ({k: cert["scale"] for k in pc.CANDIDATES} if not a.by_choice
-              else {k: v for k, v in cert["scales_by_choice"].items()})
-    cal_idx, _ = pc.choose_unscaled(pred_cal)
-    cal_view = pc.policy_pred_for_evaluation(pred_cal, cal_idx)
-    cal_res = pb.evaluate_orbits(cal_df, cal_view, scales, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs, progress=False, mu=a.mu)
-    cal_ok = cal_res["ml_ok"].fillna(False).astype(bool) & (cal_res["ml_err_km"] <= a.tol_km)
-    has = cal_res["ml_integrator"].notna()
-    cal_rate = float(1.0 - cal_ok[has].mean()) if has.any() else float("nan")
-    if cert.get("violation_rate") is not None and not np.isclose(cal_rate, cert["violation_rate"]):
-        raise AssertionError(f"end-to-end certifier ({cert['violation_rate']}) and evaluation ({cal_rate}) disagree on the calibration rows")
-    print(f"  deployed-policy violation rate on calibration rows: {cal_rate:.4f} (n={int(has.sum())})", flush=True)
-    # --- adaptive comparators calibrated on the same rows
-    rtols, rtol_rep = {}, {}
-    items = pb.reference_items(cal_df, a.mu)
+    cal_idx, cal_raw = pc.choose_unscaled(pred_cal)
+    ev_idx, ev_raw = pc.choose_unscaled(pred_ev)
+    names = list(pc.CANDIDATES)
+    if not a.by_choice:
+        scales = {k: cert["scale"] for k in names}
+        cal_rate = cert["violation_rate"]
+        sc_ev = np.full(len(ev_df), cert["scale"])
+    else:
+        scales = dict(cert["scales_by_choice"])
+        sc_ev = np.array([scales.get(names[j], np.nan) if j >= 0 else np.nan for j in ev_idx])
+        sc_cal = np.array([scales.get(names[j], np.nan) if j >= 0 else np.nan for j in cal_idx])
+        rc = pc.evaluate_orbits_c(cal_df, cal_idx, cal_raw, sc_cal, rtols={}, do_spec=False, tol_km=a.tol_km, mu=a.mu, n_jobs=a.n_jobs,
+                                  progress=False, ref_pos=ref_cal)
+        has = rc["ml_integrator"].notna()
+        cal_rate = float(1.0 - (rc["ml_ok"] & (rc["ml_err_km"] <= a.tol_km))[has].mean())
+    print(f"  deployed-policy violation rate on calibration rows: {cal_rate:.4f}", flush=True)
+    # --- adaptive comparators calibrated on the same rows (equal-risk target = the deployed policy's own rate)
     for m in pb.METHODS:
         r = pb.certify_rtol_lazy(cal_df, m, tol_km=a.tol_km, mu=a.mu, equal_risk_target=cal_rate, n_jobs=a.n_jobs, items=items)
         rtol_rep[m] = r
@@ -245,15 +264,15 @@ def cmd_policy_c(a):
         rtols[(m, "eqr")] = r["equal_risk_rtol"]
         print(f"  {m}: certified rtol {r['chosen_rtol']}, equal-risk rtol {r['equal_risk_rtol']}", flush=True)
     # --- evaluation pass
-    ev_idx, _ = pc.choose_unscaled(pred_ev)
-    ev_view = pc.policy_pred_for_evaluation(pred_ev, ev_idx)
-    res = pb.evaluate_orbits(ev_df, ev_view, scales, rtols=rtols, do_spec=not a.no_spec, tol_km=a.tol_km, n_jobs=a.n_jobs, mu=a.mu)
+    res = pc.evaluate_orbits_c(ev_df, ev_idx, ev_raw, sc_ev, rtols=rtols, do_spec=not a.no_spec, tol_km=a.tol_km, mu=a.mu, n_jobs=a.n_jobs,
+                               guard_g=guard_g, fallback=fallback, abstain=abstain_ev)
     raw = pb.candidate_raw_predictions(ev_df, pred_ev)
     led = fs.build_ledger(ev_df, res.merge(raw, on="row_id"), a.c_pred_fixed, c_feat=1.0, tol_km=a.tol_km)
     led.to_csv(os.path.join(out, "ledger.csv"), index=False)
     cal_df.assign(split="cal").to_csv(os.path.join(out, "cal_rows.csv"), index=False)
     joblib.dump({"models": models, "scales": scales, "rtols": {f"{m}|{t}": v for (m, t), v in rtols.items()}, "gate": gate_info,
-                 "features": feats, "quantile": a.quantile}, os.path.join(out, "policy.joblib"))
+                 "features": feats, "quantile": a.quantile, "guard_g": None if math.isinf(guard_g) else guard_g, "fallback": fallback},
+                os.path.join(out, "policy.joblib"))
     # --- summary of the deployed policy on the evaluation rows
     sumry = {"n_eval": int(len(led)), "risk_ledger": fs.risk_ledger(led, a.tol_km), "by_integrator": {}}
     for k in pc.CANDIDATES:
@@ -264,6 +283,14 @@ def cmd_policy_c(a):
                                          "cp95": list(clopper_pearson(nb, len(g))),
                                          "infeasible_choice": int((g["dstar_chosen"].isna()).sum())}
     ok = led["meets_tol"]
+    sumry["fallback_share"] = float(led["ml_fallback"].mean()) if "ml_fallback" in led.columns else 0.0
+    sumry["abstain_share"] = float((led["ml_integrator"] == "adaptive").mean())
+    sumry["mean_log10_C_ml_tot_met"] = float(np.log10(led.loc[ok, "C_ml_tot"]).mean())
+    sumry["median_C_ml_tot_met"] = float(led.loc[ok, "C_ml_tot"].median())
+    for comp in fs.COMPARATORS:
+        if f"{comp}_nfev" in led.columns and led[f"{comp}_nfev"].notna().any():
+            m_ = ok & led[f"{comp}_nfev"].notna()
+            sumry[f"share_total_cheaper_{comp}"] = float((led.loc[m_, "C_ml_tot"] < led.loc[m_, f"{comp}_nfev"]).mean())
     sumry["median_C_ml_int_met"] = float(led.loc[ok, "C_ml_int"].median())
     sumry["median_C_oracle_fixed"] = float(led.loc[ok, "C_fix_star"].median())
     for comp in fs.COMPARATORS:
@@ -353,6 +380,252 @@ def cmd_osc_diag(a):
     print("GO" if go else "NO-GO", "wrote", out)
 
 
+COMPILE_CONFIGS = {
+    # name: (reg_kw, clf_kw)   learning rates rise as the number of trees falls so a small ensemble still moves off its baseline
+    "M1_10x3": ({"max_iter": 10, "max_depth": 3, "learning_rate": 0.3}, {"max_iter": 10, "max_depth": 3, "learning_rate": 0.3}),
+    "M1_25x3": ({"max_iter": 25, "max_depth": 3, "learning_rate": 0.2}, {"max_iter": 25, "max_depth": 3, "learning_rate": 0.2}),
+    "M1_50x4": ({"max_iter": 50, "max_depth": 4, "learning_rate": 0.15}, {"max_iter": 40, "max_depth": 4, "learning_rate": 0.15}),
+    "M1_100x5": ({"max_iter": 100, "max_depth": 5, "learning_rate": 0.1}, {"max_iter": 60, "max_depth": 5, "learning_rate": 0.1}),
+    "M2_300": ({"max_iter": 300, "learning_rate": 0.05}, {"max_iter": 100}),
+}
+
+
+def cmd_compile_study(a):
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    from orbit_ml_cr3bp import compiled_model_3d as cm
+    from orbit_ml_cr3bp import experiments_b_3d as xb
+    from orbit_ml_cr3bp.osculating_3d import add_osc_features
+    from run_failure_study_3d import load_partb, split_rows
+    out = make_run_dir(a.out_dir, "compile_study", a)
+    d, _ = load_partb(a.data)
+    U = add_osc_features(fs.add_derived(pb.usable_rows(d).reset_index(drop=True), a.mu), a.mu)
+    train, cal, ev = split_rows(U, a.n_cal, a.n_eval, a.seed)
+    tr, te = U.iloc[train].reset_index(drop=True), U.iloc[ev].reset_index(drop=True)
+    st = te[pb.STATE_COLS].to_numpy(dtype=float)
+    Tt = te["sim_time"].to_numpy(dtype=float)
+    rows = []
+
+    def accuracy(pred_log, integ):
+        m = te[f"{integ}_success"].to_numpy() == 1
+        y = np.log10(te[f"dt_{integ}"].to_numpy(dtype=float)[m])
+        yh = pred_log[m]
+        return {f"{integ}_median_abs": float(np.median(np.abs(yh - y))), f"{integ}_p90_abs": float(np.quantile(np.abs(yh - y), 0.9)),
+                f"{integ}_pinball": float(xb.pinball(y, yh, a.quantile).mean()), f"{integ}_over": float((yh > y).mean())}
+
+    for feat_name, feats in (("osc", pc.FEATS_OSC), ("state", pb.FEATS_STATE)):
+        for name, (rk, ck) in COMPILE_CONFIGS.items():
+            if feat_name == "state" and name not in ("M1_50x4", "M2_300"):
+                continue
+            t0 = time.time()
+            models = pc.fit_policy_c(tr, feats, quantile=a.quantile, seed=a.seed, lf_gate="clf", reg_kw=rk, clf_kw=ck)
+            raw = pc.predict_raw_c(models, te)
+            cp = cm.CompiledHGBPolicy(models, p_star=a.p_star)
+            row = {"model": name, "features": feat_name, "fit_s": time.time() - t0, **accuracy(raw["rk4"]["logdt"], "rk4"),
+                   **accuracy(raw["leapfrog"]["logdt"], "leapfrog"), "size": cp.size()}
+            if a.time:
+                c = cm.measure_single_call_cost(cp, st, Tt, repeats=a.repeats)
+                row.update({k: c[k] for k in ("rhs_equiv", "rhs_equiv_range", "features_rhs_equiv", "policy_ns_per_call", "rhs_ns_per_call",
+                                              "python_dispatch_rhs_equiv")})
+                row["batched_rhs_equiv"] = cm.batched_cost(cp, st, Tt) / c["rhs_ns_per_call"]
+            rows.append(row)
+            print(name, feat_name, {k: (round(v, 3) if isinstance(v, float) else v) for k, v in row.items() if k not in ("size",)}, flush=True)
+    # M0: linear quantile policy on engineered features (censored leapfrog gate)
+    t0 = time.time()
+    lin = cm.fit_linear_policy(tr, a.quantile, a.mu, max_rows=(a.lin_rows or None), seed=a.seed)
+    cl = cm.CompiledLinearPolicy(lin, g_star=a.g_star)
+    lr, ll = cl.raw_log_dt(st, Tt)
+    row = {"model": "M0_linear", "features": "osc", "fit_s": time.time() - t0, **accuracy(lr, "rk4"), **accuracy(ll, "leapfrog")}
+    if a.time:
+        c = measure_linear = cm.measure_linear_cost(cl, st, Tt, repeats=a.repeats)
+        row.update({k: c[k] for k in ("rhs_equiv", "rhs_equiv_range", "policy_ns_per_call", "rhs_ns_per_call")})
+    rows.append(row)
+    print("M0_linear", {k: (round(v, 3) if isinstance(v, float) else v) for k, v in row.items()}, flush=True)
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "compile_study.csv"), index=False)
+    gate = a.gate_rhs
+    elig = tab[tab.get("rhs_equiv", pd.Series(dtype=float)) <= gate] if "rhs_equiv" in tab else tab.iloc[0:0]
+    save_json({"table": rows, "gate_rhs_equiv": gate, "eligible": elig["model"].tolist() + [""] if len(elig) else [],
+               "machine": proto.json_safe({"platform": sys.platform, "python": sys.version}), "numba": __import__("numba").__version__,
+               "sklearn": __import__("sklearn").__version__}, os.path.join(out, "compile_study_report.json"))
+    pd.set_option("display.width", 250)
+    cols = [c for c in ("model", "features", "rk4_median_abs", "rk4_pinball", "leapfrog_median_abs", "rhs_equiv", "batched_rhs_equiv") if c in tab.columns]
+    print(tab[cols].round(3).to_string())
+    print("wrote", out)
+
+
+def _tau_label_job(a):
+    from orbit_ml_cr3bp.data_3d import _sundman_labels
+    from orbit_ml_cr3bp.physics_3d import reference_trajectory_dense_3d
+    rid, state, T, mu, tol_km, tau_c = a
+    sol, reached = reference_trajectory_dense_3d(list(state), T, mu)
+    if not reached:
+        return {"row_id": rid}
+    r = _sundman_labels(list(state), T, mu, tol_km, (sol, reached), tau_c)
+    r["row_id"] = rid
+    return r
+
+
+def _global_ds_job(a):
+    from orbit_ml_cr3bp.sundman_3d import integrate_endpoint_rk4s
+    from orbit_ml_cr3bp.config import du_km_for_mu
+    state, T, ref_pos, ds, mu, tau_c = a
+    ok, _p, curr, _tp, _t, _r, ns, nf = integrate_endpoint_rk4s(state, ds, T, mu, 4_000_000, tau_c=tau_c)
+    if not ok:
+        return False, float("nan"), 4 * (ns + nf)
+    return True, float(np.linalg.norm(np.asarray(curr)[:3] - ref_pos)) * du_km_for_mu(mu), 4 * (ns + nf)
+
+
+def cmd_sundman_pilot(a):
+    from multiprocessing import Pool
+    from scipy.stats import spearmanr, binom
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    from orbit_ml_cr3bp.audit_3d import dense_sweep_log_3d, clopper_pearson
+    from orbit_ml_cr3bp.sundman_3d import DS_MIN, DS_MAX
+    out = make_run_dir(a.out_dir, "sundman_pilot", a)
+    d = pd.read_csv(a.data, low_memory=False)
+    for c in ("rk4_censored", "leapfrog_censored", "euler_censored", "ftle_nan", "reference_divergent", "rk4s_censored"):
+        if c in d.columns:
+            d[c] = d[c].map({True: True, False: False, "True": True, "False": False}).fillna(False).astype(bool)
+    d["row_id"] = np.arange(len(d))
+    meta = proto.read_metadata(a.data) or {}
+    if meta.get("label_pipeline_version") != 5:
+        raise ValueError("the Sundman pilot needs a v5 dataset")
+    U = fs.add_derived(pb.usable_rows(d).reset_index(drop=True), a.mu)
+    n_all = len(U)
+    rep = {"n_candidates": int(len(d)), "n_usable_v4": int(n_all), "tau_c": meta.get("sundman_tau_c")}
+    # --- label quality
+    U = U[U["rk4s_success"] == 1].reset_index(drop=True)
+    rep["rk4s_success_share"] = float(len(U) / n_all)
+    rep["rk4s_censored_share"] = float(U["rk4s_censored"].mean())
+    rep["rk4_censored_share"] = float(U["rk4_censored"].mean())
+    # --- adaptive comparators on the same orbits (spec per orbit; cal / eqr at the Part B certified rtols)
+    ref_led = read_ledger(a.rtol_ledger)
+    rt = {(m, t): float(ref_led[f"{m}_{t}_rtol"].dropna().iloc[0]) for m in pb.METHODS for t in ("cal", "eqr")}
+    rep["adaptive_rtols_from_part_b_explore"] = {f"{m}|{t}": v for (m, t), v in rt.items()}
+    jobs = [(int(U["row_id"].iloc[i]), U[pb.STATE_COLS].to_numpy(dtype=float)[i], float(U["sim_time"].iloc[i]), None, None, a.tol_km, a.mu, rt, True,
+             pb.METHODS) for i in range(len(U))]
+    t0 = time.time()
+    with Pool(a.n_jobs) as pool:
+        res = pd.DataFrame(list(pool.imap_unordered(pb._orbit_job, jobs, chunksize=4)))
+    print(f"adaptive comparators done ({time.time() - t0:.0f}s)", flush=True)
+    M = U.merge(res, on="row_id", how="left")
+    fx = fs.oracle_fixed(M)
+    M = pd.concat([M, fx], axis=1)
+    M["C_s"] = M["rk4s_evals"]
+    comps = [f"{m}_{t}" for t in ("spec", "cal", "eqr") for m in pb.METHODS]
+    rows = []
+    for c in comps:
+        col = f"{c}_nfev"
+        h = M[col].notna() & M["C_s"].notna() & M["C_fix_star"].notna()
+        g = M[h]
+        Ps = np.log10(g["C_s"] / g[col])
+        P = np.log10(g["C_fix_star"] / g[col])
+        k1, k0 = int((g["C_s"] < g[col]).sum()), int((g["C_fix_star"] < g[col]).sum())
+        row = {"comparator": c, "n": int(h.sum()), "sundman_cheaper": k1 / h.sum(), "sundman_ci": list(clopper_pearson(k1, int(h.sum()))),
+               "fixed_cheaper": k0 / h.sum(), "median_P_s": float(Ps.median()), "median_P": float(P.median()),
+               "rho_logdelta_Ps": fs.spearman_bootstrap(g["log_delta_phys"], Ps, n_boot=500),
+               "rho_logdelta_P": fs.spearman_bootstrap(g["log_delta_phys"], P, n_boot=500),
+               "slope_Ps": _ols_slope(g["log_delta_phys"], Ps, n_boot=500), "slope_P": _ols_slope(g["log_delta_phys"], P, n_boot=500)}
+        rows.append(row)
+        print(c, {k: (round(v, 3) if isinstance(v, float) else v) for k, v in row.items() if k in ("n", "sundman_cheaper", "fixed_cheaper", "median_P_s", "median_P")},
+              "rho Ps", round(row["rho_logdelta_Ps"][0], 3), "rho P", round(row["rho_logdelta_P"][0], 3), flush=True)
+    rep["oracle_vs_adaptive"] = rows
+    # --- by deployable cell (regime x horizon band), against RK45-spec
+    g = M[M["RK45_spec_nfev"].notna() & M["C_s"].notna()].copy()
+    g["cellkey"] = g["regime"].astype(str) + "|" + g["h_band"].astype(str)
+    rep["by_cell_vs_RK45_spec"] = [{"cell": k, "n": int(len(x)), "sundman_cheaper": float((x["C_s"] < x["RK45_spec_nfev"]).mean()),
+                                    "fixed_cheaper": float((x["C_fix_star"] < x["RK45_spec_nfev"]).mean()),
+                                    "median_C_s": float(x["C_s"].median()), "median_C_fix": float(x["C_fix_star"].median()),
+                                    "median_RK45_spec": float(x["RK45_spec_nfev"].median())} for k, x in g.groupby("cellkey") if len(x) >= 20]
+    # --- dense sweep (monotonicity of the Sundman label in ds)
+    rows_sw = np.random.RandomState(a.seed).choice(len(U), size=min(a.n_sweep, len(U)), replace=False)
+    sw = _dense_sweep_rk4s(U, rows_sw, a.tol_km, a.mu, a.n_jobs)
+    sw.to_csv(os.path.join(out, "dense_sweep_rk4s.csv"), index=False)
+    k = int(sw["non_monotone"].sum())
+    rep["dense_sweep"] = {"n": int(len(sw)), "non_monotone": k, "frac": k / max(len(sw), 1), "ci95": list(clopper_pearson(k, len(sw))),
+                          "label_window_has_fail": float((sw["fails_in_label_window"] > 0).mean())}
+    print("dense sweep", rep["dense_sweep"], flush=True)
+    # --- one global certified ds (no ML): fixed-sequence on a calibration half
+    perm = np.random.RandomState(a.seed + 7).permutation(len(M))
+    cal_i, ev_i = perm[: len(M) // 2], perm[len(M) // 2:]
+    ref = pc.reference_final_positions(M, a.mu, a.n_jobs)
+    tau = float(meta.get("sundman_tau_c") or 1.0)
+    st = M[pb.STATE_COLS].to_numpy(dtype=float)
+    T = M["sim_time"].to_numpy(dtype=float)
+    grid = [float(0.01 * 2 ** (j / 4)) for j in range(0, 33)]
+    chosen, chain = None, []
+    with Pool(a.n_jobs) as pool:
+        def run(ds, idx):
+            return pool.map(_global_ds_job, [(st[i], T[i], ref[i], ds, a.mu, tau) for i in idx], chunksize=8)
+        for ds in grid:
+            r = run(ds, cal_i)
+            kk = int(sum((not x[0]) or (x[1] > a.tol_km) for x in r))
+            p = float(binom.cdf(kk, len(cal_i), 0.05))
+            chain.append({"ds": ds, "violations": kk, "n": len(cal_i), "p": p})
+            if p > 0.1:
+                break
+            chosen = ds
+        rep["global_ds"] = {"chosen": chosen, "chain": chain}
+        if chosen is not None:
+            r = run(chosen, ev_i)
+            ok = np.array([x[0] and x[1] <= a.tol_km for x in r])
+            cost = np.array([x[2] for x in r], dtype=float)
+            Me = M.iloc[ev_i]
+            gl = {"n_eval": int(len(ev_i)), "violation_rate": float(1 - ok.mean()), "median_cost": float(np.median(cost[ok]))}
+            for c in comps:
+                col = f"{c}_nfev"
+                h = ok & Me[col].notna().to_numpy()
+                gl[f"cheaper_than_{c}"] = float((cost[h] < Me[col].to_numpy()[h]).mean()) if h.any() else None
+            rep["global_ds"]["eval"] = gl
+            print("global ds", chosen, gl, flush=True)
+    # --- tau_c sweep of the oracle label (cost only)
+    sweep = {}
+    for tc in a.tau_c_list:
+        with Pool(a.n_jobs) as pool:
+            rs = pd.DataFrame(pool.map(_tau_label_job, [(int(M["row_id"].iloc[i]), M[pb.STATE_COLS].to_numpy(dtype=float)[i], float(T[i]), a.mu,
+                                                         a.tol_km, tc) for i in range(len(M))], chunksize=8))
+        x = M[["row_id", "RK45_spec_nfev", "C_fix_star"]].merge(rs[["row_id", "rk4s_evals", "rk4s_censored"]], on="row_id")
+        h = x["RK45_spec_nfev"].notna() & x["rk4s_evals"].notna()
+        sweep[str(tc)] = {"n": int(h.sum()), "oracle_cheaper_than_RK45_spec": float((x.loc[h, "rk4s_evals"] < x.loc[h, "RK45_spec_nfev"]).mean()),
+                          "median_evals": float(x.loc[h, "rk4s_evals"].median()), "censored": float(x["rk4s_censored"].mean())}
+        print("tau_c", tc, sweep[str(tc)], flush=True)
+    rep["tau_c_sweep"] = sweep
+    M.to_csv(os.path.join(out, "pilot_table.csv"), index=False)
+    spec = [r for r in rows if r["comparator"] == "RK45_spec"][0]
+    rho_p, rho_ps = spec["rho_logdelta_P"][0], spec["rho_logdelta_Ps"][0]
+    go = (spec["sundman_cheaper"] >= a.go_share) and (rho_ps <= rho_p - a.go_rho_drop) and (rep["rk4s_censored_share"] < 0.02) and \
+         (rep["dense_sweep"]["frac"] < 0.02)
+    rep["go_rule"] = {"share_vs_RK45_spec": a.go_share, "rho_drop": a.go_rho_drop, "censored_below": 0.02, "non_monotone_below": 0.02}
+    rep["go"] = bool(go)
+    rep["go_detail"] = {"sundman_cheaper_RK45_spec": spec["sundman_cheaper"], "rho_P": rho_p, "rho_Ps": rho_ps}
+    save_json(rep, os.path.join(out, "sundman_pilot_report.json"))
+    print("GO" if go else "NO-GO", rep["go_detail"], "wrote", out)
+
+
+def _dense_sweep_rk4s(U, rows, tol_km, mu, n_jobs):
+    from orbit_ml_cr3bp.audit_3d import ReferenceCache, final_position_error_km
+    from orbit_ml_cr3bp.sundman_3d import DS_MIN, DS_MAX
+    from orbit_ml_cr3bp.physics_3d import Rk4sStep
+    states = U[pb.STATE_COLS].to_numpy(dtype=float)
+    cache = ReferenceCache(mu)
+    recs = []
+    ratio = 2.0 ** (1.0 / 16.0)
+    n = int(np.floor(np.log(DS_MAX / DS_MIN) / np.log(ratio))) + 1
+    grid = np.sort(DS_MAX * ratio ** (-np.arange(n)))
+    for i in rows:
+        T = float(U["sim_time"].iloc[i])
+        sol, reached = cache.get(int(i), states[i], T)
+        ref = sol.sol(T)[:3]
+        ok = np.array([(lambda e: e is not None and e <= tol_km)(final_position_error_km("rk4s", list(states[i]), float(ds), T, ref, mu)[0]) for ds in grid])
+        label = float(U["dt_rk4s"].iloc[i])
+        fails = np.where(~ok)[0]
+        win = (grid >= label / 4.0 - 1e-15) & (grid <= label + 1e-15)
+        recs.append({"orbit_row": int(i), "label": label, "non_monotone": bool(len(fails) > 0 and ok[fails[0] + 1:].any()),
+                     "n_fail": int(len(fails)), "fails_in_label_window": int((~ok[win]).sum()), "n_window": int(win.sum()),
+                     "dense_ds": float(grid[ok].max()) if ok.any() else float("nan")})
+    return pd.DataFrame(recs)
+
+
 def json_brief(cond):
     return {k: f"{v['violations']}/{v['n']}={v['rate']:.3f}" for k, v in cond.items()}
 
@@ -394,6 +667,36 @@ def main():
     sp.add_argument("--go_close", type=float, default=0.05, help="... or a close-approach band improves by at least this (dex)")
     sp.set_defaults(fn=cmd_osc_diag)
 
+    sp = sub.add_parser("sundman_pilot")
+    sp.add_argument("--data", required=True)
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--rtol_ledger", default="part_b/results/explore/policy/ledger.csv", help="ledger whose certified cal / equal-risk rtols are reused")
+    sp.add_argument("--seed", type=int, default=42)
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.add_argument("--tol_km", type=float, default=POSITION_TOL_KM)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.add_argument("--n_sweep", type=int, default=200)
+    sp.add_argument("--tau_c_list", type=float, nargs="*", default=[0.5, 2.0])
+    sp.add_argument("--go_share", type=float, default=0.40)
+    sp.add_argument("--go_rho_drop", type=float, default=0.30)
+    sp.set_defaults(fn=cmd_sundman_pilot)
+
+    sp = sub.add_parser("compile_study")
+    sp.add_argument("--data", required=True)
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--seed", type=int, default=42)
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.add_argument("--n_cal", type=int, default=2000)
+    sp.add_argument("--n_eval", type=int, default=3000)
+    sp.add_argument("--quantile", type=float, default=pb.PINNED_QUANTILE)
+    sp.add_argument("--p_star", type=float, default=0.995)
+    sp.add_argument("--g_star", type=float, default=0.3)
+    sp.add_argument("--lin_rows", type=int, default=0, help="subsample the linear fit to this many rows (0 = all)")
+    sp.add_argument("--time", action="store_true", help="measure the single-call cost (run on a quiet machine)")
+    sp.add_argument("--repeats", type=int, default=5)
+    sp.add_argument("--gate_rhs", type=float, default=10.0)
+    sp.set_defaults(fn=cmd_compile_study)
+
     sp = sub.add_parser("policy_c")
     sp.add_argument("--data", required=True)
     sp.add_argument("--out_dir", default="out_c")
@@ -414,6 +717,9 @@ def main():
     sp.add_argument("--rule", choices=["fixed_sequence", "bonferroni"], default="fixed_sequence")
     sp.add_argument("--grid", choices=["fine", "partb"], default="fine")
     sp.add_argument("--by_choice", action="store_true", help="one scale per selected integrator (Mondrian by selection)")
+    sp.add_argument("--guard_g", type=float, default=None, help="step-over guard: abort the fixed-step run when dt / tau > g and fall back to RK45 (certified rtol)")
+    sp.add_argument("--abstain_rule", choices=["none", "physics"], default="none")
+    sp.add_argument("--abstain_logtau", type=float, default=-1.0, help="physics rule: abstain when reach_2 = 1 and log10 tau_hat is below this")
     sp.add_argument("--no_spec", action="store_true")
     sp.add_argument("--c_pred_fixed", type=float, default=0.0, help="model inference cost charged per orbit (RHS-equivalents); 0 = integration only")
     sp.set_defaults(fn=cmd_policy_c)

@@ -45,10 +45,14 @@ def main():
     parser.add_argument("--base_seed", type=int, default=12345,
                          help="Seed offset; use different values to generate independent datasets "
                               "(output file gets a _seed<N> suffix when not 12345)")
-    parser.add_argument("--pipeline", type=str, default="legacy", choices=["legacy", "v4"],
+    parser.add_argument("--pipeline", type=str, default="legacy", choices=["legacy", "v4", "v5"],
                          help="'legacy' = label_pipeline_version 3 exactly (Part A). 'v4' = Part B: physical step ceiling "
                               "(2 TU, clipped at the horizon), reference rtol 1e-13, per-orbit physics diagnostics, "
-                              "success defined by the search's reason code.")
+                              "success defined by the search's reason code. 'v5' = Part C: v4 plus the Sundman-time RK4 label (dt_rk4s, counted "
+                              "cost), the osculating periapsis feature columns and optional --sampling_weights.")
+    parser.add_argument("--tau_c", type=float, default=None, help="v5: cap of the Sundman time-scaling function (default 1.0 TU)")
+    parser.add_argument("--sampling_weights", type=float, nargs=3, default=None, metavar=("LAGRANGE", "WIDE", "NEAR_MOON"),
+                         help="override the lagrange/wide/near_moon mixture (default 0.55 0.20 0.25); v5 only")
     args = parser.parse_args()
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -71,6 +75,8 @@ def main():
         base_seed=args.base_seed,
         tol_du=args.tol_du,
         pipeline=args.pipeline,
+        tau_c=args.tau_c,
+        sampling_weights=(None if args.sampling_weights is None else dict(zip(("lagrange", "wide", "near_moon"), args.sampling_weights))),
     )
 
     print(f"\nUsable orbits: {combo_report['usable_count']} / {combo_report['num_candidates']}")

@@ -21,6 +21,7 @@ from scipy.stats import binom
 
 from .audit_3d import clopper_pearson, DT_MIN
 from .config import MU, POSITION_TOL_KM, du_km_for_mu
+from .fair_baseline_3d import _run_adaptive_ex
 from .physics_3d import EVALS_PER_STEP_3D, INTEGRATORS_3D, integrate_endpoint_3d, reference_trajectory_dense_3d
 from . import policy_b_3d as pb
 
@@ -175,18 +176,61 @@ def reference_final_positions(df, mu=MU, n_jobs=8):
 
 
 def _run_job(a):
-    integ, state, dt, T, ref_pos, mu = a
-    ok, _prev, curr, _tp, _ta, reason = integrate_endpoint_3d(INTEGRATORS_3D[integ], list(state), float(dt), float(T), mu, MAX_STEPS)
+    """One chosen fixed-step run, optionally guarded (step-over guard g) with an adaptive fallback (rtol, method) from t = 0.
+    Returns (ok, err_km, evals, fell_back, reason). evals = steps x evaluations per step (+ the fallback's nfev)."""
+    integ, state, dt, T, ref_pos, mu, g, fb = a
+    if math.isinf(g):
+        ok, _prev, curr, _tp, _ta, reason = integrate_endpoint_3d(INTEGRATORS_3D[integ], list(state), float(dt), float(T), mu, MAX_STEPS)
+        steps = int(math.ceil(T / float(dt) - 1e-9)) if ok else 0
+    else:
+        from .guard_3d import integrate_endpoint_guard, REASON_GUARD
+        ok, _prev, curr, _tp, _ta, reason, steps = integrate_endpoint_guard(integ, state, dt, T, mu, MAX_STEPS, g)
+        if reason == REASON_GUARD:
+            if fb is None:
+                return False, float("nan"), steps * EVALS_PER_STEP_3D[integ], False, int(reason)
+            res, _capped = _run_adaptive_ex(np.asarray(state, dtype=float), float(T), ref_pos, float(fb[0]), mu, fb[1])
+            ev = steps * EVALS_PER_STEP_3D[integ]
+            if res is None:
+                return False, float("nan"), ev, True, int(reason)
+            return True, float(res["err_km"]), ev + int(res["nfev"]), True, int(reason)
+    ev = steps * EVALS_PER_STEP_3D[integ]
     if not ok:
-        return False, float("nan"), int(reason)
-    return True, float(np.linalg.norm(np.asarray(curr)[:3] - ref_pos)) * du_km_for_mu(mu), 0
+        return False, float("nan"), ev, False, int(reason)
+    return True, float(np.linalg.norm(np.asarray(curr)[:3] - ref_pos)) * du_km_for_mu(mu), ev, False, 0
 
 
-def run_chosen(pool, df_states, horizons, ref_pos, choice_idx, raw_dt, scale, rows, mu=MU, candidates=CANDIDATES):
-    """Run the chosen integrator at scale * raw dt on `rows` (positions). Returns (ok, err_km) arrays aligned with `rows`."""
-    jobs = [(candidates[choice_idx[i]], df_states[i], float(raw_dt[i]) * float(scale), horizons[i], ref_pos[i], mu) for i in rows]
-    res = pool.map(_run_job, jobs, chunksize=max(1, len(jobs) // 64)) if pool is not None else [_run_job(j) for j in jobs]
-    return np.array([r[0] for r in res], dtype=bool), np.array([r[1] for r in res], dtype=float)
+def _adaptive_only_job(a):
+    state, T, ref_pos, mu, fb = a
+    res, _capped = _run_adaptive_ex(np.asarray(state, dtype=float), float(T), ref_pos, float(fb[0]), mu, fb[1])
+    if res is None:
+        return False, float("nan"), 0, True, -1
+    return True, float(res["err_km"]), int(res["nfev"]), True, -1
+
+
+def run_chosen(pool, df_states, horizons, ref_pos, choice_idx, raw_dt, scale, rows, mu=MU, candidates=CANDIDATES, g=math.inf, fb=None,
+               abstain=None):
+    """Run the chosen integrator at scale * raw dt on `rows` (positions). Returns (ok, err_km, evals, fell_back) arrays aligned with
+    `rows`. g < inf turns the step-over guard on (fb = (rtol, method) is the adaptive fallback); rows where `abstain` is True go straight
+    to the adaptive solve at fb."""
+    jobs, kinds = [], []
+    for i in rows:
+        if abstain is not None and abstain[i]:
+            jobs.append((df_states[i], horizons[i], ref_pos[i], mu, fb))
+            kinds.append(1)
+        else:
+            jobs.append((candidates[choice_idx[i]], df_states[i], float(raw_dt[i]) * float(scale), horizons[i], ref_pos[i], mu, g, fb))
+            kinds.append(0)
+    fn = lambda j: _adaptive_only_job(j) if len(j) == 5 else _run_job(j)       # noqa: E731
+    if pool is not None:
+        res = pool.map(_mixed_job, jobs, chunksize=max(1, len(jobs) // 64))
+    else:
+        res = [fn(j) for j in jobs]
+    return (np.array([r[0] for r in res], dtype=bool), np.array([r[1] for r in res], dtype=float),
+            np.array([r[2] for r in res], dtype=float), np.array([r[3] for r in res], dtype=bool))
+
+
+def _mixed_job(j):
+    return _adaptive_only_job(j) if len(j) == 5 else _run_job(j)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -228,28 +272,36 @@ def certify_sequence(violations_at, grid, alpha=ALPHA, delta=DELTA, rule="fixed_
 
 
 def certify_end_to_end(cal, pred, ref_pos, tol_km=POSITION_TOL_KM, alpha=ALPHA, delta=DELTA, grid=FIXED_SEQ_GRID, rule="fixed_sequence",
-                       mu=MU, n_jobs=8, by_choice=False, candidates=CANDIDATES):
+                       mu=MU, n_jobs=8, by_choice=False, candidates=CANDIDATES, guard_g=math.inf, fallback=None, abstain=None):
     """Certify ONE scale for the deployed policy. The integrator is chosen once from the unscaled predictions (so the choice cannot
     depend on the scale); every grid value is then tested on the chosen runs only. A violation is a chosen run that collides, escapes,
     goes non-finite, hits the step cap, or ends more than tol_km from the reference (this includes an integrator for which no step
     works). Rows with no feasible integrator abstain (an adaptive solve is deployed there) and are not counted.
     by_choice=True: the stricter variant, one scale per selected-integrator group, each certified at delta / (number of groups).
+    guard_g < inf: the step-over guard is part of the deployed policy (aborted runs fall back to the adaptive solve `fallback` =
+    (rtol, method) from t = 0); abstain (bool array): rows sent straight to that adaptive solve. Both are inside the certificate: a
+    fallback or abstained run that misses the tolerance is a violation, and the denominator is every row with a deployed run.
     Also reports the realized risk of each selected integrator at the chosen scale, with Clopper-Pearson bounds."""
     states = cal[STATE_COLS].to_numpy(dtype=float)
     T = cal["sim_time"].to_numpy(dtype=float)
     idx, raw = choose_unscaled(pred, candidates)
-    rows_all = np.where(idx >= 0)[0]
+    if abstain is not None:
+        abstain = np.asarray(abstain, dtype=bool)
+        if by_choice:
+            raise ValueError("by_choice and abstain are not combined")
+    rows_all = np.where((idx >= 0) | (abstain if abstain is not None else False))[0]
     pool = Pool(n_jobs) if n_jobs > 1 else None
     cache = {}
     try:
         def bad_at(s, rows, tag="all"):
             key = (round(float(s), 12), tag)
             if key not in cache:
-                ok, err = run_chosen(pool, states, T, ref_pos, idx, raw, s, rows, mu, candidates)
+                ok, err, _ev, _fb = run_chosen(pool, states, T, ref_pos, idx, raw, s, rows, mu, candidates, guard_g, fallback, abstain)
                 cache[key] = ~ok | ~(err <= tol_km)
             return cache[key]
 
-        report = {"n_cal": int(len(cal)), "n_policy_runs": int(len(rows_all)), "n_abstain": int(len(cal) - len(rows_all)),
+        report = {"n_cal": int(len(cal)), "n_policy_runs": int(len(rows_all)), "n_abstain": int(abstain.sum()) if abstain is not None else int(len(cal) - len(rows_all)),
+                  "guard_g": None if math.isinf(guard_g) else guard_g,
                   "choice_counts": {k: int((idx == j).sum()) for j, k in enumerate(candidates)}}
         if not by_choice:
             res = certify_sequence(lambda s: (int(bad_at(s, rows_all).sum()), len(rows_all)), grid, alpha, delta, rule)
@@ -324,3 +376,63 @@ def select_gate_threshold(raw, sel, max_rate=0.005, lf_gate="clf", grid=None, ca
         if chosen is None and rate <= max_rate:
             chosen = float(g)
     return chosen, pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# abstention and the evaluation pass of the Part C policy (guard + fallback + abstention)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def abstain_flags(df, rule="none", logtau_below=None, dispersion=None, frac=0.2):
+    """Rows sent straight to the adaptive solver. 'physics' (free): the osculating orbit about the secondary comes back to periapsis within
+    the horizon (osc_reach_2 = 1) and the analytic timescale osc_logtau_hat is below `logtau_below`. 'dispersion': the top `frac` of the
+    q50 - q10 spread of the RK4 log-step predictions (`dispersion` = that spread, one value per row; a second quantile model, so about
+    twice the inference). Chosen on the selection set, never on calibration rows."""
+    if rule == "none":
+        return np.zeros(len(df), dtype=bool)
+    if rule == "physics":
+        return ((df["osc_reach_2"].to_numpy() == 1.0) & (df["osc_logtau_hat"].to_numpy() < logtau_below))
+    if rule == "dispersion":
+        thr = np.quantile(dispersion, 1.0 - frac)
+        return np.asarray(dispersion) >= thr
+    raise ValueError(rule)
+
+
+def evaluate_orbits_c(df, choice_idx, raw_dt, scale, rtols=None, do_spec=True, tol_km=POSITION_TOL_KM, mu=MU, n_jobs=8,
+                      methods=pb.METHODS, guard_g=math.inf, fallback=None, abstain=None, candidates=CANDIDATES, progress=True,
+                      ref_pos=None):
+    """The deployed Part C policy (common scale `scale` on the integrator chosen from the raw predictions, optional step-over guard with
+    adaptive fallback, optional abstention) and the adaptive comparators, one row per orbit. Same columns as policy_b_3d.evaluate_orbits,
+    plus ml_fallback / ml_abstain; ml_integrator is 'adaptive' for abstained rows (they are run, and counted in the risk)."""
+    import time
+    states = df[STATE_COLS].to_numpy(dtype=float)
+    T = df["sim_time"].to_numpy(dtype=float)
+    rids = df["row_id"].to_numpy() if "row_id" in df.columns else np.arange(len(df))
+    if ref_pos is None:
+        ref_pos = reference_final_positions(df, mu, n_jobs)
+    abstain = np.zeros(len(df), dtype=bool) if abstain is None else np.asarray(abstain, dtype=bool)
+    t0 = time.time()
+    # adaptive comparators (pb's own job with the ML part switched off)
+    jobs = [(int(rids[i]), states[i], float(T[i]), None, None, tol_km, mu, rtols or {}, do_spec, methods) for i in range(len(df))]
+    with Pool(n_jobs) as pool:
+        res_ad = pd.DataFrame(list(pool.imap_unordered(pb._orbit_job, jobs, chunksize=4)))
+        if progress:
+            print(f"  evaluate_orbits_c: adaptive comparators done, {time.time() - t0:.0f}s", flush=True)
+        rows = np.arange(len(df))
+        sc = np.asarray(scale, dtype=float) if np.ndim(scale) else np.full(len(df), float(scale))
+        # per-row scale (by_choice) is handled by running each group at its own scale
+        ok = np.zeros(len(df), dtype=bool)
+        err = np.full(len(df), np.nan)
+        ev = np.zeros(len(df))
+        fbk = np.zeros(len(df), dtype=bool)
+        for s_val in np.unique(sc[~np.isnan(sc)]):
+            r = rows[(sc == s_val)]
+            o, e, v, f = run_chosen(pool, states, T, ref_pos, choice_idx, raw_dt, s_val, r, mu, candidates, guard_g, fallback, abstain)
+            ok[r], err[r], ev[r], fbk[r] = o, e, v, f
+    names = np.array(list(candidates) + ["adaptive"], dtype=object)
+    integ = np.where(abstain, "adaptive", np.where(choice_idx >= 0, names[np.maximum(choice_idx, 0)], None))
+    out = pd.DataFrame({"row_id": rids.astype(int), "ml_integrator": integ, "ml_raw_dt": np.where(abstain, np.nan, raw_dt),
+                        "ml_dt": np.where(abstain, np.nan, raw_dt * sc), "ml_scale": np.where(abstain, np.nan, sc),
+                        "ml_ok": ok, "ml_err_km": err, "ml_evals": ev, "ml_fallback": fbk, "ml_abstain": abstain})
+    out["ml_steps"] = np.nan
+    out.loc[(choice_idx < 0) & ~abstain, ["ml_ok", "ml_err_km", "ml_evals"]] = [False, np.nan, np.nan]
+    return out.merge(res_ad, on="row_id", how="left")

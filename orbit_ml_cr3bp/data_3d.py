@@ -61,8 +61,9 @@ from .diagnostics_3d import (
 
 LABEL_PIPELINE_VERSION = 3
 LABEL_PIPELINE_VERSION_V4 = 4
+LABEL_PIPELINE_VERSION_V5 = 5          # Part C: v4 + Sundman-time RK4 labels + periapsis feature columns + optional sampling weights
 ACCURACY_LABEL_MODES = ("accuracy", "accuracy_monotone")
-PIPELINES = ("legacy", "v4")
+PIPELINES = ("legacy", "v4", "v5")
 
 
 def extract_features_3d(state, mu=MU, sim_time: float | None = None):
@@ -132,8 +133,25 @@ def _divergent_label(state, mu, outcome, sim_time=None, ceiling_mode="legacy"):
     }
 
 
+def _sundman_labels(state, sim_time, mu, tol_km, reference, tau_c):
+    """Part C: the largest fictitious step ds of the Sundman-time RK4 that meets the tolerance (same monotone search, ds in
+    [1e-4, 4]), and the counted cost of the run at that label."""
+    from .physics_3d import Rk4sStep
+    from .sundman_3d import DS_MIN, DS_MAX, integrate_endpoint_rk4s, rk4s_evals, SUNDMAN_TAU_C
+    tc = SUNDMAN_TAU_C if tau_c is None else float(tau_c)
+    r = find_dt_for_integrator_accuracy_monotone_3d("rk4s", state, sim_time, mu, dt_min=DS_MIN, dt_max=DS_MAX, tol_km=tol_km,
+                                                   reference=reference, return_details=True, step_func=Rk4sStep(tc))
+    out = {"dt_rk4s": r["dt"], "rk4s_censored": r["censored"], "rk4s_reason": r["reason"], "rk4s_drift": r["pos_err_km"],
+           "rk4s_ns": np.nan, "rk4s_nf": np.nan, "rk4s_evals": np.nan, "sundman_tau_c": tc}
+    if r["reason"] == REASON_OK:
+        ok, _p, _c, _tp, _t, _rs, ns, nf = integrate_endpoint_rk4s(state, r["dt"], sim_time, mu, 4_000_000, tau_c=tc)
+        if ok:
+            out.update({"rk4s_ns": int(ns), "rk4s_nf": int(nf), "rk4s_evals": rk4s_evals(ns, nf)})
+    return out
+
+
 def label_orbit_accuracy_3d(state, sim_time, mu=MU, tol_km=None, monotone=False, ceiling_mode="legacy",
-                            diagnostics=False):
+                            diagnostics=False, extra_integrators=(), tau_c=None):
     """
     Accuracy-based labeling: "stable" means the integrator's own final
     position at sim_time lands within tol_km (config.POSITION_TOL_KM if not
@@ -195,7 +213,8 @@ def label_orbit_accuracy_3d(state, sim_time, mu=MU, tol_km=None, monotone=False,
                  tol_km=tol_km, reference=reference, return_details=True)
     r_l = search("leapfrog", state, sim_time, mu, dt_max=dt_max,
                  tol_km=tol_km, reference=reference, return_details=True)
-    return {**diag,
+    extra = _sundman_labels(state, sim_time, mu, tol_km, reference, tau_c) if "rk4s" in extra_integrators else {}
+    return {**diag, **extra,
         "dt_euler": r_e["dt"], "dt_rk4": r_r["dt"], "dt_leapfrog": r_l["dt"],
         "euler_censored": r_e["censored"], "rk4_censored": r_r["censored"], "leapfrog_censored": r_l["censored"],
         "euler_reason": r_e["reason"], "rk4_reason": r_r["reason"], "leapfrog_reason": r_l["reason"],
@@ -205,7 +224,7 @@ def label_orbit_accuracy_3d(state, sim_time, mu=MU, tol_km=None, monotone=False,
     }
 
 
-def _sample_orbit_for_generation(mu, label_mode):
+def _sample_orbit_for_generation(mu, label_mode, weights=None):
     """
     Sampling-mode dispatch for generate_one_3d_training_orbit. label_mode
     "jacobi" is UNCHANGED from before (always "mixed": 80% clustered around
@@ -219,8 +238,9 @@ def _sample_orbit_for_generation(mu, label_mode):
         return generate_3d_orbit(mu=mu, sampling_mode="mixed", return_label=True)
 
     roll = np.random.rand()
-    w_lagrange = SAMPLING_WEIGHTS_3D["lagrange"]
-    w_wide = SAMPLING_WEIGHTS_3D["wide"]
+    w = SAMPLING_WEIGHTS_3D if weights is None else weights
+    w_lagrange = w["lagrange"]
+    w_wide = w["wide"]
     if roll < w_lagrange:
         points = ["L1", "L2", "L3", "L4", "L5"]
         chosen = np.random.choice(points)
@@ -232,15 +252,17 @@ def _sample_orbit_for_generation(mu, label_mode):
         return generate_3d_orbit(mu=mu, sampling_mode="near_moon", return_label=True)
 
 
-def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jacobi", tol_km=None, pipeline="legacy"):
+def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jacobi", tol_km=None, pipeline="legacy", tau_c=None,
+                                   sampling_weights=None):
     """pipeline="legacy": label_pipeline_version 3 behaviour exactly. pipeline="v4" (Part B): physical step ceiling, per-orbit
     physics diagnostics, success = the search's own reason code (Issue 15) instead of dt > dt_min."""
-    v4 = pipeline == "v4"
+    v4 = pipeline in ("v4", "v5")
+    v5 = pipeline == "v5"
     seed32 = int(np.random.SeedSequence([int(base_seed), int(idx)]).generate_state(1)[0])
     np.random.seed(seed32)
     random.seed(seed32)
 
-    state, orbit_label = _sample_orbit_for_generation(mu, label_mode)
+    state, orbit_label = _sample_orbit_for_generation(mu, label_mode, sampling_weights)
 
     if label_mode in ACCURACY_LABEL_MODES:
         log_time = random.uniform(ACCURACY_SIM_TIME_LOG_MIN, ACCURACY_SIM_TIME_LOG_MAX)
@@ -268,7 +290,8 @@ def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jaco
     if label_mode in ACCURACY_LABEL_MODES:
         labels = label_orbit_accuracy_3d(state, sim_time, mu, tol_km=tol_km,
                                          monotone=(label_mode == "accuracy_monotone"),
-                                         ceiling_mode="physical" if v4 else "legacy", diagnostics=v4)
+                                         ceiling_mode="physical" if v4 else "legacy", diagnostics=v4,
+                                         extra_integrators=("rk4s",) if v5 else (), tau_c=tau_c)
     else:
         labels = label_orbit_3d(state, sim_time, mu)
     row.update(labels)
@@ -284,6 +307,12 @@ def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jaco
     row["euler_success"] = success_e
     row["rk4_success"] = success_r
     row["leapfrog_success"] = success_l
+    if v5:
+        from .osculating_3d import osc_features, OSC_FEATURE_COLS, OSC_FLAG_COLS
+        row["rk4s_success"] = int(labels.get("rk4s_reason", -1) == REASON_OK)
+        row["sampling_branch"] = "near_moon" if orbit_label == "near_moon" else ("wide" if orbit_label == "wide" else "lagrange")
+        f_, fl_ = osc_features(np.asarray(state, dtype=float)[None, :], np.array([sim_time]), mu)
+        row.update({c: float(v) for c, v in zip(OSC_FEATURE_COLS + OSC_FLAG_COLS, np.concatenate([f_[0], fl_[0]]))})
 
     usable = int(success_e or success_r or success_l)
     return {"row": row, "usable": usable, "combo": (success_e, success_r, success_l)}
@@ -299,6 +328,8 @@ def generate_3d_training_dataset(
     base_seed: int = 12345,
     tol_du: float | None = None,
     pipeline: str = "legacy",
+    tau_c: float | None = None,
+    sampling_weights: dict | None = None,
 ) -> tuple[pd.DataFrame, dict, dict]:
     """
     label_mode="jacobi" (default): unchanged original behavior --
@@ -336,8 +367,8 @@ def generate_3d_training_dataset(
         raise ValueError("label_mode must be 'jacobi', 'accuracy' or 'accuracy_monotone'")
     if pipeline not in PIPELINES:
         raise ValueError(f"pipeline must be one of {PIPELINES}")
-    if pipeline == "v4" and label_mode not in ACCURACY_LABEL_MODES:
-        raise ValueError("pipeline 'v4' needs an accuracy label mode")
+    if pipeline in ("v4", "v5") and label_mode not in ACCURACY_LABEL_MODES:
+        raise ValueError(f"pipeline '{pipeline}' needs an accuracy label mode")
     if tol_du is not None and tol_km is None:
         tol_km = float(tol_du) * du_km_for_mu(mu)
 
@@ -356,7 +387,7 @@ def generate_3d_training_dataset(
     usable_count = 0
     combo_counts = {combo: 0 for combo in product([0, 1], repeat=3)}
     worker_func = partial(generate_one_3d_training_orbit, mu=mu, label_mode=label_mode, tol_km=tol_km,
-                          base_seed=base_seed, pipeline=pipeline)
+                          base_seed=base_seed, pipeline=pipeline, tau_c=tau_c, sampling_weights=sampling_weights)
 
     with Pool(processes=n_workers) as pool:
         results = pool.imap_unordered(worker_func, range(num_orbits), chunksize=chunk_size)
@@ -382,6 +413,10 @@ def generate_3d_training_dataset(
                    "dt_ceiling", "C0", "ftle_nan", "reference_divergent",
                    "reference_outcome", "ftle_status", "ftle_t_frac"]
     extra_cols = ["orbit_label", "orbit_idx", "mu", "du_km", "tol_km"] + list(DIAGNOSTIC_COLUMNS)
+    if pipeline == "v5":
+        from .osculating_3d import OSC_FEATURE_COLS, OSC_FLAG_COLS
+        extra_cols += ["dt_rk4s", "rk4s_success", "rk4s_censored", "rk4s_reason", "rk4s_drift", "rk4s_ns", "rk4s_nf", "rk4s_evals",
+                       "sundman_tau_c", "sampling_branch"] + OSC_FEATURE_COLS + OSC_FLAG_COLS
 
     all_cols = basic_cols + phys_cols + target_cols + success_cols + status_cols + extra_cols
     existing_cols = [c for c in all_cols if c in df.columns]
@@ -420,7 +455,7 @@ def generate_3d_training_dataset(
     metadata = {
         "mu": mu,
         "system": system_params(mu)["name"],
-        "label_pipeline_version": LABEL_PIPELINE_VERSION_V4 if pipeline == "v4" else LABEL_PIPELINE_VERSION,
+        "label_pipeline_version": {"v4": LABEL_PIPELINE_VERSION_V4, "v5": LABEL_PIPELINE_VERSION_V5}.get(pipeline, LABEL_PIPELINE_VERSION),
         "pipeline": pipeline,
         "seeding": "seedsequence",
         "collision_radius_primary_du": r1_crash,
@@ -443,14 +478,17 @@ def generate_3d_training_dataset(
             "du_km": du_km_for_mu(mu),
             "position_tol_du": (POSITION_TOL_KM if tol_km is None else tol_km) / du_km_for_mu(mu),
             "sim_time_log_range": [ACCURACY_SIM_TIME_LOG_MIN, ACCURACY_SIM_TIME_LOG_MAX],
-            "sampling_weights": SAMPLING_WEIGHTS_3D,
+            "sampling_weights": SAMPLING_WEIGHTS_3D if sampling_weights is None else sampling_weights,
         })
     else:
         metadata.update({
             "integrator_tolerances": INTEGRATOR_TOLERANCES_3D,
             "sim_time_log_range": [SIM_TIME_LOG_MIN, SIM_TIME_LOG_MAX],
         })
-    if pipeline == "v4":
+    if pipeline == "v5":
+        from .sundman_3d import SUNDMAN_TAU_C, DS_MIN, DS_MAX
+        metadata.update({"sundman_tau_c": SUNDMAN_TAU_C if tau_c is None else tau_c, "sundman_ds_range": [DS_MIN, DS_MAX]})
+    if pipeline in ("v4", "v5"):
         metadata.update({
             "ceiling_mode": "physical", "dt_ceiling_abs": DT_CEILING_PHYSICAL_ABS,
             "reference_rtol": REFERENCE_RTOL, "reference_atol": REFERENCE_ATOL, "reference_max_step": REFERENCE_MAX_STEP,
