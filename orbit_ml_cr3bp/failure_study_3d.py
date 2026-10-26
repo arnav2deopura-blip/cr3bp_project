@@ -328,3 +328,36 @@ def lever_isoline(led, comparators=COMPARATORS, O_grid=LEVER_O_GRID, target=0.5,
                          "hi": float(np.quantile(bs, 0.975, method="inverted_cdf")),
                          "share_at_delta_inf": float(np.isfinite(t).mean())})
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Part C: the same identity for the Sundman-time policy (plan 6.4.1)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def decompose_sundman(led, comparator):
+    """log10(C_ML,tot / C_ad) = P_s + Q + K + O + R for the Sundman-time policy, on orbits that met the tolerance:
+      P_s  log10(C_s* / C_ad)         the oracle fixed-ds run, counted (not estimated), against the adaptive solve
+      Q    log10(d*_s / d_hat_s)      prediction: > 0 under-predicted (costly), < 0 over-predicted (risky)
+      K    log10(1 / s)               safety scale
+      O    log10(1 + C_pred / C_int)  model overhead (features included)
+      R    the remainder: the step count is not exactly proportional to 1/ds (landing steps, the overshoot rule)
+    There is no selection term (one integrator)."""
+    col = f"{comparator}_nfev"
+    ok = (led["meets_tol"].astype(bool) & led[col].notna() & led["C_s_star"].notna() & (led["ml_raw_dt"] > 0) & (led["C_ml_int"] > 0))
+    out = pd.DataFrame(index=led.index, columns=["P_s", "Q", "K", "O", "R", "total", "dominant"], dtype=object)
+    L = led[ok]
+    c_ad = L[col]
+    P = np.log10(L["C_s_star"] / c_ad)
+    Q = np.log10(L["dstar_chosen"] / L["ml_raw_dt"])
+    K = np.log10(1.0 / L["ml_scale"])
+    O = np.log10(1.0 + (L["C_feat"] + L["C_pred"]) / L["C_ml_int"])
+    total = np.log10(L["C_ml_tot"] / c_ad)
+    R = total - (P + Q + K + O)
+    terms = pd.DataFrame({"P_s": P, "Q": Q, "K": K, "O": O})
+    dom = terms.idxmax(axis=1).where(terms.max(axis=1) > 0, "none")
+    for name, v in (("P_s", P), ("Q", Q), ("K", K), ("O", O), ("R", R), ("total", total)):
+        out.loc[L.index, name] = v.astype(float)
+    out.loc[L.index, "dominant"] = dom
+    for c in ("P_s", "Q", "K", "O", "R", "total"):
+        out[c] = out[c].astype(float)
+    return out
