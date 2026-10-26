@@ -74,3 +74,39 @@ not run, so the Part A transfer failure is still confounded. (5) No Sun-Earth sy
 
 HB3 (lookahead) is now answered exploratorily: seeing the trajectory buys accuracy but not net cost. The mu half of HB6 is answered in the plan's direction, descriptively: the Kepler-like corner is easier
 for both the paradigm and the model, and the ML integration still loses to adaptive at every mu. Still not done: E8 (periodic families, halo/NRHO behaviour) and E12 (2D control).
+
+## Errata (2026-10-26)
+
+Added after a re-read for Part C (plan Track 0). The text above is unchanged; where an item below contradicts it, this section governs. Code and outputs:
+`run_part_c_3d.py e3c_paired`, `part_c/results/c0/e3c_paired/`. Same D_explore rows, same model fits, same 3,000 evaluation orbits as the E3c table.
+
+**E1. "Intervals do not overlap" (Section 1, third bullet) is wrong.** The two intervals are [25.4, 28.6] and [27.9, 31.2]; they overlap. The paired comparison on the same 3,000
+orbits is the right test: at the Part B certified scales (0.5 for f = 0, 0.6 for f = 0.05) f = 0.05 wins on 885 orbits and f = 0 on 810; 96 orbits are won only with lookahead,
+21 only without; exact McNemar p = 1.2e-12. So the share difference (+2.5 points) is real *as measured*; item E2 says what it is a difference of.
+
+**E2. The f = 0.05 row is not risk-matched with f = 0.** It has a larger certified scale (0.6 against 0.5) and a larger realized violation rate (4.4 % against 3.3 %; its upper bound, 5.2 %,
+passes 5 %). A larger scale makes every integration cheaper, so part of the "gain" is extra risk. Re-evaluated on the same 3,000 orbits:
+
+| comparison | f = 0 wins | f = 0.05 wins | difference | McNemar p |
+|---|---|---|---|---|
+| each at its Part B scale (0.5 / 0.6) | 810 | 885 | +2.5 points | 1.2e-12 |
+| both at scale 0.5 | 810 | 798 | -0.4 points | 0.27 |
+| both at scale 0.6 | 894 | 885 | -0.3 points | 0.45 |
+
+At equal *realized* risk (violation rate and win share interpolated linearly along the scale grid 0.3-0.8, cost on a log scale), the share cheaper than RK45-cal is
+24.9 % (f = 0) against 23.0 % (f = 0.05) at 3 %, 27.6 % against 26.0 % at 3.5 %, and 29.4 % against 28.1 % at 4 % (median total cost 1,741 / 1,747, 1,473 / 1,525, 1,291 / 1,347).
+Against DOP853-cal the lookahead arm is further behind (e.g. 8.6 % against 15.4 % at 3 %). **Reading: a 5 %-of-horizon lookahead does not move the cost-risk frontier; at equal scale or equal risk it is neutral to
+slightly worse, because its 20 evaluations are not repaid.** The earlier statement that the share "rises slightly with a short lookahead" is retracted for the risk-matched comparison; what rose was the risk the
+certificate allowed (the more accurate prediction earns a coarser certified scale, 0.5 to 0.6, which is a legitimate use of the certificate but not a saving from the lookahead itself). The scale grid is coarse
+(0.4, 0.5, 0.6, 0.8), so part of the 0.5-to-0.6 step may be grid resolution; the matched-scale rows above are the cleaner reading.
+
+**E3. The f = 1 arm is an information bound, not a policy.** Its "lookahead" is a complete RK45 solve at rtol 1e-6, which is already a usable answer for the orbit (302 evaluations
+at the median); a deployed policy that had paid for it would stop there. The f = 1 row shows how good the features can get, nothing about what a policy should do.
+
+**E4. "Overhead matters least where the integration is dearest" (Section 2, fourth bullet) is arithmetic, not a finding.** The overhead term is O = log10(1 + C_over / C_int), which must fall as C_int rises.
+Read the bullet as a consequence of that definition. What the dial adds is the level of C_int at each mu, not the trend of O.
+
+**E5. The mu trends are confounded; limits (1) and (2) apply to everything in Section 2.** The median closest approach to the secondary is 54 Hill radii at mu = 1e-6 and 1.5 at mu = 0.05, so mu
+changes together with how often orbits meet the secondary; and the per-mu models are trained on 3,000 orbits, where E4 says the hard cells are data-starved. The paradigm-gap curve is model-free and is the
+more trustworthy of the two (it does not depend on training size); the integration-only ML-gap curve mixes mu with a small-data effect. Part C Track 4.1 (stratified by closest approach in Hill radii, matched
+resampling, a model-size control) is the planned remedy. Figure panel 3 now carries its Clopper-Pearson band (figure code only; no number changed).

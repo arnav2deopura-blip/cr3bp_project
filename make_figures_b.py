@@ -354,6 +354,14 @@ def mu_dial(table_csv, out):
              ("ml_int_gap_median", "ml_int_gap_lo", "ml_int_gap_hi", "#e87ba4", "ML integration gap (dex, median)"),
              ("fixed_cheaper_share", None, None, "#1baf7a", "share where a perfect fixed step is cheaper"),
              ("violation_rate", "violation_lo", "violation_hi", "#eb6834", "ML violation rate")]
+    from scipy.stats import beta as _beta
+    t = t.copy()
+    # the table has no interval for the share where a perfect fixed step wins: Clopper-Pearson from the evaluated orbits
+    k_ = np.rint(t["fixed_cheaper_share"] * t["n_eval"]).to_numpy()
+    n_ = t["n_eval"].to_numpy(dtype=float)
+    t["fixed_lo"] = np.where(k_ == 0, 0.0, _beta.ppf(0.025, np.maximum(k_, 1), n_ - k_ + 1))
+    t["fixed_hi"] = np.where(k_ == n_, 1.0, _beta.ppf(0.975, k_ + 1, np.maximum(n_ - k_, 1)))
+    specs[2] = ("fixed_cheaper_share", "fixed_lo", "fixed_hi", "#1baf7a", "share where a perfect fixed step is cheaper")
     for ax, (col, lo, hi, color, title) in zip(axes, specs):
         y = t[col].to_numpy()
         if lo:

@@ -257,3 +257,74 @@ def spearman_bootstrap(x, y, n_boot=2000, seed=0):
         i = rng.randint(0, len(x), len(x))
         bs.append(spearmanr(x[i], y[i]).statistic)
     return rho, float(np.nanquantile(bs, 0.025)), float(np.nanquantile(bs, 0.975)), int(len(x))
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Part C, C0: the lever surface (counterfactual, optimistic upper bound: larger steps would raise violations, which this ignores)
+# ---------------------------------------------------------------------------------------------------------------------
+
+LEVER_O_GRID = (0.0, 10.0, 25.0, 50.0, 100.0, 200.0, 500.0, 1128.0)
+LEVER_DELTA_GRID = (0.0, 0.15, 0.3, 0.45, 0.6, 0.8, 1.0)
+
+
+def lever_thresholds(led, comparator, O):
+    """Per orbit that met the tolerance and has an adaptive cost: the dex reduction of the ML integration cost at which the
+    ML policy (integration x 10^-delta + overhead O, features included in O) becomes cheaper than the comparator,
+    delta_i(O) = log10(C_int / (C_ad - O)); +inf when C_ad <= O (no reduction can win). Returns a Series indexed like led (NaN
+    for orbits without a valid comparison)."""
+    c_ad = led[f"{comparator}_nfev"]
+    ok = led["meets_tol"].astype(bool) & c_ad.notna() & (led["C_ml_int"] > 0)
+    gap = (c_ad - O).where(ok)
+    thr = np.log10(led["C_ml_int"].where(ok) / gap.where(gap > 0))
+    return thr.where(ok & (gap > 0), np.where(ok, np.inf, np.nan))
+
+
+def lever_surface(led, comparators=COMPARATORS, O_grid=LEVER_O_GRID, delta_grid=LEVER_DELTA_GRID, by=None, min_n=MIN_CELL_N):
+    """Share of orbits where the ML policy would be cheaper than each adaptive comparator if its integration cost were cut by
+    delta dex and a fixed overhead O (RHS-equivalents, features included) were charged. Orbits are those that met the tolerance
+    with a valid comparator cost. Each share carries a Clopper-Pearson 95 % interval. `by`: a column of led (e.g. a cell label) for
+    a per-group table; groups smaller than min_n are skipped. Returns a long DataFrame."""
+    from .audit_3d import clopper_pearson
+    rows = []
+    groups = [("ALL", slice(None))] if by is None else [(g, led[by] == g) for g in sorted(led[by].dropna().unique())]
+    for comp in comparators:
+        if f"{comp}_nfev" not in led.columns or led[f"{comp}_nfev"].notna().sum() == 0:
+            continue
+        for O in O_grid:
+            thr = lever_thresholds(led, comp, O)
+            for gname, sel in groups:
+                t = thr[sel] if by is not None else thr
+                t = t.dropna()
+                n = len(t)
+                if n < (min_n if by is not None else 1):
+                    continue
+                for dlt in delta_grid:
+                    k = int((t < dlt).sum())
+                    lo, hi = clopper_pearson(k, n)
+                    rows.append({"comparator": comp, "group": gname, "O": float(O), "delta_dex": float(dlt), "n": n, "k": k,
+                                 "share": k / n, "lo": lo, "hi": hi})
+    return pd.DataFrame(rows)
+
+
+def lever_isoline(led, comparators=COMPARATORS, O_grid=LEVER_O_GRID, target=0.5, n_boot=500, seed=0):
+    """For each comparator and overhead O: the smallest delta (dex) at which the share reaches `target` = the target-quantile of
+    the per-orbit thresholds (exact, no grid), with a bootstrap interval; inf when the quantile is unreachable at that O."""
+    import warnings
+    rng = np.random.RandomState(seed)
+    rows = []
+    for comp in comparators:
+        if f"{comp}_nfev" not in led.columns or led[f"{comp}_nfev"].notna().sum() == 0:
+            continue
+        for O in O_grid:
+            t = lever_thresholds(led, comp, O).dropna().to_numpy()
+            if len(t) == 0:
+                continue
+            with warnings.catch_warnings():       # inverted_cdf never interpolates, but numpy still forms inf - inf
+                warnings.simplefilter("ignore", RuntimeWarning)
+                q = float(np.quantile(t, target, method="inverted_cdf"))
+                bs = [np.quantile(t[rng.randint(0, len(t), len(t))], target, method="inverted_cdf") for _ in range(n_boot)]
+            rows.append({"comparator": comp, "O": float(O), "n": len(t), "delta_needed_dex": q,
+                         "lo": float(np.quantile(bs, 0.025, method="inverted_cdf")),
+                         "hi": float(np.quantile(bs, 0.975, method="inverted_cdf")),
+                         "share_at_delta_inf": float(np.isfinite(t).mean())})
+    return pd.DataFrame(rows)

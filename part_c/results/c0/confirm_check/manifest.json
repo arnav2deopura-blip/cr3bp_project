@@ -1,0 +1,20 @@
+{
+  "command": "lever",
+  "utc": "20261026T202926Z",
+  "args": {
+    "cmd": "lever",
+    "ledger": "part_b/results/confirm/policy/ledger.csv.gz",
+    "out_dir": "out_c/lever_confirm",
+    "fn": "<function cmd_lever at 0x1790e0680>"
+  },
+  "git_commit": "68a43ffc4e908c6c7277ec97304c85d62257bd75",
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "argv": [
+    "run_part_c_3d.py",
+    "lever",
+    "--ledger",
+    "part_b/results/confirm/policy/ledger.csv.gz",
+    "--out_dir",
+    "out_c/lever_confirm"
+  ]
+}

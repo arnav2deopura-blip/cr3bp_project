@@ -8,3 +8,7 @@ __pycache__/
 # Part B working data and run folders (outputs worth keeping are copied to part_b/results)
 data_b/
 out_b/
+
+# Part C working data and run folders (outputs worth keeping are copied to part_c/results)
+data_c/
+out_c/

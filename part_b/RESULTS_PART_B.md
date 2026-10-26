@@ -37,6 +37,9 @@ expectations). The permutation p-values sit at their floor (1/10,001), so the Ho
 |log10 prediction/label| is 0.32 dex, the label's spread at 3.8 km is at most 0.14 dex and almost always 0 (labels move in 0.0108 dex steps);
 in the top lambda T tercile the median residual is 25 times the spread and no orbit's residual is within it.
 
+*Addendum (2026-10-26, Part C Track 0.7):* T2 is a **sign-only** result. It does not say there is an information floor on the model's accuracy: the label is stable under 3.8 km perturbations,
+so the model's error is not due to an information floor in the initial state's precision.
+
 ## 3. Where each ceiling binds (descriptive, with intervals)
 
 Mean cost-gap decomposition against RK45-spec over the 13,540 orbits that met the tolerance (dex, additive; 95 % CI): paradigm +0.21
@@ -101,7 +104,7 @@ Mean cost-gap decomposition against RK45-spec over the 13,540 orbits that met th
 ## 6. Not done (and why it matters)
 
 HB3 (E3c lookahead) and the mu dial (E7) were run afterwards as pre-registered EXPLORATORY studies: see `part_b/RESULTS_E3C_MU_DIAL.md` (seeing the trajectory buys accuracy but not net cost; both gaps
-fall as mu falls, the violation rate does not). Neither is in the confirmatory family. Cross-mu transfer with dimensionless features (Issue 10) is still not tested, so Part A's transfer failure is still
+fall as mu falls, the violation rate does not). Neither is in the confirmatory family (corrections of 2026-10-26 are in the Errata section at the end of `RESULTS_E3C_MU_DIAL.md`: the short-lookahead gain does not survive risk matching, and the mu trends are confounded). Cross-mu transfer with dimensionless features (Issue 10) is still not tested, so Part A's transfer failure is still
 confounded. E8 (periodic families, halo/NRHO out-of-distribution behaviour, Issue 12) and E12 (2D control) were deferred.
 Plan issues 5 (the deployed policy is still certified per integrator, not end to end), 11-14 and 16-18 were not addressed in code. Issue 4 is covered by the pinball/coverage
 reporting in E4/E5, issue 9 by the physics baseline in E10, issues 3 and 14 only partly (E1 validates the reference; the endpoint-only error definition is unchanged), and issue 10 not at all (no mu dial). The one-time `RESULTS_REPORT.md.bak` duplicate was left alone.
