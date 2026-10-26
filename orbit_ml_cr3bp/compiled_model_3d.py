@@ -124,15 +124,20 @@ def state_features_row(st, T, mu, c_l1, out):
 
 
 @njit(cache=True)
-def policy_hgb_one(st, T, mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, xbuf, flags):
+def policy_hgb_one(st, T, mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, use_struct, xbuf, flags):
     """fr, fl, fg: forests (tuples) of the RK4 and leapfrog log10-dt regressors and of the leapfrog gate classifier (ignored unless
     gate_kind == GATE_CLF). gate_thr: logit(p*) for the classifier, margin g* (dex above dt_min) for the censored regressor.
-    Returns (choice, raw_dt): choice 0 = RK4, 1 = leapfrog (-1 never: RK4 is always feasible)."""
+    gate_kind == 3: a single regressor (fr) and no leapfrog (RK4 alone, or the Sundman-time RK4 whose regressor is fr).
+    use_struct: the regressors predict log10 d* - osc_logtau_hat (xbuf[24]); the offset is added back here.
+    Returns (choice, raw_dt): choice 0 = RK4 / Sundman RK4, 1 = leapfrog (-1 never: RK4 is always feasible)."""
     state_features_row(st, T, mu, c_l1, xbuf)
     if use_osc:
         osc_row(st[0], st[1], st[2], st[3], st[4], st[5], T, mu, xbuf[12:25], flags)
-    log_rk4 = forest_raw(xbuf, fr[0], fr[1], fr[2], fr[3], fr[4], fr[5], fr[6], fr[7])
-    log_lf = forest_raw(xbuf, fl[0], fl[1], fl[2], fl[3], fl[4], fl[5], fl[6], fl[7])
+    off = xbuf[24] if use_struct else 0.0
+    log_rk4 = forest_raw(xbuf, fr[0], fr[1], fr[2], fr[3], fr[4], fr[5], fr[6], fr[7]) + off
+    if gate_kind == 3:
+        return 0, 10.0 ** log_rk4
+    log_lf = forest_raw(xbuf, fl[0], fl[1], fl[2], fl[3], fl[4], fl[5], fl[6], fl[7]) + off
     allow = True
     if gate_kind == 1:
         allow = forest_raw(xbuf, fg[0], fg[1], fg[2], fg[3], fg[4], fg[5], fg[6], fg[7]) >= gate_thr
@@ -146,44 +151,60 @@ def policy_hgb_one(st, T, mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, xb
 
 
 @njit(cache=True)
-def policy_hgb_batch(states, T, mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr):
+def policy_hgb_batch(states, T, mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, use_struct):
     n = states.shape[0]
     ch = np.empty(n, dtype=np.int64)
     dt = np.empty(n)
     xbuf = np.zeros(25)
     flags = np.zeros(2)
     for i in range(n):
-        c, d = policy_hgb_one(states[i], T[i], mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, xbuf, flags)
+        c, d = policy_hgb_one(states[i], T[i], mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, use_struct, xbuf, flags)
         ch[i] = c
         dt[i] = d
     return ch, dt
 
 
 class CompiledHGBPolicy:
-    """Everything the compiled policy needs, built from the models of policy_c_3d.fit_policy_c."""
+    """Everything the compiled policy needs, built from the models of policy_c_3d.fit_policy_c (physical-time rk4 + gated leapfrog,
+    rk4 alone with single=True, or the Sundman-time regressor reg_rk4s, which is a single model)."""
 
-    def __init__(self, models, p_star=0.5, g_star=0.0, mu=MU):
+    def __init__(self, models, p_star=0.5, g_star=0.0, mu=MU, single=False):
         self.mu = float(mu)
         self.c_l1 = c_l1_for_mu(mu)
         feats = models["features"]
         self.use_osc = len(feats) > 12
         if self.use_osc and len(feats) != 25:
             raise ValueError("expected FEATS_STATE (12) or FEATS_OSC (25) columns")
-        self.fr = export_forest(models["reg_rk4"])
-        self.fl = export_forest(models["reg_leapfrog"])
+        self.use_struct = bool(models.get("structured", False))
+        if self.use_struct and not self.use_osc:
+            raise ValueError("the structured target needs the periapsis features")
+        cands = models.get("candidates", ("rk4", "leapfrog"))
         self.gate = models["lf_gate"]
-        if self.gate == "clf":
-            self.fg = export_forest(models["clf_leapfrog"])
-            self.gate_kind = GATE_CLF
-            p = min(max(float(p_star), 1e-12), 1.0 - 1e-12)
-            self.gate_thr = math.log(p / (1.0 - p))
+        if cands == ("rk4s",):
+            self.fr = export_forest(models["reg_rk4s"])
+            self.fl = self.fr
+            self.fg = self.fr
+            self.gate_kind, self.gate_thr = 3, 0.0
+        elif single or "reg_leapfrog" not in models:
+            self.fr = export_forest(models["reg_rk4"])
+            self.fl = self.fr
+            self.fg = self.fr
+            self.gate_kind, self.gate_thr = 3, 0.0
         else:
-            self.fg = self.fl                    # unused placeholder with the right type
-            self.gate_kind = GATE_CENSORED if self.gate == "censored" else GATE_NONE
-            self.gate_thr = float(g_star)
+            self.fr = export_forest(models["reg_rk4"])
+            self.fl = export_forest(models["reg_leapfrog"])
+            if self.gate == "clf":
+                self.fg = export_forest(models["clf_leapfrog"])
+                self.gate_kind = GATE_CLF
+                p = min(max(float(p_star), 1e-12), 1.0 - 1e-12)
+                self.gate_thr = math.log(p / (1.0 - p))
+            else:
+                self.fg = self.fl                    # unused placeholder with the right type
+                self.gate_kind = GATE_CENSORED if self.gate == "censored" else GATE_NONE
+                self.gate_thr = float(g_star)
 
     def _args(self):
-        return (self.mu, self.c_l1, self.use_osc, self.fr, self.fl, self.fg, self.gate_kind, self.gate_thr)
+        return (self.mu, self.c_l1, self.use_osc, self.fr, self.fl, self.fg, self.gate_kind, self.gate_thr, self.use_struct)
 
     def batch(self, states, T):
         return policy_hgb_batch(np.ascontiguousarray(states, dtype=np.float64), np.ascontiguousarray(T, dtype=np.float64), *self._args())
@@ -191,11 +212,12 @@ class CompiledHGBPolicy:
     def one(self, state, T):
         xbuf = np.zeros(25)
         flags = np.zeros(2)
-        return policy_hgb_one(np.ascontiguousarray(state, dtype=np.float64), float(T), *self._args(), xbuf, flags)
+        a = self._args()
+        return policy_hgb_one(np.ascontiguousarray(state, dtype=np.float64), float(T), *a, xbuf, flags)
 
     def size(self):
-        return {"rk4": forest_nodes_visited(self.fr), "leapfrog": forest_nodes_visited(self.fl),
-                "gate": forest_nodes_visited(self.fg) if self.gate == "clf" else None}
+        return {"rk4": forest_nodes_visited(self.fr), "leapfrog": forest_nodes_visited(self.fl) if self.gate_kind != 3 else None,
+                "gate": forest_nodes_visited(self.fg) if self.gate_kind == GATE_CLF else None}
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -203,14 +225,14 @@ class CompiledHGBPolicy:
 # ---------------------------------------------------------------------------------------------------------------------
 
 @njit(cache=True)
-def _loop_policy(states, T, reps, mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr):
+def _loop_policy(states, T, reps, mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, use_struct):
     n = states.shape[0]
     xbuf = np.zeros(25)
     flags = np.zeros(2)
     acc = 0.0
     for r in range(reps):
         i = r % n
-        c, d = policy_hgb_one(states[i], T[i], mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, xbuf, flags)
+        c, d = policy_hgb_one(states[i], T[i], mu, c_l1, use_osc, fr, fl, fg, gate_kind, gate_thr, use_struct, xbuf, flags)
         acc += d + c
     return acc
 

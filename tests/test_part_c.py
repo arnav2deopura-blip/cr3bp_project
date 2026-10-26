@@ -304,6 +304,8 @@ def _random_policy_frame(n, seed, mu=0.01215058535):
     df["rk4_success"] = (rng.rand(n) > 0.0001).astype(int)
     df["dt_leapfrog"] = 10 ** (base - 0.5 + rng.normal(0, 0.25, n))
     df["leapfrog_success"] = (rng.rand(n) > 0.25 + 0.2 * (df["r2_3d"].to_numpy() < 0.3)).astype(int)
+    df["dt_rk4s"] = 10 ** (-0.5 + 0.3 * np.tanh(df["r2_3d"].to_numpy()) + rng.normal(0, 0.1, n))
+    df["rk4s_success"] = 1
     return df
 
 
@@ -527,6 +529,38 @@ def test_abstention_flags_and_the_certified_risk_counts_them():
     assert f.tolist() == [True, False, False, True]
     disp = np.arange(10.0)
     assert pc.abstain_flags(pd.DataFrame(index=range(10)), "dispersion", dispersion=disp, frac=0.2).sum() == 2
+
+
+def test_compiled_policy_structured_target_and_single_model_and_sundman():
+    from orbit_ml_cr3bp import compiled_model_3d as cm
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    df = _random_policy_frame(5000, 14)
+    train, te = df.iloc[:4000].reset_index(drop=True), df.iloc[4000:].reset_index(drop=True)
+    st, T = te[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(), te["sim_time"].to_numpy()
+    kw = {"reg_kw": {"max_iter": 30, "max_depth": 3}, "clf_kw": {"max_iter": 20}}
+    # structured target, two integrators with the classifier gate
+    models = pc.fit_policy_c(train, pc.FEATS_OSC, seed=1, lf_gate="clf", structured=True, **kw)
+    assert models["structured"]
+    py = pc.predict_policy_c(models, te, p_star=0.7)
+    idx, raw = pc.choose_unscaled(py)
+    ch, dt = cm.CompiledHGBPolicy(models, p_star=0.7).batch(st, T)
+    assert (ch == idx).all() and np.allclose(dt, raw, rtol=1e-12)
+    # the structured prediction is the offset-corrected one
+    r = pc.predict_raw_c(models, te)
+    X = te[pc.FEATS_OSC].to_numpy()
+    assert np.allclose(r["rk4"]["logdt"], models["reg_rk4"].predict(X) + te["osc_logtau_hat"].to_numpy())
+    # rk4 alone (a single regressor)
+    m1 = pc.fit_policy_c(train, pc.FEATS_OSC, seed=1, lf_gate="none", structured=True, candidates=("rk4",), **kw)
+    cp1 = cm.CompiledHGBPolicy(m1)
+    ch1, dt1 = cp1.batch(st, T)
+    assert (ch1 == 0).all() and np.allclose(dt1, 10 ** pc.predict_raw_c(m1, te)["rk4"]["logdt"], rtol=1e-12)
+    # the Sundman-time policy: one regressor on log10 ds*
+    ms = pc.fit_policy_c(train, pc.FEATS_OSC, seed=1, lf_gate="none", structured=False, candidates=("rk4s",), **kw)
+    cps = cm.CompiledHGBPolicy(ms)
+    chs, dts = cps.batch(st, T)
+    assert (chs == 0).all() and np.allclose(dts, 10 ** pc.predict_raw_c(ms, te)["rk4s"]["logdt"], rtol=1e-12)
+    sz = cps.size()
+    assert sz["rk4"]["n_trees"] == 30 and sz["leapfrog"] is None
 
 
 def main():

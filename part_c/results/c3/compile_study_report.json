@@ -1,0 +1,291 @@
+{
+  "table": [
+    {
+      "model": "M1_10x3",
+      "features": "osc",
+      "fit_s": 0.591073751449585,
+      "rk4_median_abs": 0.4404603478232185,
+      "rk4_p90_abs": 1.107325335642759,
+      "rk4_pinball": 0.07233941521683813,
+      "rk4_over": 0.07366666666666667,
+      "leapfrog_median_abs": 0.3746210038657868,
+      "leapfrog_p90_abs": 0.7793656554866293,
+      "leapfrog_pinball": 0.05728004654463191,
+      "leapfrog_over": 0.08095238095238096,
+      "size": {
+        "rk4": {
+          "n_trees": 10,
+          "n_nodes": 150
+        },
+        "leapfrog": {
+          "n_trees": 10,
+          "n_nodes": 150
+        },
+        "gate": {
+          "n_trees": 10,
+          "n_nodes": 140
+        }
+      },
+      "rhs_equiv": 20.477592084051125,
+      "rhs_equiv_range": [
+        14.798261060871269,
+        27.49756561572812
+      ],
+      "features_rhs_equiv": 5.264878690273431,
+      "policy_ns_per_call": 2361.04333,
+      "rhs_ns_per_call": 115.298875,
+      "python_dispatch_rhs_equiv": 7.042,
+      "batched_rhs_equiv": 9.482234757277553
+    },
+    {
+      "model": "M1_25x3",
+      "features": "osc",
+      "fit_s": 0.6535632610321045,
+      "rk4_median_abs": 0.2921734104628232,
+      "rk4_p90_abs": 1.0398774173477223,
+      "rk4_pinball": 0.06294535553801826,
+      "rk4_over": 0.084,
+      "leapfrog_median_abs": 0.29453157984415823,
+      "leapfrog_p90_abs": 0.7755139428518084,
+      "leapfrog_pinball": 0.05140995552419474,
+      "leapfrog_over": 0.0945578231292517,
+      "size": {
+        "rk4": {
+          "n_trees": 25,
+          "n_nodes": 375
+        },
+        "leapfrog": {
+          "n_trees": 25,
+          "n_nodes": 375
+        },
+        "gate": {
+          "n_trees": 25,
+          "n_nodes": 369
+        }
+      },
+      "rhs_equiv": 29.73013566275695,
+      "rhs_equiv_range": [
+        26.3916955694155,
+        30.85765793812756
+      ],
+      "features_rhs_equiv": 4.093132417889511,
+      "policy_ns_per_call": 3730.16208,
+      "rhs_ns_per_call": 125.467375,
+      "python_dispatch_rhs_equiv": 7.333333333333333,
+      "batched_rhs_equiv": 15.61893679532229
+    },
+    {
+      "model": "M1_50x4",
+      "features": "osc",
+      "fit_s": 1.7321858406066895,
+      "rk4_median_abs": 0.2130476432713811,
+      "rk4_p90_abs": 1.0216308319093808,
+      "rk4_pinball": 0.05748947558289363,
+      "rk4_over": 0.09833333333333333,
+      "leapfrog_median_abs": 0.19848679135805136,
+      "leapfrog_p90_abs": 0.7386891117693358,
+      "leapfrog_pinball": 0.04554337591173628,
+      "leapfrog_over": 0.11020408163265306,
+      "size": {
+        "rk4": {
+          "n_trees": 50,
+          "n_nodes": 1438
+        },
+        "leapfrog": {
+          "n_trees": 50,
+          "n_nodes": 1496
+        },
+        "gate": {
+          "n_trees": 24,
+          "n_nodes": 690
+        }
+      },
+      "rhs_equiv": 88.91066974339667,
+      "rhs_equiv_range": [
+        44.688623870536084,
+        140.23850089380937
+      ],
+      "features_rhs_equiv": 3.5514579691799066,
+      "policy_ns_per_call": 8727.24542,
+      "rhs_ns_per_call": 98.157459,
+      "python_dispatch_rhs_equiv": 11.995637949836423,
+      "batched_rhs_equiv": 53.8751721354156
+    },
+    {
+      "model": "M1_100x5",
+      "features": "osc",
+      "fit_s": 4.8326849937438965,
+      "rk4_median_abs": 0.15010084208845664,
+      "rk4_p90_abs": 0.9063169079234654,
+      "rk4_pinball": 0.051167828902793686,
+      "rk4_over": 0.11566666666666667,
+      "leapfrog_median_abs": 0.15956898261144692,
+      "leapfrog_p90_abs": 0.6881629312397519,
+      "leapfrog_pinball": 0.04220269004768541,
+      "leapfrog_over": 0.12755102040816327,
+      "size": {
+        "rk4": {
+          "n_trees": 100,
+          "n_nodes": 5176
+        },
+        "leapfrog": {
+          "n_trees": 100,
+          "n_nodes": 5162
+        },
+        "gate": {
+          "n_trees": 30,
+          "n_nodes": 1502
+        }
+      },
+      "rhs_equiv": 211.97125120606583,
+      "rhs_equiv_range": [
+        205.97311894272266,
+        253.25801736898825
+      ],
+      "features_rhs_equiv": 4.434590680587586,
+      "policy_ns_per_call": 26390.60625,
+      "rhs_ns_per_call": 124.500875,
+      "python_dispatch_rhs_equiv": 15.555555555555555,
+      "batched_rhs_equiv": 184.86115057424297
+    },
+    {
+      "model": "M2_300",
+      "features": "osc",
+      "fit_s": 21.24263906478882,
+      "rk4_median_abs": 0.1199394956175174,
+      "rk4_p90_abs": 0.7184551941009618,
+      "rk4_pinball": 0.04703866965546488,
+      "rk4_over": 0.14633333333333334,
+      "leapfrog_median_abs": 0.11768211893966907,
+      "leapfrog_p90_abs": 0.6181285281653199,
+      "leapfrog_pinball": 0.03917702300190679,
+      "leapfrog_over": 0.1486394557823129,
+      "size": {
+        "rk4": {
+          "n_trees": 300,
+          "n_nodes": 18300
+        },
+        "leapfrog": {
+          "n_trees": 300,
+          "n_nodes": 18300
+        },
+        "gate": {
+          "n_trees": 32,
+          "n_nodes": 1952
+        }
+      },
+      "rhs_equiv": 1188.3080323041286,
+      "rhs_equiv_range": [
+        858.4824582281994,
+        1857.9831745465026
+      ],
+      "features_rhs_equiv": 4.039152858526055,
+      "policy_ns_per_call": 145204.16042,
+      "rhs_ns_per_call": 122.194041,
+      "python_dispatch_rhs_equiv": 62.41283924843424,
+      "batched_rhs_equiv": 889.0903444301347
+    },
+    {
+      "model": "M1_50x4",
+      "features": "state",
+      "fit_s": 1.929321050643921,
+      "rk4_median_abs": 0.4210702053729014,
+      "rk4_p90_abs": 1.1128635752275802,
+      "rk4_pinball": 0.07733086846561517,
+      "rk4_over": 0.11066666666666666,
+      "leapfrog_median_abs": 0.31442224726679957,
+      "leapfrog_p90_abs": 0.8815378068087756,
+      "leapfrog_pinball": 0.06046977316376953,
+      "leapfrog_over": 0.11326530612244898,
+      "size": {
+        "rk4": {
+          "n_trees": 50,
+          "n_nodes": 1412
+        },
+        "leapfrog": {
+          "n_trees": 50,
+          "n_nodes": 1468
+        },
+        "gate": {
+          "n_trees": 27,
+          "n_nodes": 767
+        }
+      },
+      "rhs_equiv": 60.63146465981394,
+      "rhs_equiv_range": [
+        41.088081336286514,
+        101.94506995748695
+      ],
+      "features_rhs_equiv": 0.09773910417455829,
+      "policy_ns_per_call": 7512.06167,
+      "rhs_ns_per_call": 123.897084,
+      "python_dispatch_rhs_equiv": 12.094857142857142,
+      "batched_rhs_equiv": 41.29771932324089
+    },
+    {
+      "model": "M2_300",
+      "features": "state",
+      "fit_s": 25.29437804222107,
+      "rk4_median_abs": 0.3176097051743657,
+      "rk4_p90_abs": 1.002148216640289,
+      "rk4_pinball": 0.06944499095641561,
+      "rk4_over": 0.148,
+      "leapfrog_median_abs": 0.21997551629718592,
+      "leapfrog_p90_abs": 0.7837357415846584,
+      "leapfrog_pinball": 0.05271783993357428,
+      "leapfrog_over": 0.14081632653061224,
+      "size": {
+        "rk4": {
+          "n_trees": 294,
+          "n_nodes": 17934
+        },
+        "leapfrog": {
+          "n_trees": 300,
+          "n_nodes": 18300
+        },
+        "gate": {
+          "n_trees": 27,
+          "n_nodes": 1647
+        }
+      },
+      "rhs_equiv": 1046.1625407586912,
+      "rhs_equiv_range": [
+        710.4574597624749,
+        1161.7884768584745
+      ],
+      "features_rhs_equiv": 0.06570562124078663,
+      "policy_ns_per_call": 114187.07208,
+      "rhs_ns_per_call": 109.1485,
+      "python_dispatch_rhs_equiv": 58.43756003842459,
+      "batched_rhs_equiv": 1054.2498705891514
+    },
+    {
+      "model": "M0_linear",
+      "features": "osc",
+      "fit_s": 15.801209211349487,
+      "rk4_median_abs": 0.260645300307854,
+      "rk4_p90_abs": 0.7773956528855978,
+      "rk4_pinball": 0.06853744454874192,
+      "rk4_over": 0.11133333333333334,
+      "leapfrog_median_abs": 0.22758020070673657,
+      "leapfrog_p90_abs": 0.7480351821219353,
+      "leapfrog_pinball": 0.05275492432458456,
+      "leapfrog_over": 0.11054421768707483,
+      "rhs_equiv": 11.811300166809808,
+      "rhs_equiv_range": [
+        10.653653217960327,
+        14.133762369109425
+      ],
+      "policy_ns_per_call": 755.92125,
+      "rhs_ns_per_call": 63.999834
+    }
+  ],
+  "gate_rhs_equiv": 10.0,
+  "eligible": [],
+  "machine": {
+    "platform": "darwin",
+    "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]"
+  },
+  "numba": "0.67.0",
+  "sklearn": "1.9.0"
+}

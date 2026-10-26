@@ -48,3 +48,62 @@ Caveat that stays: the counterfactual ignores that larger steps raise violations
 lookahead arm is 1.3-1.9 points *below* f = 0. So the earlier "short lookahead helps" reading came from the larger certified scale, not from the lookahead. Item 0.6 (CI band in `mu_dial.png` panel 3):
 Clopper-Pearson from `n_eval`, figure code only (`make_figures_b.py`, outside any seal that matters now). Item 0.8 (delete `RESULTS_REPORT.md.bak`): not done, see decision 4 above.
 Tests: `tests/test_part_c.py` (lever functions).
+
+## 2. C1-C3 on D_explore (2026-10-26; exploratory, development data; outputs in `part_c/results/c1_c2`, `c3`)
+
+All runs use `run_part_c_3d.py policy_c` on D_explore (seed 21; 16,170 usable orbits) with Part B's cal / evaluation rows (2,000 / 3,000) and the same adaptive comparators. The training slice is smaller than
+Part B's (9,170 instead of 11,170) because 2,000 rows are carved out of it to tune the leapfrog gate (the selection slice; the gate is never tuned on calibration rows). Integration-only costs here
+(`C_pred` = 0); overhead is the subject of C3 below. Evaluation violation rates have 3,000 orbits behind them (95 % CP half-width about 0.6 points).
+
+**Track 1.1: end-to-end common scale** (`policy_c_3d.certify_end_to_end`; tests in `tests/test_part_c.py`). The deployed choice is made on the unscaled predictions, so it cannot depend on the scale; one scale is then
+tested on exactly the chosen runs. The certifier's violation count on the calibration rows equals the count of the evaluation pass (asserted in the unit test and in every run). What the Part B per-integrator
+certificate hid is now visible: Part B's D_explore ledger has 5.7 % violations [3.8, 8.1] on the 494 orbits that chose leapfrog (D_confirm: 6.4 % [5.5, 7.5], 2,343 orbits, 173 of them infeasible choices), above alpha = 5 %,
+against 3.6 % on RK4. The conditional rates are now part of every report (`conditional_risk`, `conditional_breach`).
+
+| arm | features | leapfrog gate | scale rule | scale | RK4 cond. risk | leapfrog cond. risk (n) | infeasible leapfrog choices | median integration cost | integration cheaper than RK45-cal / eqr |
+|---|---|---|---|---|---|---|---|---|---|
+| Part B (ledger) | state | RF classifier, per-integrator scales | Bonferroni, 18 values | 0.5 / 0.5 | 3.6 % | 5.7 % (494) | 41 | 1,408 | 28.7 % / 25.0 % |
+| A | state | classifier at 0.5, no tuning | end to end, Bonferroni, 18 values | 0.4 | 2.8 % | 4.1 % [2.6, 6.1] (541) | 33 | 1,972 | 23.4 % / 20.6 % |
+| B | state | classifier, p* = 0.995 tuned on the selection slice (budget 0.5 %) | same | 0.5 | 3.4 % | 2.0 % [0.8, 4.1] (346) | 2 | 1,580 | 27.9 % / 25.1 % |
+| C | state | same as B | end to end, fixed sequence on 28 values | 0.566 | 3.9 % | 3.8 % [2.0, 6.3] (346) | 2 | 1,370 | 30.0 % / 26.7 % |
+| D | state + periapsis | classifier, p* = 0.80 | same as C | 0.734 | 3.8 % | 8.5 % [5.5, 12.4] (281) | 14 | 516 | 44.9 % / 39.9 % |
+| E | state + periapsis | censored regressor, margin 0 | same as C | 0.734 | 3.8 % | 3.6 % [1.4, 7.2] (196) | 1 | 520 | 44.7 % / 40.2 % |
+
+Reading. (i) A has the smaller scale (0.4) than Part B (0.5) mostly because it trains on fewer rows and leapfrog choices that no scale can repair are now inside the certificate; B shows the cost of those infeasible
+choices: tuning the gate on the selection slice removes 31 of 33 of them and the scale and cost move back (median integration cost -20 %). (ii) The fixed sequence on the fine grid adds about +0.05 dex of scale at the same
+certificate (0.5 to 0.566); the guard-rail of plan 2.3(a) (the risk at s = 0.1 must be well below alpha) is checked at the seal on D_select. (iii) The periapsis features (D, E) move the certified scale to 0.73 and cut the median
+integration cost by 3x. (iv) The marginal certificate can hide a breach: D has 8.5 % leapfrog risk with a total of 4.2 %; the censored gate (E) removes it (3.6 %), so E is the candidate carried forward and the by-selected-integrator
+variant (plan 1.1.4) is run as arm G for the record.
+
+**Track 1.2.** RK4 needs no classifier (dropped). The gate is a tuned threshold on the selection slice: classifier probability p* (B, C, D) or the margin of a censored leapfrog regressor (E, trained on all rows with
+the label 0.5 x dt_min where no step works; threshold 0.0 already meets the 0.5 % budget). Infeasible leapfrog choices on the evaluation rows: Part B 41 / 494 (explore) and 173 / 2,343 (confirm); B 2 / 346; E 1 / 196.
+
+**Track 1.5 (housekeeping).** `config.py`: `LEGACY_JACOBI_TOLERANCES_3D` with the old name kept as an alias; the `FTLE_INTEGRATION_TIME` comment says "fallback". Done now, before the Part C seal, so it is inside the fingerprint.
+
+**C2: periapsis features (plan 2.2), `osc_diag`, D_explore, 3 seeds.** The analytic two-body periapsis radius and time match a numerical two-body integration to 1e-8 (tests), including the rotating-frame velocity transform.
+Diagnostics: Spearman(log tau_hat, log tau_min of the reference) = 0.91 overall (0.98 regime I; 0.64 for orbits that come within 0.05 DU, 0.37 for the 0.05-0.17 band); the osculating periapsis radius about the secondary is within a factor 2
+of the true closest approach for 73 % of orbits that "reach" it before T, and 66 % of the close-approach orbits (min r2 < 0.05). Model effect, same HGB (300 trees, q = 0.1): median |log10 prediction / label| for RK4 0.339 -> 0.138 dex
+(state + 13 features; -0.20 dex; go rule was -0.03), leapfrog 0.228 -> 0.137; close-approach bands -0.17 and -0.44 dex; pinball 0.071 -> 0.048; over-prediction rate unchanged (13.1 % -> 12.7 %). The single feature tau_hat gives -0.155 dex
+of the -0.20. **GO.** This is more than the plan expected (E3b's oracle trajectory features reach 0.057 dex, so the analytic lookahead recovers about 70 % of that gap for free).
+
+**C3: compiled models and cost (plan 2.1), `compile_study`, D_explore.** `compiled_model_3d.py` exports the fitted trees to flat arrays and evaluates them in Numba; equality with `est.predict` / `predict_proba` is asserted to
+1e-12 on 10,000 rows for three model sizes and the classifier (`tests/test_part_c.py`; the exported attributes are private scikit-learn ones, pinned to 1.9.0). The compiled policy (features, both regressors, gate, choice, dt) agrees
+with the Python policy on every row for state / periapsis features and classifier / censored / no gate. Cost protocol as in the plan, with the departure that "single call" is one orbit evaluated alone inside a compiled loop cycling through 1,000 states
+(no Python dispatch; the RHS reference is timed the same way, `_cr3bp_derivatives_3d_numba`, about 100-125 ns here because it allocates its result) and the Python-dispatched value reported next to it.
+**These timings were taken while eight other jobs were running (data generation, policy arms); they are for ranking only. The value that is pinned for the confirmatory run is re-measured on an idle machine before the seal.**
+
+| model (periapsis features) | RK4 median abs error (dex) | RK4 pinball | leapfrog median abs error | RHS-equivalents per orbit (single call, loaded machine) |
+|---|---|---|---|---|
+| M0 linear quantile, 33 engineered features, censored gate | 0.261 | 0.069 | 0.228 | 11.8 |
+| M1 10 trees, depth 3 | 0.440 | 0.072 | 0.375 | 20.5 |
+| M1 25 trees, depth 3 | 0.292 | 0.063 | 0.295 | 29.7 |
+| M1 50 trees, depth 4 | 0.213 | 0.057 | 0.198 | 88.9 |
+| M1 100 trees, depth 5 | 0.150 | 0.051 | 0.160 | 212 |
+| M2 300 trees (Part B's size) | 0.120 | 0.047 | 0.118 | 1,188 |
+| M2 300 trees, state features only | 0.318 | 0.069 | 0.220 | 1,046 |
+
+Part B's pinned 1,128 is reproduced by the compiled M2 (1,046-1,188 here), so compiling alone does not help; the saving comes from the model size. The periapsis features themselves cost 3.5-5 RHS-equivalents (13 values with logs, a square root and trigonometry), i.e. half of
+the 10-RHS gate by themselves. Two findings change the plan's candidate list: (1) the physics-structured target of plan 2.2 (predict log10 d* - log10 tau_hat) is worth much more than "trees gain little": at equal size the median error falls from 0.47 to 0.29 dex
+(10 trees), 0.30 to 0.23 (25), 0.21 to 0.17 (50), 0.12 to 0.10 (300) (`part_c/results/c3/structured_target.py`); it is now an option (`structured=True`, also in the compiled policy) and is decided on D_select. (2) A policy that needs a single regressor
+(RK4 alone, or the Sundman-time regressor of Track 3) costs about a third of the two-regressor-plus-gate policy, which is what brings the tree models near the gate. **Gate status: M0 is at about 12 on the loaded machine, the smallest structured tree models
+about 12-13 per single regressor; whether any model is eligible at <= 10 is decided with the idle-machine measurement.**

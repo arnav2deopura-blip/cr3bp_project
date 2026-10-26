@@ -49,21 +49,28 @@ def _hgb_regressor(q, seed, max_iter=300, learning_rate=0.05, max_depth=None):
                                          max_depth=max_depth, random_state=seed)
 
 
-def _hgb_classifier(seed, max_iter=100, max_depth=None):
+def _hgb_classifier(seed, max_iter=100, max_depth=None, learning_rate=0.1):
     from sklearn.ensemble import HistGradientBoostingClassifier
-    return HistGradientBoostingClassifier(max_iter=max_iter, max_depth=max_depth, random_state=seed)
+    return HistGradientBoostingClassifier(max_iter=max_iter, max_depth=max_depth, learning_rate=learning_rate, random_state=seed)
 
 
 def fit_policy_c(train, features, quantile=pb.PINNED_QUANTILE, seed=42, lf_gate="clf", rk4_classifier=False, sample_weight=None,
-                 reg_kw=None, clf_kw=None):
+                 reg_kw=None, clf_kw=None, structured=False, candidates=CANDIDATES):
     """train: rows with labels (dt_<k>, <k>_success). lf_gate: 'clf' (HGB classifier on leapfrog_success), 'censored' (leapfrog
     regressor trained on ALL rows with the label 0.5 * dt_min where no step works) or 'none' (leapfrog always allowed).
-    rk4_classifier=False: RK4 is always feasible (the 1-in-16k miss shows up as a violation and stays in the risk count)."""
+    rk4_classifier=False: RK4 is always feasible (the 1-in-16k miss shows up as a violation and stays in the risk count).
+    structured=True: the regressors predict log10 d* - osc_logtau_hat (the analytic timescale, which is a feature); the offset is added
+    back at prediction time. It removes the part of the step that is just the local dynamical time and lets small ensembles reach the
+    accuracy of much larger ones (D_explore: 10 trees of depth 3 go from 0.47 to 0.29 dex median error).
+    candidates=("rk4s",): the Sundman-time policy (one regressor on log10 ds*, labels dt_rk4s / rk4s_success, no gate)."""
     reg_kw, clf_kw = reg_kw or {}, clf_kw or {}
-    X = train[list(features)].to_numpy(dtype=float)
+    features = list(features)
+    X = train[features].to_numpy(dtype=float)
+    off = X[:, features.index("osc_logtau_hat")] if structured else 0.0
     w = None if sample_weight is None else np.asarray(sample_weight, dtype=float)
-    models = {"features": list(features), "quantile": quantile, "lf_gate": lf_gate, "rk4_classifier": rk4_classifier}
-    for k in CANDIDATES:
+    models = {"features": features, "quantile": quantile, "lf_gate": lf_gate, "rk4_classifier": rk4_classifier, "structured": structured,
+              "candidates": tuple(candidates)}
+    for k in candidates:
         succ = train[f"{k}_success"].to_numpy() == 1
         y = np.full(len(train), np.nan)
         y[succ] = np.log10(train[f"dt_{k}"].to_numpy(dtype=float)[succ])
@@ -72,7 +79,8 @@ def fit_policy_c(train, features, quantile=pb.PINNED_QUANTILE, seed=42, lf_gate=
             y[~succ] = LOG_FLOOR_CENSORED
             use = np.ones(len(train), dtype=bool)
         reg = _hgb_regressor(quantile, seed, **reg_kw)
-        reg.fit(X[use], y[use], sample_weight=None if w is None else w[use])
+        yy = y - off if structured else y
+        reg.fit(X[use], yy[use] if structured else y[use], sample_weight=None if w is None else w[use])
         models[f"reg_{k}"] = reg
         need_clf = (k == "leapfrog" and lf_gate == "clf") or (k == "rk4" and rk4_classifier)
         if need_clf:
@@ -86,9 +94,10 @@ def predict_raw_c(models, df):
     """Unthresholded predictions: log10 dt per candidate, feasibility score per candidate (probability, or the log prediction for
     the censored gate, or +inf where no gate applies)."""
     X = df[models["features"]].to_numpy(dtype=float)
+    off = X[:, models["features"].index("osc_logtau_hat")] if models.get("structured") else 0.0
     out = {}
-    for k in CANDIDATES:
-        logdt = models[f"reg_{k}"].predict(X)
+    for k in models["candidates"]:
+        logdt = models[f"reg_{k}"].predict(X) + off
         if f"clf_{k}" in models:
             score = models[f"clf_{k}"].predict_proba(X)[:, 1]
         elif k == "leapfrog" and models["lf_gate"] == "censored":
@@ -103,7 +112,7 @@ def apply_gate(raw, p_star=0.5, g_star=0.0, lf_gate="clf"):
     """pred dict (feasible, dt per candidate) for pb.policy_choice / evaluate_orbits. p_star: classifier threshold; g_star: margin
     (dex above dt_min) for the censored gate."""
     pred = {}
-    for k in CANDIDATES:
+    for k in raw:
         r = raw[k]
         if k == "leapfrog" and lf_gate == "clf":
             feas = r["score"] >= p_star
@@ -179,6 +188,13 @@ def _run_job(a):
     """One chosen fixed-step run, optionally guarded (step-over guard g) with an adaptive fallback (rtol, method) from t = 0.
     Returns (ok, err_km, evals, fell_back, reason). evals = steps x evaluations per step (+ the fallback's nfev)."""
     integ, state, dt, T, ref_pos, mu, g, fb = a
+    if integ == "rk4s":              # Sundman-time RK4: dt is the fictitious step; the cost is counted, not ceil(T / dt) x 4
+        from .sundman_3d import integrate_endpoint_rk4s, rk4s_evals, SUNDMAN_TAU_C
+        ok, _prev, curr, _tp, _ta, reason, ns, nf = integrate_endpoint_rk4s(state, dt, T, mu, MAX_STEPS, tau_c=SUNDMAN_TAU_C)
+        ev = rk4s_evals(ns, nf)
+        if not ok:
+            return False, float("nan"), ev, False, int(reason)
+        return True, float(np.linalg.norm(np.asarray(curr)[:3] - ref_pos)) * du_km_for_mu(mu), ev, False, 0
     if math.isinf(g):
         ok, _prev, curr, _tp, _ta, reason = integrate_endpoint_3d(INTEGRATORS_3D[integ], list(state), float(dt), float(T), mu, MAX_STEPS)
         steps = int(math.ceil(T / float(dt) - 1e-9)) if ok else 0
