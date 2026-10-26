@@ -1,0 +1,37 @@
+{
+  "spearman_pred_true_log_nfev": 0.9644884750001619,
+  "n_train": 14161,
+  "n_test": 4034,
+  "rows": [
+    {
+      "batch_size": 32,
+      "n": 4034,
+      "lane_eff_unsorted": 0.07998150363192073,
+      "lane_eff_sorted_by_prediction": 0.5359066206963621,
+      "lane_eff_sorted_oracle": 0.8261564546931054,
+      "cost_ratio_pred_sorted_over_unsorted": 0.1492452239682951
+    },
+    {
+      "batch_size": 128,
+      "n": 4034,
+      "lane_eff_unsorted": 0.042084749514010616,
+      "lane_eff_sorted_by_prediction": 0.39691799956714247,
+      "lane_eff_sorted_oracle": 0.60193863671238,
+      "cost_ratio_pred_sorted_over_unsorted": 0.10602882600412677
+    },
+    {
+      "batch_size": 32,
+      "n": 4030,
+      "what": "ML fixed-step counts (exactly known before launch)",
+      "lane_eff_unsorted": 0.07958369228412854,
+      "lane_eff_sorted_exact": 0.7383268522407269
+    },
+    {
+      "batch_size": 128,
+      "n": 4030,
+      "what": "ML fixed-step counts (exactly known before launch)",
+      "lane_eff_unsorted": 0.041742563220846504,
+      "lane_eff_sorted_exact": 0.5227616876000801
+    }
+  ]
+}

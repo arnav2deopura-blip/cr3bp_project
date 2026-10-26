@@ -143,3 +143,7 @@ dated entry below.
   (E11b) and the tests were looking for the D_confirm one; D_lock now has its own folder (`out_b/lock`). (2) `make_figures_b.py` gained three
   presentation functions (horizon dial, step-over, information floor), which read run outputs and compute nothing that enters a test. The text
   above "## Deviations" is unchanged (same SHA-256 as in the first seal).
+- 2026-10-26, after every confirmatory step had run once (`confirm_log_b.jsonl`): `make_figures_b.py` was edited for legibility only (step-over
+  chart: sample sizes moved into the axis labels; information-floor chart: the key moved below the panels, shared y range; the dataset name in titles became a `--label` argument after the first confirm render wrongly said D_explore). It reads run
+  outputs and computes nothing that enters a test, so `freeze_b.py check` now reports exactly this file as changed; no confirmatory step
+  remains to be guarded. The figures in `part_b/figures/` were regenerated with the edited file.

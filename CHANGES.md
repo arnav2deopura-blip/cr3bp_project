@@ -110,3 +110,10 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
   `matched_accuracy_baseline_3d(count_ml_divergence=)`.
 - `audit_3d.py`: `dense_sweep_log_3d`, `summarize_dense_sweep_log` (geometric grid; replaces the linear sweep for Part B).
 - `tests/test_phase0.py`: 9 checks. `freeze_snapshot.py check` now reports the code as changed relative to the Part A seal (expected).
+
+# 2026-10-25/26: Part B (failure study) executed; see part_b/RESULTS_PART_B.md
+- New: `orbit_ml_cr3bp/{diagnostics,policy_b,failure_study,experiments_b,confirm_b,sweeps_b}_3d.py`, `run_failure_study_3d.py`, `run_failure_experiments_3d.py`,
+  `run_confirm_b_3d.py`, `make_sweep_b.py`, `make_figures_b.py`, `freeze_b.py`, `tests/`. Pre-registration `part_b/PREREGISTRATION_B.md`, seal `FREEZE_B.json`
+  (first seal `FREEZE_B.v1.json`), run log `confirm_log_b.jsonl`, data hashes `part_b/DATA_HASHES_B.json`.
+- Datasets (label_pipeline_version 4, in untracked `data_b/`): D_explore seed 21, D_confirm seed 22 (20,000 each), D_lock seed 23 (5,000), horizon sweeps.
+- Part A (sealed 2026-10-23) is untouched; `freeze_snapshot.py check` reports the tree as changed relative to it, as expected.

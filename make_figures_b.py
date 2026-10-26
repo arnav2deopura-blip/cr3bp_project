@@ -19,6 +19,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
 
+LABEL = "D_explore"     # dataset named in the titles; set with --label
 SURFACE = "#fcfcfb"
 INK = "#0b0b0b"
 INK2 = "#52514e"
@@ -81,7 +82,7 @@ def waterfall(dec_dir, ledger_path, out, comparators=("RK45_spec", "RK45_cal")):
             ax.set_ylim(-0.62, 1.85)
             if j == 0:
                 ax.set_ylabel("mean contribution to log10(ML cost / adaptive cost)")
-    fig.suptitle("Where the extra cost of the ML step-size policy comes from (mean over orbits that met the tolerance, dex; D_explore)",
+    fig.suptitle(f"Where the extra cost of the ML step-size policy comes from (mean over orbits that met the tolerance, dex; {LABEL})",
                  x=0.01, ha="left", fontsize=10.5, color=INK)
     fig.tight_layout(rect=(0, 0, 1, 0.96))
     p = os.path.join(out, "waterfall.png")
@@ -112,7 +113,7 @@ def paradigm(ledger_path, out, comp="RK45_spec"):
     ax.yaxis.grid(True, color=GRID, lw=0.5)
     ax.set_axisbelow(True)
     _style(ax)
-    ax.set_title("Even a perfect single step costs more where the trajectory's pace varies (D_explore)", fontsize=9.5, loc="left")
+    ax.set_title(f"Even a perfect single step costs more where the trajectory's pace varies ({LABEL})", fontsize=9.5, loc="left")
     fig.tight_layout()
     p = os.path.join(out, "paradigm_vs_delta.png")
     fig.savefig(p, dpi=170)
@@ -164,7 +165,7 @@ def wheremap(dec_dir, ledger_path, out, comp="RK45_spec", min_n=20):
         ax.grid(which="minor", color=SURFACE, lw=2)
         ax.tick_params(which="minor", length=0)
     fig.suptitle(f"Where each ceiling binds: Hill regime (I = closed necks ... V = no forbidden region) x closest lunar approach "
-                 f"(vs {comp.replace('_', ' ')}; D_explore, cells with n<{min_n} blank)", x=0.01, ha="left", fontsize=10)
+                 f"(vs {comp.replace('_', ' ')}; {LABEL}, cells with n<{min_n} blank)", x=0.01, ha="left", fontsize=10)
     fig.tight_layout(rect=(0, 0, 1, 0.93))
     p = os.path.join(out, "wheremap.png")
     fig.savefig(p, dpi=170)
@@ -227,11 +228,11 @@ def stepover(e9_dir, out):
     fig, axes = plt.subplots(1, 2, figsize=(10.4, 3.8))
     ax = axes[0]
     ax.bar(range(len(t)), t["violation_rate"] * 100, color="#2a78d6", width=0.62, edgecolor=SURFACE, linewidth=1.5)
-    for i, (v, n) in enumerate(zip(t["violation_rate"], t["n"])):
+    for i, v in enumerate(t["violation_rate"]):
         ax.text(i, v * 100 + 1.5, f"{v:.0%}", ha="center", fontsize=8, color=INK)
-        ax.text(i, 1.5, f"n={n}", ha="center", fontsize=7, color="#ffffff" if v > 0.1 else MUTED, rotation=90, va="bottom")
     ax.set_xticks(range(len(t)))
-    ax.set_xticklabels([s.replace("(", "").replace("]", "").replace(", ", "-").replace("inf", "+") for s in t["step_over"]], rotation=30, ha="right", fontsize=8)
+    ax.set_xticklabels([f"{s.replace('(', '').replace(']', '').replace(', ', '-').replace('inf', '+')}\nn={n}"
+                        for s, n in zip(t["step_over"], t["n"])], fontsize=7.5)
     ax.set_xlabel("step-over ratio  dt_used / tau_min  (shortest local timescale on the trajectory)")
     ax.set_ylabel("share of runs that violate the tolerance (%)")
     ax.set_ylim(0, 112)
@@ -278,10 +279,12 @@ def information(e3a_dir, out):
         ax.set_axisbelow(True)
         _style(ax)
     axes[0].set_ylabel("dex")
-    axes[0].text(0.02, 0.96, "blue: model's median |log10 prediction / label|\norange: 90th percentile of the label's spread under the perturbation",
-                 transform=axes[0].transAxes, va="top", fontsize=7.5, color=INK2)
     fig.suptitle("The label is stable under navigation-level perturbations: the model's error is not an information floor", x=0.01, ha="left", fontsize=10)
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.text(0.01, 0.01, "blue: the model's median |log10 prediction / label|     orange: 90th percentile of the label's spread under the perturbation "
+             "(labels move in steps of 0.0108 dex)", fontsize=8, color=INK2, ha="left", va="bottom")
+    for ax in axes:
+        ax.set_ylim(0, 0.47)
+    fig.tight_layout(rect=(0, 0.05, 1, 0.93))
     p = os.path.join(out, "information_floor.png")
     fig.savefig(p, dpi=170)
     plt.close(fig)
@@ -294,10 +297,13 @@ def main():
     ap.add_argument("--sweep_ledger")
     ap.add_argument("--e9")
     ap.add_argument("--e3a")
+    ap.add_argument("--label", default="D_explore", help="dataset name shown in titles")
     ap.add_argument("--decompose")
     ap.add_argument("--ledger")
     ap.add_argument("--out", default="part_b/figures/explore")
     a = ap.parse_args()
+    global LABEL
+    LABEL = a.label
     os.makedirs(a.out, exist_ok=True)
     outs = []
     if a.what in ("waterfall", "all"):

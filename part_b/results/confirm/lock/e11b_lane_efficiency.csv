@@ -1,0 +1,5 @@
+batch_size,n,lane_eff_unsorted,lane_eff_sorted_by_prediction,lane_eff_sorted_oracle,cost_ratio_pred_sorted_over_unsorted,what,lane_eff_sorted_exact
+32,4034,0.07998150363192073,0.5359066206963621,0.8261564546931054,0.1492452239682951,,
+128,4034,0.042084749514010616,0.39691799956714247,0.60193863671238,0.10602882600412677,,
+32,4030,0.07958369228412854,,,,ML fixed-step counts (exactly known before launch),0.7383268522407269
+128,4030,0.041742563220846504,,,,ML fixed-step counts (exactly known before launch),0.5227616876000801

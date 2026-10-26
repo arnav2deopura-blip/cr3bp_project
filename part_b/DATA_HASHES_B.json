@@ -1,0 +1,22 @@
+{
+  "recorded_utc": "2026-10-25T23:16:04.094681+00:00",
+  "note": "recorded after generation and before any analysis of these sets",
+  "files": {
+    "data_b/cr3bp_3d_training_data_accuracy_monotone_seed22.csv": {
+      "sha256": "240204c7b4248a8dc8d39283e883984df62609898ad8826b8a5ef901b0b53c71",
+      "rows": 20000,
+      "usable": 16161,
+      "rk4_censored_frac": 0.0,
+      "leapfrog_censored_frac": 0.0,
+      "ref_check_km_max": 2.0086961815264512
+    },
+    "data_b/cr3bp_3d_training_data_accuracy_monotone_seed23.csv": {
+      "sha256": "f1f2bff413129da04eac8c63440a446b47fac8847912f88618ebe2dadc6f5c2d",
+      "rows": 5000,
+      "usable": 4034,
+      "rk4_censored_frac": 0.0,
+      "leapfrog_censored_frac": 0.0,
+      "ref_check_km_max": 0.0107433932646005
+    }
+  }
+}

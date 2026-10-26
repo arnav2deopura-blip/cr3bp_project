@@ -1,0 +1,19 @@
+{
+  "n_usable_sampled": 600,
+  "n_doomed_sampled": 300,
+  "radau_capped": 0,
+  "usable_pairs_compared": 600,
+  "diff_km_quantiles": {
+    "0.5": 1.3258524784411368e-08,
+    "0.9": 5.490362513186827e-06,
+    "0.99": 0.00011505538257061408,
+    "1.0": 0.0030795661707809867
+  },
+  "f0_ref_threshold_km": 10.0,
+  "n_f0_ref": 0,
+  "frac_within_1km": 1.0,
+  "usable_orbits_where_radau_disagrees_on_outcome": 0,
+  "doomed_orbits_where_radau_reaches_horizon": 0,
+  "doomed_event_agreement": 1.0,
+  "doomed_t_end_abs_diff_median": 1.2247147740396258e-15
+}

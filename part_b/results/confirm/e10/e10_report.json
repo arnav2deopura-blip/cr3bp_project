@@ -1,0 +1,82 @@
+{
+  "rules": {
+    "rk4": {
+      "a": -1.706875428259413,
+      "b": 0.5596824528232877
+    },
+    "leapfrog": {
+      "a": -2.3129125963386206,
+      "b": 0.6854153051486236
+    }
+  },
+  "scales": {
+    "rk4": 0.25,
+    "leapfrog": 0.25
+  },
+  "n": 14161,
+  "physics_violation_rate": 0.03304851352305628,
+  "ml_violation_rate": 0.03855659911023233,
+  "median_int_cost_physics": 12360.0,
+  "median_int_cost_ml": 1400.0,
+  "median_total_cost_physics": 12361.0,
+  "median_total_cost_ml": 2529.0,
+  "median_ratio_physics_int_over_ml_int_both_ok": 12.048223350253807,
+  "physics_total_cheaper_than_RK45_spec": 0.0,
+  "physics_int_cheaper_than_RK45_spec": 0.0,
+  "ml_int_cheaper_than_RK45_spec": 0.0027175908923980905,
+  "physics_total_cheaper_than_RK45_cal": 0.0,
+  "physics_int_cheaper_than_RK45_cal": 0.0,
+  "ml_int_cheaper_than_RK45_cal": 0.2834373852368711,
+  "break_even": {
+    "RK45_spec": {
+      "share_with_positive_headroom": 0.0027175908923980905,
+      "median_headroom_when_positive": 4.0,
+      "p90_headroom": -22.0,
+      "share_ml_total_cheaper_at_zero_overhead": 0.0027175908923980905,
+      "share_ml_total_cheaper_with_measured_overhead": 0.0
+    },
+    "DOP853_spec": {
+      "share_with_positive_headroom": 0.03782592728608153,
+      "median_headroom_when_positive": 6.0,
+      "p90_headroom": -18.0,
+      "share_ml_total_cheaper_at_zero_overhead": 0.03782592728608153,
+      "share_ml_total_cheaper_with_measured_overhead": 0.0
+    },
+    "RK45_cal": {
+      "share_with_positive_headroom": 0.2834373852368711,
+      "median_headroom_when_positive": 48.0,
+      "p90_headroom": 56.0,
+      "share_ml_total_cheaper_at_zero_overhead": 0.2834373852368711,
+      "share_ml_total_cheaper_with_measured_overhead": 0.0
+    },
+    "DOP853_cal": {
+      "share_with_positive_headroom": 0.17627616599338963,
+      "median_headroom_when_positive": 18.0,
+      "p90_headroom": 18.0,
+      "share_ml_total_cheaper_at_zero_overhead": 0.17627616599338963,
+      "share_ml_total_cheaper_with_measured_overhead": 0.0
+    },
+    "RK45_eqr": {
+      "share_with_positive_headroom": 0.2361366140286449,
+      "median_headroom_when_positive": 30.0,
+      "p90_headroom": 34.0,
+      "share_ml_total_cheaper_at_zero_overhead": 0.2361366140286449,
+      "share_ml_total_cheaper_with_measured_overhead": 0.0
+    },
+    "DOP853_eqr": {
+      "share_with_positive_headroom": 0.1541681968417187,
+      "median_headroom_when_positive": 18.0,
+      "p90_headroom": 14.0,
+      "share_ml_total_cheaper_at_zero_overhead": 0.1541681968417187,
+      "share_ml_total_cheaper_with_measured_overhead": 0.0
+    }
+  },
+  "prediction_cost_evals_equiv_repeats": [
+    1180.120789255513,
+    1221.2521041286684,
+    1311.561425965843,
+    1313.5133012767367,
+    1343.443117227657
+  ],
+  "prediction_cost_in_ledger": 1357.5615787261681
+}

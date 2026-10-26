@@ -1,0 +1,51 @@
+{
+  "args": {
+    "cmd": "policy",
+    "data": "data_b/cr3bp_3d_training_data_accuracy_monotone_seed23.csv",
+    "out_dir": "out_b/lock",
+    "seed": 42,
+    "tol_km": 100.0,
+    "n_jobs": 8,
+    "n_cal": 0,
+    "n_eval": 0,
+    "features": "state",
+    "quantile": 0.1,
+    "no_spec": false,
+    "guard_lock": false,
+    "c_pred_fixed": 1128.0,
+    "frozen_calibration": true,
+    "frozen_policy": "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_b/confirm/policy_20261025T231605Z",
+    "fn": "<function cmd_policy at 0x14b1a2980>"
+  },
+  "n_usable": 4034,
+  "n_train": 0,
+  "n_cal": 0,
+  "n_eval": 4034,
+  "scales": {
+    "rk4": 0.5,
+    "leapfrog": 0.5
+  },
+  "scale_chains": {},
+  "cal_policy_violation_rate": null,
+  "rtol_calibration": {},
+  "prediction_cost": {
+    "sec_per_orbit": 9.121691714972257e-05,
+    "evals_equiv": 1242.1092419390632,
+    "sec_per_rhs": 7.343711331486703e-08,
+    "n_rows": 1000
+  },
+  "c_pred_used": 1128.0,
+  "risk_ledger": {
+    "n_policy_runs": 4034,
+    "n_violations": 132,
+    "violation_rate": 0.03272186415468518,
+    "n_diverged": 4,
+    "abstain_rate": 0.0,
+    "median_err_over_tol": 11.257757514460888,
+    "p90_err_over_tol": 1639.3435124987022,
+    "cvar90_err_over_tol": 8875.131458586578,
+    "max_err_over_tol": 24229.14037650947,
+    "catastrophic_share": 0.515625
+  },
+  "wall_seconds": 155.48826098442078
+}

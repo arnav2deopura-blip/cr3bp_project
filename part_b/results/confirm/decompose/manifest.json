@@ -1,0 +1,21 @@
+{
+  "command": "decompose",
+  "utc": "20261025T232735Z",
+  "args": {
+    "cmd": "decompose",
+    "ledger": "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_b/confirm/policy_20261025T231605Z/ledger.csv",
+    "out_dir": "out_b/confirm",
+    "tol_km": 100.0,
+    "fn": "<function cmd_decompose at 0x148356ca0>"
+  },
+  "git_commit": "4459ccc30c8865a71e4a506c7aebf1a47c9d4935",
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "argv": [
+    "run_failure_study_3d.py",
+    "decompose",
+    "--ledger",
+    "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_b/confirm/policy_20261025T231605Z/ledger.csv",
+    "--out_dir",
+    "out_b/confirm"
+  ]
+}
