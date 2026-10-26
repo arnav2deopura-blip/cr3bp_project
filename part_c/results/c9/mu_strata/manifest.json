@@ -1,0 +1,31 @@
+{
+  "command": "mu_strata",
+  "utc": "20261026T215501Z",
+  "args": {
+    "cmd": "mu_strata",
+    "runs": [
+      "1e-06=part_b/results/exploratory/mu_dial/policy_mu1e-06",
+      "0.0001=part_b/results/exploratory/mu_dial/policy_mu0.0001",
+      "0.001=part_b/results/exploratory/mu_dial/policy_mu0.001",
+      "0.01215058535=part_b/results/exploratory/mu_dial/policy_mu0.01215058535",
+      "0.05=part_b/results/exploratory/mu_dial/policy_mu0.05"
+    ],
+    "comp": "RK45_spec",
+    "out_dir": "out_c/mu_strata",
+    "fn": "<function cmd_mu_strata at 0x16ce344a0>"
+  },
+  "git_commit": "44cb1e917ac5a82a8bd7082800940aca50306237",
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "argv": [
+    "run_part_c_3d.py",
+    "mu_strata",
+    "--runs",
+    "1e-06=part_b/results/exploratory/mu_dial/policy_mu1e-06",
+    "0.0001=part_b/results/exploratory/mu_dial/policy_mu0.0001",
+    "0.001=part_b/results/exploratory/mu_dial/policy_mu0.001",
+    "0.01215058535=part_b/results/exploratory/mu_dial/policy_mu0.01215058535",
+    "0.05=part_b/results/exploratory/mu_dial/policy_mu0.05",
+    "--out_dir",
+    "out_c/mu_strata"
+  ]
+}

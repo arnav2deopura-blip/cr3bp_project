@@ -90,3 +90,88 @@ def generate(mu, n, base_seed, out_csv, n_jobs=8, tol_km=POSITION_TOL_KM):
     with open(out_csv.replace(".csv", "_metadata.json"), "w") as f:
         json.dump(meta, f, indent=2)
     return df
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Part C Track 4.1: the dial without the confound between mu and how close the orbits come to the secondary
+# ---------------------------------------------------------------------------------------------------------------------
+
+HILL_BAND_EDGES = (0.0, 1.0, 3.0, 10.0, np.inf)
+HILL_BAND_LABELS = ("<1", "1-3", "3-10", ">10")
+
+
+def hill_band(min_r2, mu):
+    """Closest approach to the secondary in Hill radii, banded (plan 4.1.1)."""
+    x = np.asarray(min_r2, dtype=float) / hill_radius(mu)
+    return pd.cut(x, bins=list(HILL_BAND_EDGES), labels=list(HILL_BAND_LABELS), right=False).astype(object)
+
+
+def stratify_by_hill(led, mu, comp="RK45_spec", min_n=50, n_boot=1000):
+    """Per closest-approach band: n, share where a perfect fixed step is cheaper, median paradigm gap and integration-only ML gap (dex) with
+    bootstrap intervals, violation rate. A mu effect WITHIN bands is evidence of mu itself; a difference only BETWEEN bands means the dial measured
+    encounter depth."""
+    from .audit_3d import clopper_pearson
+    from .failure_study_3d import bootstrap_ci
+    d = led.copy()
+    d["band"] = hill_band(d["min_r2"], mu)
+    rows = []
+    for b in HILL_BAND_LABELS:
+        g = d[d["band"] == b]
+        if len(g) < min_n:
+            rows.append({"mu": mu, "band": b, "n": int(len(g))})
+            continue
+        h = g[g[f"{comp}_nfev"].notna() & g["C_fix_star"].notna()]
+        gap = np.log10(h["C_fix_star"] / h[f"{comp}_nfev"])
+        k = int((h["C_fix_star"] < h[f"{comp}_nfev"]).sum())
+        ml = g[g["ml_ok"].fillna(False).astype(bool) & g["ml_evals"].notna() & g[f"{comp}_nfev"].notna()]
+        mgap = np.log10(ml["ml_evals"] / ml[f"{comp}_nfev"])
+        nv = int(g["violation"].sum())
+        nh = int(g["has_choice"].sum())
+        rows.append({"mu": mu, "band": b, "n": int(len(g)), "fixed_cheaper_share": k / max(len(h), 1), "fixed_cheaper_ci95": clopper_pearson(k, len(h)),
+                     "paradigm_gap_median": bootstrap_ci(gap, n_boot=n_boot), "ml_int_gap_median": bootstrap_ci(mgap, n_boot=n_boot),
+                     "violation_rate": nv / max(nh, 1), "violation_ci95": clopper_pearson(nv, nh)})
+    return pd.DataFrame(rows)
+
+
+def matched_subsample(values_by_mu, target_edges=None, seed=0, min_per_bin=30):
+    """Matched resampling (plan 4.1.2). values_by_mu: {mu: array of log10(min_r2 / r_H)}. The common target histogram is the pooled histogram
+    restricted to bins that EVERY system populates (>= min_per_bin orbits); each mu is subsampled (without replacement, probability proportional
+    to target / own density per bin, scaled so the largest ratio is 1) so the bin shares match the target. Returns {mu: boolean mask} and
+    the target shares per bin."""
+    rng = np.random.RandomState(seed)
+    allv = np.concatenate([np.asarray(v) for v in values_by_mu.values()])
+    edges = np.asarray(target_edges) if target_edges is not None else np.linspace(np.floor(allv.min()), np.ceil(allv.max()), 13)
+    counts = {mu: np.histogram(v, bins=edges)[0] for mu, v in values_by_mu.items()}
+    populated = np.all([c >= min_per_bin for c in counts.values()], axis=0)
+    pooled = sum(counts.values()).astype(float)
+    target = np.where(populated, pooled, 0.0)
+    target = target / target.sum()
+    masks = {}
+    for mu, v in values_by_mu.items():
+        v = np.asarray(v)
+        c = counts[mu].astype(float)
+        own = c / c.sum()
+        ratio = np.where(populated & (own > 0), target / np.where(own > 0, own, 1.0), 0.0)
+        ratio = ratio / ratio.max()
+        b = np.clip(np.digitize(v, edges) - 1, 0, len(edges) - 2)
+        masks[mu] = rng.rand(len(v)) < ratio[b]
+    return masks, {"edges": edges.tolist(), "target_share": target.tolist(), "populated": populated.tolist()}
+
+
+def dimensionless_features(df, mu):
+    """Inputs that do not carry the system's units (plan 4.1.4): r1 (DU); r2 / r_H; the velocity components over the local circular speed of the
+    nearer body; T (TU, universal in the CR3BP); (C - C_L1) / (C_L1 - C_L3). Returns a DataFrame of those columns."""
+    from .physics_3d import jacobi_constant_3d, libration_point_location
+    x1, _ = libration_point_location(mu, "L1")
+    x3, _ = libration_point_location(mu, "L3")
+    c_l1 = jacobi_constant_3d([x1, 0, 0, 0, 0, 0], mu)
+    c_l3 = jacobi_constant_3d([x3, 0, 0, 0, 0, 0], mu)
+    r1 = np.maximum(np.sqrt((df["x"] + mu) ** 2 + df["y"] ** 2 + df["z"] ** 2), 1e-9)
+    r2 = np.maximum(np.sqrt((df["x"] + mu - 1.0) ** 2 + df["y"] ** 2 + df["z"] ** 2), 1e-9)
+    near2 = (r2 / hill_radius(mu)) < (r1 / 1.0)
+    gm = np.where(near2, mu, 1.0 - mu)
+    r = np.where(near2, r2, r1)
+    vc = np.sqrt(gm / r)
+    out = pd.DataFrame({"r1": r1, "r2_over_rH": r2 / hill_radius(mu), "vx_over_vc": df["vx"] / vc, "vy_over_vc": df["vy"] / vc, "vz_over_vc": df["vz"] / vc,
+                        "T": df["sim_time"], "c_rel": (df["jacobi_3d"] - c_l1) / (c_l1 - c_l3), "near_secondary": near2.astype(float)})
+    return out

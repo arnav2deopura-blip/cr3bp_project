@@ -445,3 +445,62 @@ def measure_linear_cost(policy, states, T, n_policy=100_000, n_rhs=1_000_000, re
     rhs_ns, rhs_rng = _median_ns(lambda n: _loop_rhs(states, n, policy.mu), n_rhs, repeats)
     return {"policy_ns_per_call": pol_ns, "policy_ns_range": pol_rng, "rhs_ns_per_call": rhs_ns, "rhs_ns_range": rhs_rng,
             "rhs_equiv": pol_ns / rhs_ns, "rhs_equiv_range": [pol_rng[0] / rhs_rng[1], pol_rng[1] / rhs_rng[0]], "repeats": repeats}
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# M0 single: one linear quantile regressor (RK4 alone, or the Sundman-time step)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def fit_linear_single(train, dt_col, success_col, quantile=0.1, mu=MU, alpha=0.0, max_rows=30000, seed=0, sample_weight=None):
+    """One linear quantile regressor (HiGHS) on log10 of `dt_col` over the 33 engineered features, rows with success_col == 1."""
+    from sklearn.linear_model import QuantileRegressor
+    c_l1 = c_l1_for_mu(mu)
+    ok = train[success_col].to_numpy() == 1
+    tr = train[ok]
+    w = None if sample_weight is None else np.asarray(sample_weight)[ok]
+    if max_rows and len(tr) > max_rows:
+        idx = np.random.RandomState(seed).choice(len(tr), max_rows, replace=False)
+        tr = tr.iloc[idx]
+        w = None if w is None else w[idx]
+    X = linear_features_batch(tr[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(dtype=np.float64), tr["sim_time"].to_numpy(dtype=np.float64), mu, c_l1)
+    m, sd = X.mean(axis=0), X.std(axis=0) + 1e-12
+    reg = QuantileRegressor(quantile=quantile, alpha=alpha, solver="highs").fit((X - m) / sd, np.log10(tr[dt_col].to_numpy(dtype=float)), sample_weight=w)
+    return {"mu": mu, "c_l1": c_l1, "w": np.ascontiguousarray(reg.coef_ / sd, dtype=np.float64), "b": float(reg.intercept_ - np.dot(reg.coef_, m / sd))}
+
+
+def predict_linear_single(lin, df):
+    X = linear_features_batch(df[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(dtype=np.float64), df["sim_time"].to_numpy(dtype=np.float64), lin["mu"], lin["c_l1"])
+    return X @ lin["w"] + lin["b"]
+
+
+@njit(cache=True)
+def policy_linear_single_one(st, T, mu, c_l1, w, b, xbuf):
+    linear_features_row(st, T, mu, c_l1, xbuf)
+    s = b
+    for j in range(33):
+        s += w[j] * xbuf[j]
+    return 0, 10.0 ** s
+
+
+@njit(cache=True)
+def _loop_linear_single(states, T, reps, mu, c_l1, w, b):
+    n = states.shape[0]
+    xbuf = np.zeros(33)
+    acc = 0.0
+    for r in range(reps):
+        i = r % n
+        c, d = policy_linear_single_one(states[i], T[i], mu, c_l1, w, b, xbuf)
+        acc += d + c
+    return acc
+
+
+def measure_linear_single_cost(lin, states, T, n_policy=100_000, n_rhs=1_000_000, repeats=5):
+    states = np.ascontiguousarray(states[:1000], dtype=np.float64)
+    T = np.ascontiguousarray(T[:1000], dtype=np.float64)
+    a = (lin["mu"], lin["c_l1"], lin["w"], lin["b"])
+    _loop_linear_single(states, T, 10, *a)
+    _loop_rhs(states, 10, lin["mu"])
+    pol_ns, pol_rng = _median_ns(lambda n: _loop_linear_single(states, T, n, *a), n_policy, repeats)
+    rhs_ns, rhs_rng = _median_ns(lambda n: _loop_rhs(states, n, lin["mu"]), n_rhs, repeats)
+    return {"policy_ns_per_call": pol_ns, "rhs_ns_per_call": rhs_ns, "rhs_equiv": pol_ns / rhs_ns,
+            "rhs_equiv_range": [pol_rng[0] / rhs_rng[1], pol_rng[1] / rhs_rng[0]], "repeats": repeats}

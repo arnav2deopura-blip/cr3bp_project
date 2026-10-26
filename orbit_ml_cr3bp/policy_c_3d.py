@@ -37,6 +37,8 @@ LOG_FLOOR_CENSORED = math.log10(0.5 * DT_MIN)     # label given to rows where no
 
 # 0.1 * 2^(k/8), k = 0..26 (0.1 ... 0.951), then 1.0: 28 values, tested safest-first (plan 2.3a)
 FIXED_SEQ_GRID = tuple(float(0.1 * 2.0 ** (k / 8.0)) for k in range(27)) + (1.0,)
+# one global fictitious step (the non-ML control of C5): 0.01 ... 2.56 in steps of 2^(1/4), tested safest-first like the scale grid
+GLOBAL_DS_GRID = tuple(float(0.01 * 2.0 ** (j / 4.0)) for j in range(33))
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -93,6 +95,11 @@ def fit_policy_c(train, features, quantile=pb.PINNED_QUANTILE, seed=42, lf_gate=
 def predict_raw_c(models, df):
     """Unthresholded predictions: log10 dt per candidate, feasibility score per candidate (probability, or the log prediction for
     the censored gate, or +inf where no gate applies)."""
+    if "linear" in models:             # M0: one linear quantile regressor per candidate (compiled_model_3d.fit_linear_single)
+        from .compiled_model_3d import predict_linear_single
+        return {k: {"logdt": predict_linear_single(models["linear"][k], df), "score": np.full(len(df), np.inf)} for k in models["candidates"]}
+    if models.get("constant"):          # the non-ML control: every orbit gets raw step 1, so the certified scale IS the one global step
+        return {k: {"logdt": np.zeros(len(df)), "score": np.full(len(df), np.inf)} for k in models["candidates"]}
     X = df[models["features"]].to_numpy(dtype=float)
     off = X[:, models["features"].index("osc_logtau_hat")] if models.get("structured") else 0.0
     out = {}

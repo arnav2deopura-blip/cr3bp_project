@@ -667,11 +667,16 @@ def load_c_frame(paths, mu=MU, enriched=None):
 
 
 def _fit_for_config(cfg, tr, w, feats):
-    """-> (kind, object) with .pred(df) -> raw dict. kinds: 'trees' (models dict) or 'linear' (compiled linear policy)."""
+    """-> (kind, models dict) usable by policy_c_3d.predict_raw_c. kinds: 'trees' (HGB) or 'linear' (M0)."""
     from orbit_ml_cr3bp import policy_c_3d as pc
     from orbit_ml_cr3bp import compiled_model_3d as cm
     fam = cfg["family"]
     cands = ("rk4s",) if fam == "sundman" else (("rk4",) if cfg.get("rk4_only") else ("rk4", "leapfrog"))
+    if cfg["cls"] == "linear":
+        lin = {k: cm.fit_linear_single(tr, f"dt_{k}", f"{k}_success", cfg["q"], MU, max_rows=cfg.get("max_rows", 30000), seed=cfg.get("seed", 42),
+                                       sample_weight=w) for k in cands}
+        return "linear", {"features": ["x", "y", "z", "vx", "vy", "vz", "sim_time"], "candidates": cands, "linear": lin, "lf_gate": "none",
+                          "structured": False, "quantile": cfg["q"]}
     if cfg["cls"] == "trees":
         size = {"reg_kw": {"max_iter": cfg["n_iter"], "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]},
                 "clf_kw": {"max_iter": max(10, cfg["n_iter"] // 2), "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]}}
@@ -757,6 +762,29 @@ def cmd_freeze_policy(a):
     feats = _config_features(cfg)
     fam = cfg["family"]
     cands = ("rk4s",) if fam == "sundman" else (("rk4",) if cfg.get("rk4_only") else ("rk4", "leapfrog"))
+    if cfg.get("cls") == "linear":
+        from orbit_ml_cr3bp import compiled_model_3d as cm
+        lin = {k: cm.fit_linear_single(Utr, f"dt_{k}", f"{k}_success", cfg["q"], a.mu, max_rows=cfg.get("max_rows", 30000), seed=cfg.get("seed", 42),
+                                       sample_weight=wtr) for k in cands}
+        models = {"features": ["x", "y", "z", "vx", "vy", "vz", "sim_time"], "candidates": cands, "linear": lin, "lf_gate": "none",
+                  "structured": False, "quantile": cfg["q"]}
+        spec = {"config": cfg, "gate": {"lf_gate": "none", "p_star": 0.5, "g_star": 0.0}, "features": models["features"], "candidates": list(cands),
+                "n_train_rows": int(len(Utr)), "train_files": a.train}
+        path = os.path.join(out, "policy_frozen.joblib")
+        joblib.dump({"models": models, "spec": spec}, path)
+        spec["model_file_sha256"] = proto.sha256_file(path)
+        save_json(spec, os.path.join(out, "policy_frozen_spec.json"))
+        print("wrote", out)
+        return
+    if cfg.get("cls") == "constant":      # the non-ML control: no model, no training data
+        models = {"features": [], "candidates": cands, "constant": True, "lf_gate": "none", "structured": False, "quantile": None}
+        spec = {"config": cfg, "gate": {"lf_gate": "none", "p_star": 0.5, "g_star": 0.0}, "features": [], "candidates": list(cands)}
+        path = os.path.join(out, "policy_frozen.joblib")
+        joblib.dump({"models": models, "spec": spec}, path)
+        spec["model_file_sha256"] = proto.sha256_file(path)
+        save_json(spec, os.path.join(out, "policy_frozen_spec.json"))
+        print("wrote", out)
+        return
     size = {"reg_kw": {"max_iter": cfg["n_iter"], "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]},
             "clf_kw": {"max_iter": max(10, cfg["n_iter"] // 2), "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]}}
     models = pc.fit_policy_c(Utr, feats, quantile=cfg["q"], seed=cfg.get("seed", 42), lf_gate=cfg.get("gate", "none") if "leapfrog" in cands else "none",
@@ -790,7 +818,7 @@ def deploy_and_evaluate(cfg, models, gate, cal_df, ev_df, out, a, scale_override
     pred_ev = pc.apply_gate(raw_ev, p_star=gate["p_star"], g_star=gate["g_star"], lf_gate=models["lf_gate"])
     ev_idx, ev_raw = pc.choose_unscaled(pred_ev, cands)
     guard_g = math.inf if cfg.get("guard_g") is None else float(cfg["guard_g"])
-    grid = pc.FIXED_SEQ_GRID if cfg.get("grid", "fine") == "fine" else tuple(pb.LTT_SCALE_GRID)
+    grid = {"fine": pc.FIXED_SEQ_GRID, "global_ds": pc.GLOBAL_DS_GRID}.get(cfg.get("grid", "fine"), tuple(pb.LTT_SCALE_GRID))
     rule = cfg.get("rule", "fixed_sequence")
     fallback, abstain_ev, abstain_cal = fallback_override, None, None
     cert, rtols, rtol_rep = None, rtols_override or {}, {}
@@ -866,6 +894,8 @@ def cmd_apply_policy(a):
     fz = joblib.load(a.frozen)
     models, spec = fz["models"], fz["spec"]
     cfg, gate = dict(spec["config"]), spec["gate"]
+    if models.get("constant"):
+        cfg.update({"grid": "global_ds"})
     if a.overhead is not None:
         cfg["overhead_rhs"] = a.overhead
     U, _ = load_c_frame([a.data], a.mu)
@@ -887,6 +917,93 @@ def cmd_apply_policy(a):
                "wall_seconds": time.time() - t0}, os.path.join(out, "apply_policy_report.json"))
     print(json.dumps(proto.json_safe(rep["summary"]), indent=1))
     print(f"wrote {out}  ({time.time() - t0:.0f}s)")
+
+
+def cmd_c1_resid(a):
+    """C1 inputs: |log10 raw prediction / label| of the Part C RK4 regressor and of the Part B-style state-only model refitted on the same D_train,
+    on the evaluation orbits (every usable orbit that is not a calibration row) with a valid RK4 label."""
+    import joblib
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    out = make_run_dir(a.out_dir, "c1_resid", a)
+    U, _ = load_c_frame([a.data], a.mu)
+    if a.cal_ids and os.path.exists(a.cal_ids):
+        cal = set(pd.read_csv(a.cal_ids)["row_id"])
+        U = U[~U["row_id"].isin(cal)].reset_index(drop=True)
+    U = U[U["rk4_success"] == 1].reset_index(drop=True)
+    y = np.log10(U["dt_rk4"].to_numpy(dtype=float))
+    res = {}
+    for key, path in (("partC", a.phys), ("partB_refit", a.partb)):
+        fz = joblib.load(path)
+        raw = pc.predict_raw_c(fz["models"], U)["rk4"]["logdt"]
+        res[f"abs_resid_{key}"] = np.abs(raw - y)
+        res[f"over_{key}"] = raw > y
+    df = pd.DataFrame({"row_id": U["row_id"].to_numpy(), **res})
+    df.to_csv(os.path.join(out, "c1_resid.csv"), index=False)
+    print({k: float(np.median(v)) for k, v in res.items() if k.startswith("abs")}, "n", len(df))
+    print("wrote", out)
+
+
+def cmd_mu_strata(a):
+    """Track 4.1.1: the mu dial stratified by closest approach in Hill radii, from the existing per-mu policy ledgers (no new data)."""
+    from orbit_ml_cr3bp import mu_dial_3d as md
+    out = make_run_dir(a.out_dir, "mu_strata", a)
+    frames = []
+    for spec in a.runs:
+        mu_s, path = spec.split("=", 1)
+        mu = float(mu_s)
+        f = os.path.join(path, "ledger.csv")
+        led = read_ledger(f if os.path.exists(f) else f + ".gz")
+        frames.append(md.stratify_by_hill(led, mu, comp=a.comp))
+    tab = pd.concat(frames, ignore_index=True)
+    flat = []
+    for _, r in tab.iterrows():
+        row = {"mu": r["mu"], "band": r["band"], "n": r["n"]}
+        if "paradigm_gap_median" in r and isinstance(r["paradigm_gap_median"], (list, tuple)):
+            row.update({"fixed_cheaper_share": r["fixed_cheaper_share"], "paradigm_gap": r["paradigm_gap_median"][0], "paradigm_lo": r["paradigm_gap_median"][1],
+                        "paradigm_hi": r["paradigm_gap_median"][2], "ml_int_gap": r["ml_int_gap_median"][0], "ml_lo": r["ml_int_gap_median"][1],
+                        "ml_hi": r["ml_int_gap_median"][2], "violation_rate": r["violation_rate"]})
+        flat.append(row)
+    flat = pd.DataFrame(flat)
+    flat.to_csv(os.path.join(out, "mu_strata.csv"), index=False)
+    pd.set_option("display.width", 220)
+    print(flat.round(3).to_string())
+    print("wrote", out)
+
+
+def cmd_overhead(a):
+    """Single-call cost of a frozen policy in RHS-equivalents (plan 2.1 protocol), median of --repeats. --pin writes the median into the frozen
+    spec (config.overhead_rhs) so it is the value that is hashed at the seal. Run on an IDLE machine."""
+    import joblib
+    import platform
+    import numba
+    from orbit_ml_cr3bp import compiled_model_3d as cm
+    fz = joblib.load(a.frozen)
+    models, spec = fz["models"], fz["spec"]
+    U, _ = load_c_frame([a.data], a.mu)
+    U = U.sample(min(len(U), 2000), random_state=0)
+    st, T = U[pb.STATE_COLS].to_numpy(dtype=float), U["sim_time"].to_numpy(dtype=float)
+    if "linear" in models:
+        k = models["candidates"][0]
+        c = cm.measure_linear_single_cost(models["linear"][k], st, T, repeats=a.repeats)
+        c["kind"] = "linear"
+    elif models.get("constant"):
+        c = {"rhs_equiv": 0.0, "kind": "constant"}
+    else:
+        pol = cm.CompiledHGBPolicy(models, p_star=spec["gate"]["p_star"], g_star=spec["gate"]["g_star"])
+        c = cm.measure_single_call_cost(pol, st, T, repeats=a.repeats)
+        c["kind"] = "trees"
+        c["size"] = pol.size()
+        c["batched_rhs_equiv"] = cm.batched_cost(pol, st, T) / c["rhs_ns_per_call"]
+    c["machine"] = {"platform": platform.platform(), "python": platform.python_version(), "numba": numba.__version__,
+                    "load_average_1min": os.getloadavg()[0], "cpu_count": os.cpu_count()}
+    print(json.dumps(proto.json_safe(c), indent=1))
+    if a.pin:
+        spec["config"]["overhead_rhs"] = float(c["rhs_equiv"])
+        spec["overhead_measurement"] = proto.json_safe(c)
+        joblib.dump({"models": models, "spec": spec}, a.frozen)
+        spec["model_file_sha256"] = proto.sha256_file(a.frozen)
+        save_json(spec, os.path.join(os.path.dirname(a.frozen), "policy_frozen_spec.json"))
+        print("pinned overhead_rhs =", spec["config"]["overhead_rhs"])
 
 
 def json_brief(cond):
@@ -943,6 +1060,29 @@ def main():
     sp.add_argument("--go_share", type=float, default=0.40)
     sp.add_argument("--go_rho_drop", type=float, default=0.30)
     sp.set_defaults(fn=cmd_sundman_pilot)
+
+    sp = sub.add_parser("mu_strata")
+    sp.add_argument("--runs", nargs="+", required=True, help="mu=policy_dir (a folder with ledger.csv), one per mu")
+    sp.add_argument("--comp", default="RK45_spec")
+    sp.add_argument("--out_dir", default="out_c")
+    sp.set_defaults(fn=cmd_mu_strata)
+
+    sp = sub.add_parser("overhead")
+    sp.add_argument("--frozen", required=True)
+    sp.add_argument("--data", required=True, help="a v5 CSV whose states are used for the timing loop")
+    sp.add_argument("--repeats", type=int, default=5)
+    sp.add_argument("--pin", action="store_true")
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.set_defaults(fn=cmd_overhead)
+
+    sp = sub.add_parser("c1_resid")
+    sp.add_argument("--data", required=True)
+    sp.add_argument("--phys", required=True)
+    sp.add_argument("--partb", required=True)
+    sp.add_argument("--cal_ids", default=None)
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.set_defaults(fn=cmd_c1_resid)
 
     sp = sub.add_parser("freeze_policy")
     sp.add_argument("--config", required=True)

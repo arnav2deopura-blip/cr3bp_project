@@ -614,6 +614,79 @@ def test_doomed_event_type_time_and_agreement_rules_on_a_synthetic_collision():
     assert f2[0] and anyf[0]
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# C8: the confirmatory tests
+# ---------------------------------------------------------------------------------------------------------------------
+
+def test_confirm_c_tests_have_the_right_size_and_power():
+    from orbit_ml_cr3bp import confirm_c_3d as cc
+    rng = np.random.RandomState(0)
+    n = 6000
+    b = np.abs(rng.normal(0.3, 0.25, n))
+    # C1: no difference -> p large; a 0.04 dex improvement -> p small
+    assert cc.c1_prediction(b, b + rng.normal(0, 0.05, n), n_boot=500)["p"] > 0.05
+    assert cc.c1_prediction(b - 0.04, b, n_boot=500)["p"] < 0.01
+    # C2 / C4: binomial on win shares
+    def led(share, n=8000, seed=1):
+        r = np.random.RandomState(seed)
+        win = r.rand(n) < share
+        return pd.DataFrame({"meets_tol": True, "C_ml_tot": np.where(win, 90.0, 110.0), "RK45_eqr_nfev": 100.0})
+    assert cc.c2_policy_share(led(0.50))["p"] > 0.05
+    assert cc.c2_policy_share(led(0.53))["p"] < 0.01
+    assert cc.c2_policy_share(led(0.49))["p"] > 0.5
+    lv = led(0.7); lv.loc[:1999, "meets_tol"] = False            # violations are not wins
+    assert abs(cc.c2_policy_share(lv)["share"] - 0.7 * 0.75) < 0.03
+    # C3: oracle share and the drop of the Spearman
+    m = 4000
+    ld = rng.uniform(0, 2, m)
+    c_ad = np.exp(rng.normal(5, 0.4, m))
+    c_fix = c_ad * 10 ** (0.9 * ld - 0.3 + rng.normal(0, 0.15, m))
+    c_s = c_ad * 10 ** (rng.normal(-0.05, 0.2, m))
+    M = pd.DataFrame({"C_s_star": c_s, "C_fix_star": c_fix, "RK45_spec_nfev": c_ad, "log_delta_phys": ld})
+    r3 = cc.c3_sundman_paradigm(M, n_boot=300)
+    assert r3["p"] < 0.01 and r3["b_rho"]["rho_fixed_physical"] > 0.8 and abs(r3["b_rho"]["rho_sundman"]) < 0.1
+    M["C_s_star"] = c_ad * 10 ** (rng.normal(0.02, 0.2, m))      # not cheaper than the comparator on most orbits -> (a) fails -> p large
+    assert cc.c3_sundman_paradigm(M, n_boot=300)["p"] > 0.05
+    # C5: paired saving
+    base = np.exp(rng.normal(5.5, 0.5, 5000))
+    lg = pd.DataFrame({"row_id": np.arange(5000), "meets_tol": True, "C_ml_tot": base})
+    lm = pd.DataFrame({"row_id": np.arange(5000), "meets_tol": True, "C_ml_tot": base * 10 ** rng.normal(-0.2, 0.15, 5000)})
+    assert cc.c5_ml_vs_global(lm, lg, n_boot=500)["p"] < 0.01
+    lm2 = pd.DataFrame({"row_id": np.arange(5000), "meets_tol": True, "C_ml_tot": base * 10 ** rng.normal(0.0, 0.15, 5000)})
+    assert cc.c5_ml_vs_global(lm2, lg, n_boot=500)["p"] > 0.05
+    # Holm
+    h = cc.holm({"C1": 0.001, "C2": 0.2, "C3": 0.02, "C4": 0.0005, "C5": 0.04})
+    assert h["C4"]["reject"] and h["C1"]["reject"] and not h["C2"]["reject"]
+    assert abs(h["C3"]["p_holm"] - 0.06) < 1e-12 and not h["C3"]["reject"]
+
+
+def test_constant_policy_makes_the_certified_scale_the_global_step():
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    models = {"features": [], "candidates": ("rk4s",), "constant": True, "lf_gate": "none", "structured": False}
+    df = pd.DataFrame(index=range(7))
+    raw = pc.predict_raw_c(models, df)
+    pred = pc.apply_gate(raw)
+    idx, r = pc.choose_unscaled(pred, ("rk4s",))
+    assert (idx == 0).all() and np.allclose(r, 1.0)
+    assert len(pc.GLOBAL_DS_GRID) == 33 and abs(pc.GLOBAL_DS_GRID[0] - 0.01) < 1e-15 and abs(pc.GLOBAL_DS_GRID[-1] - 2.56) < 1e-12
+
+
+def test_linear_single_policy_matches_its_python_form_and_is_a_quantile():
+    from orbit_ml_cr3bp import compiled_model_3d as cm
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    df = _random_policy_frame(3000, 15)
+    lin = cm.fit_linear_single(df.iloc[:2500], "dt_rk4s", "rk4s_success", 0.1, max_rows=0)
+    models = {"features": ["x"], "candidates": ("rk4s",), "linear": {"rk4s": lin}, "lf_gate": "none", "structured": False}
+    te = df.iloc[2500:].reset_index(drop=True)
+    raw = pc.predict_raw_c(models, te)["rk4s"]["logdt"]
+    st, T = te[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(), te["sim_time"].to_numpy()
+    for i in range(0, 500, 53):
+        c, d = cm.policy_linear_single_one(st[i], T[i], lin["mu"], lin["c_l1"], lin["w"], lin["b"], np.zeros(33))
+        assert c == 0 and abs(np.log10(d) - raw[i]) < 1e-9
+    over = float((cm.predict_linear_single(lin, df.iloc[:2500]) > np.log10(df.iloc[:2500]["dt_rk4s"].to_numpy())).mean())
+    assert 0.05 < over < 0.2
+
+
 def main():
     names = [k for k in sorted(globals()) if k.startswith("test_")]
     for k in names:
