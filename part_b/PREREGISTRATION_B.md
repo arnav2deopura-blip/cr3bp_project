@@ -147,3 +147,34 @@ dated entry below.
   chart: sample sizes moved into the axis labels; information-floor chart: the key moved below the panels, shared y range; the dataset name in titles became a `--label` argument after the first confirm render wrongly said D_explore). It reads run
   outputs and computes nothing that enters a test, so `freeze_b.py check` now reports exactly this file as changed; no confirmatory step
   remains to be guarded. The figures in `part_b/figures/` were regenerated with the edited file.
+- 2026-10-26, after the confirmatory run and before any E3c or mu-dial result exists (written first, committed first): two EXPLORATORY studies
+  of the pieces the plan listed and Section 7 deferred. They add no test to the sealed Holm family and change nothing above "## Deviations".
+  All new code (`lookahead_3d.py`, `mu_dial_3d.py`, their commands) is outside the seal; the confirmatory steps are complete and logged.
+  **E3c, lookahead (HB3).** Run on D_explore only, with the same splits as the D_explore policy run (11,170 train / 2,000 calibration / 3,000
+  evaluation rows). For f = 0.05, 0.1, 0.25, 0.5, 1.0 an RK45 solve (rtol 1e-6, atol 1e-9, capped at 300,000 right-hand-side evaluations;
+  capped rows get NaN features and the cap as cost) integrates the first fraction f of the horizon; its `nfev` is the lookahead cost.
+  Features from the accepted steps: minimum r1, minimum r2, minimum tau, maximum 1/tau, and f T max(1/tau)/integral(1/tau) dt. Partial FTLE
+  is omitted (a variational integration, and it leaks the outcome). Per f: a q = 0.1 HistGradientBoosting regressor on log10 d*_RK4 with the
+  state features plus the lookahead features (f = 0 is the state-only model), RK4 only; its scale certified on the 2,000 calibration rows with
+  the sealed rule (alpha 0.05, delta 0.1, 18-value grid); evaluation as in the policy run. Reported with 95 % intervals: median and 90th
+  percentile |log10 prediction/label|, pinball loss, over-prediction rate, certified scale, realized violation rate, median integration and
+  lookahead cost, the share of orbits where lookahead + integration is cheaper than RK45-spec, RK45-cal and DOP853-cal (with the model cost
+  excluded, and with the pinned 1,128 added), overall and by Hill regime and min-r2 band. Descriptive reading: the smallest f whose median
+  error is within 25 % of the f = 1 error (f_match), and the share of orbits that win at f_match. Expectation stated now: the error falls with f;
+  lookahead plus integration is not cheaper than adaptive-spec on most orbits at any f, because the integration cost alone already exceeds it.
+  **mu dial (E7).** New datasets, seeds 31-35, 8,000 orbits each, mu = 1e-6, 1e-4, 1e-3, 0.01215058535, 0.05 (one seed per mu in that order),
+  label pipeline v4, tolerance 100 km = 2.6015e-4 DU at every mu, horizons log-uniform 1-20 TU, Earth-Moon length unit. Same mixture as v4
+  (lagrange 0.55, wide 0.20, near-secondary 0.25) with mu-scaled geometry, r_H = (mu/3)^(1/3), v_H = sqrt(mu/r_H): L1/L2 offsets a = 0.628 r_H per
+  position component and velocity components uniform +-0.543 v_H; L3/L4/L5 and "wide" unchanged (primary-dominated); near-secondary r2
+  log-uniform on [0.034 r_H, r_H] with velocity components uniform +-2.17 v_H. The constants are the Earth-Moon values of the old box
+  (0.1/r_H, 0.15/v_H, 0.6/v_H, 1.2 R_moon/r_H), so the mu = 0.01215 member reproduces the old sampling up to the near-secondary upper bound
+  (0.15 DU became r_H = 0.159 DU). Body radii: primary 6,371 km at every mu; secondary radius scales with r_H, equal to the Moon's at Earth-Moon
+  (`SYSTEMS` entries added for the four other mu; Earth-Moon and Sun-Earth behaviour is unchanged). Per mu: usable orbits split 3,000 train /
+  1,000 calibration / the rest evaluation (seed 42), the pinned state-only hurdle model fitted on that mu's training rows, scales and adaptive
+  tolerances certified on that mu's calibration rows, the same ledger and decomposition. Reported with 95 % intervals per mu: share of orbits
+  where a perfect fixed step is cheaper than RK45-spec, median paradigm gap, OLS slope of the gap on log10 delta_phys, mean decomposition terms,
+  integration-only ML gap, certified scale, violation rate. Descriptive only: no hypothesis test, and with five mu the monotonicity is
+  reported as the order of the five medians. Expectation (the plan's HB6): both gaps fall as mu falls. Alternative stated now, so it cannot be
+  claimed afterwards: since the paradigm gap tracks delta_phys (T1), it can move with mu only through delta_phys. Not done: the cross-mu transfer
+  test with dimensionless features (Issue 10) and any claim about Sun-Earth.
+
