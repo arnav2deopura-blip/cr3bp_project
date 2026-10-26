@@ -91,3 +91,10 @@ Process notes: (i) a background job driven from a stdin script left a stray proc
 12 minutes; found via `ps`, stopped; no result was affected (all affected runs were reruns of deterministic steps). (ii) The first policy run
 used the half-decade rtol grid, which made the equal-risk rtol equal to the certified one; refined and rerun (deviation 6). (iii) One
 combined shell command with `rm` and `sh -c` was blocked by a safety check and was not re-issued; the stale scratch folder it targeted was left alone.
+
+## 5. Exploratory follow-ups (2026-10-26): E3c lookahead and the mu dial
+Pre-registered first (git 5d24baf), run, results in `part_b/RESULTS_E3C_MU_DIAL.md`. E3c: median error 0.32 -> 0.07 dex as the fraction of the horizon integrated first goes 0 -> 1; total cost
+1,539 -> 635 evaluations against 134 (RK45-spec) and 380 (RK45-cal); 8 of 9 groups need f = 1 to match the full-trajectory error. Mu dial (seeds 31-35, 8,000 orbits each): paradigm gap
++0.06 / +0.10 / +0.11 / +0.17 / +0.21 dex and integration-only ML gap +0.50 / +0.55 / +0.70 / +1.20 / +1.35 dex for mu = 1e-6 / 1e-4 / 1e-3 / 0.01215 / 0.05; violations 2.7-3.7 % at every mu.
+Caveat to keep: Hill-scaled sampling leaves most small-mu orbits primary-dominated (median closest approach 54 r_H at 1e-6, 1.5 r_H at 0.05).
+

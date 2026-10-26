@@ -117,3 +117,9 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
   (first seal `FREEZE_B.v1.json`), run log `confirm_log_b.jsonl`, data hashes `part_b/DATA_HASHES_B.json`.
 - Datasets (label_pipeline_version 4, in untracked `data_b/`): D_explore seed 21, D_confirm seed 22 (20,000 each), D_lock seed 23 (5,000), horizon sweeps.
 - Part A (sealed 2026-10-23) is untouched; `freeze_snapshot.py check` reports the tree as changed relative to it, as expected.
+
+# 2026-10-26: Part B exploratory follow-ups (E3c lookahead, mu dial); see part_b/RESULTS_E3C_MU_DIAL.md
+- New: `orbit_ml_cr3bp/lookahead_3d.py`, `orbit_ml_cr3bp/mu_dial_3d.py`, `make_mu_dial_b.py`; `config.py` gains `SYSTEMS` entries for mu = 1e-6, 1e-4, 1e-3, 0.05 (secondary radius scaled with its Hill
+  radius; Earth-Moon and Sun-Earth unchanged); `run_failure_study_3d.py policy` gains `--mu` and `--n_train`; `run_failure_experiments_3d.py` gains `e3c_features`, `e3c`, `mu_dial`.
+- Datasets (untracked, `data_b/mu_dial/`, hashes in `part_b/results/exploratory/mu_dial/dataset_hashes.json`): seeds 31-35.
+

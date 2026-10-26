@@ -100,9 +100,9 @@ Mean cost-gap decomposition against RK45-spec over the 13,540 orbits that met th
 
 ## 6. Not done (and why it matters)
 
-HB3 (how much of the trajectory must be seen: E3c lookahead) was not run; the E3b upper bound and the arithmetic that any lookahead adds cost to a policy that already
-exceeds the adaptive cost on 71-99.7 % of orbits are indirect only. The mu dial of HB6 (E7) needs mu-scaled sampling and dimensionless features; cross-mu transfer is
-therefore still confounded as Part A noted. E8 (periodic families, halo/NRHO out-of-distribution behaviour, Issue 12) and E12 (2D control) were deferred.
+HB3 (E3c lookahead) and the mu dial (E7) were run afterwards as pre-registered EXPLORATORY studies: see `part_b/RESULTS_E3C_MU_DIAL.md` (seeing the trajectory buys accuracy but not net cost; both gaps
+fall as mu falls, the violation rate does not). Neither is in the confirmatory family. Cross-mu transfer with dimensionless features (Issue 10) is still not tested, so Part A's transfer failure is still
+confounded. E8 (periodic families, halo/NRHO out-of-distribution behaviour, Issue 12) and E12 (2D control) were deferred.
 Plan issues 5 (the deployed policy is still certified per integrator, not end to end), 11-14 and 16-18 were not addressed in code. Issue 4 is covered by the pinball/coverage
 reporting in E4/E5, issue 9 by the physics baseline in E10, issues 3 and 14 only partly (E1 validates the reference; the endpoint-only error definition is unchanged), and issue 10 not at all (no mu dial). The one-time `RESULTS_REPORT.md.bak` duplicate was left alone.
 

@@ -1,0 +1,399 @@
+{
+  "args": {
+    "cmd": "policy",
+    "data": "data_b/mu_dial/mu_0.001_seed33.csv",
+    "out_dir": "out_b/mu_dial/policy_mu0.001",
+    "seed": 42,
+    "tol_km": 100.0,
+    "n_jobs": 6,
+    "n_cal": 1000,
+    "n_eval": 0,
+    "features": "state",
+    "quantile": 0.1,
+    "no_spec": false,
+    "guard_lock": false,
+    "mu": 0.001,
+    "n_train": 3000,
+    "c_pred_fixed": 1128.0,
+    "frozen_calibration": false,
+    "frozen_policy": null,
+    "fn": "<function cmd_policy at 0x1334eea20>"
+  },
+  "n_usable": 6595,
+  "n_train": 3000,
+  "n_cal": 1000,
+  "n_eval": 2595,
+  "scales": {
+    "rk4": 0.4,
+    "leapfrog": 0.3
+  },
+  "scale_chains": {
+    "rk4": [
+      {
+        "scale": 1.0,
+        "n": 1000,
+        "violations": 147,
+        "violation_rate": 0.147,
+        "p_value": 1.0,
+        "certified": false
+      },
+      {
+        "scale": 0.8,
+        "n": 1000,
+        "violations": 74,
+        "violation_rate": 0.074,
+        "p_value": 0.9995886565582409,
+        "certified": false
+      },
+      {
+        "scale": 0.6,
+        "n": 1000,
+        "violations": 46,
+        "violation_rate": 0.046,
+        "p_value": 0.3115349498801499,
+        "certified": false
+      },
+      {
+        "scale": 0.5,
+        "n": 1000,
+        "violations": 39,
+        "violation_rate": 0.039,
+        "p_value": 0.059814879051903275,
+        "certified": false
+      },
+      {
+        "scale": 0.4,
+        "n": 1000,
+        "violations": 28,
+        "violation_rate": 0.028,
+        "p_value": 0.00039171400190333994,
+        "certified": true
+      }
+    ],
+    "leapfrog": [
+      {
+        "scale": 1.0,
+        "n": 989,
+        "violations": 166,
+        "violation_rate": 0.1678463094034378,
+        "p_value": 1.0,
+        "certified": false
+      },
+      {
+        "scale": 0.8,
+        "n": 989,
+        "violations": 87,
+        "violation_rate": 0.08796764408493428,
+        "p_value": 0.9999997819243732,
+        "certified": false
+      },
+      {
+        "scale": 0.6,
+        "n": 989,
+        "violations": 58,
+        "violation_rate": 0.05864509605662285,
+        "p_value": 0.9042508102811012,
+        "certified": false
+      },
+      {
+        "scale": 0.5,
+        "n": 989,
+        "violations": 48,
+        "violation_rate": 0.04853387259858443,
+        "p_value": 0.4534263686538985,
+        "certified": false
+      },
+      {
+        "scale": 0.4,
+        "n": 989,
+        "violations": 33,
+        "violation_rate": 0.033367037411526794,
+        "p_value": 0.0073047071155680115,
+        "certified": false
+      },
+      {
+        "scale": 0.3,
+        "n": 989,
+        "violations": 22,
+        "violation_rate": 0.022244691607684528,
+        "p_value": 6.4956274818726084e-06,
+        "certified": true
+      }
+    ]
+  },
+  "cal_policy_violation_rate": 0.031000000000000028,
+  "rtol_calibration": {
+    "RK45": {
+      "method": "RK45",
+      "chosen_rtol": 1.9684194472866112e-07,
+      "equal_risk_rtol": 6.172216859059897e-07,
+      "equal_risk_target": 0.031000000000000028,
+      "p_threshold": 0.005555555555555556,
+      "n_cal": 1000,
+      "chain": [
+        {
+          "rtol": 0.001,
+          "n": 1000,
+          "violations": 812,
+          "violation_rate": 0.812,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 17,
+          "mean_nfev": 4792.3682604272635
+        },
+        {
+          "rtol": 0.0002955209235202888,
+          "n": 1000,
+          "violations": 649,
+          "violation_rate": 0.649,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 1,
+          "mean_nfev": 2458.4324324324325
+        },
+        {
+          "rtol": 8.733261623828437e-05,
+          "n": 1000,
+          "violations": 477,
+          "violation_rate": 0.477,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 744.464
+        },
+        {
+          "rtol": 2.5808615404180768e-05,
+          "n": 1000,
+          "violations": 323,
+          "violation_rate": 0.323,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 634.256
+        },
+        {
+          "rtol": 7.626985859023451e-06,
+          "n": 1000,
+          "violations": 172,
+          "violation_rate": 0.172,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 782.06
+        },
+        {
+          "rtol": 2.2539339047347933e-06,
+          "n": 1000,
+          "violations": 92,
+          "violation_rate": 0.092,
+          "p_value": 0.9999999867824662,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 986.432
+        },
+        {
+          "rtol": 6.660846290809154e-07,
+          "n": 1000,
+          "violations": 34,
+          "violation_rate": 0.034,
+          "p_value": 0.009304461374676928,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 1239.11
+        },
+        {
+          "rtol": 1.9684194472866112e-07,
+          "n": 1000,
+          "violations": 11,
+          "violation_rate": 0.011,
+          "p_value": 1.3567154261172147e-11,
+          "certified": true,
+          "capped": 0,
+          "mean_nfev": 1537.85
+        },
+        {
+          "rtol": 3.6209583502459167e-07,
+          "n": 1000,
+          "violations": 21,
+          "violation_rate": 0.021,
+          "p_value": 1.939712029491804e-06,
+          "certified": null,
+          "refine": true
+        },
+        {
+          "rtol": 4.911073914777704e-07,
+          "n": 1000,
+          "violations": 25,
+          "violation_rate": 0.025,
+          "p_value": 5.111074154466426e-05,
+          "certified": null,
+          "refine": true
+        },
+        {
+          "rtol": 5.719432530342213e-07,
+          "n": 1000,
+          "violations": 30,
+          "violation_rate": 0.03,
+          "p_value": 0.0012770679174797827,
+          "certified": null,
+          "refine": true
+        },
+        {
+          "rtol": 6.172216859059897e-07,
+          "n": 1000,
+          "violations": 31,
+          "violation_rate": 0.031,
+          "p_value": 0.0021958022437049913,
+          "certified": null,
+          "refine": true
+        }
+      ]
+    },
+    "DOP853": {
+      "method": "DOP853",
+      "chosen_rtol": 1.9684194472866112e-07,
+      "equal_risk_rtol": 5.719432530342213e-07,
+      "equal_risk_target": 0.031000000000000028,
+      "p_threshold": 0.005555555555555556,
+      "n_cal": 1000,
+      "chain": [
+        {
+          "rtol": 0.001,
+          "n": 1000,
+          "violations": 427,
+          "violation_rate": 0.427,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 512.276
+        },
+        {
+          "rtol": 0.0002955209235202888,
+          "n": 1000,
+          "violations": 285,
+          "violation_rate": 0.285,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 573.644
+        },
+        {
+          "rtol": 8.733261623828437e-05,
+          "n": 1000,
+          "violations": 183,
+          "violation_rate": 0.183,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 637.292
+        },
+        {
+          "rtol": 2.5808615404180768e-05,
+          "n": 1000,
+          "violations": 119,
+          "violation_rate": 0.119,
+          "p_value": 1.0,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 720.884
+        },
+        {
+          "rtol": 7.626985859023451e-06,
+          "n": 1000,
+          "violations": 96,
+          "violation_rate": 0.096,
+          "p_value": 0.9999999992147429,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 819.008
+        },
+        {
+          "rtol": 2.2539339047347933e-06,
+          "n": 1000,
+          "violations": 61,
+          "violation_rate": 0.061,
+          "p_value": 0.9488904409581156,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 925.952
+        },
+        {
+          "rtol": 6.660846290809154e-07,
+          "n": 1000,
+          "violations": 35,
+          "violation_rate": 0.035,
+          "p_value": 0.014219957911606296,
+          "certified": false,
+          "capped": 0,
+          "mean_nfev": 1053.308
+        },
+        {
+          "rtol": 1.9684194472866112e-07,
+          "n": 1000,
+          "violations": 18,
+          "violation_rate": 0.018,
+          "p_value": 1.0284395340651126e-07,
+          "certified": true,
+          "capped": 0,
+          "mean_nfev": 1197.584
+        },
+        {
+          "rtol": 3.6209583502459167e-07,
+          "n": 1000,
+          "violations": 27,
+          "violation_rate": 0.027,
+          "p_value": 0.00020607276080268828,
+          "certified": null,
+          "refine": true
+        },
+        {
+          "rtol": 4.911073914777704e-07,
+          "n": 1000,
+          "violations": 30,
+          "violation_rate": 0.03,
+          "p_value": 0.0012770679174797827,
+          "certified": null,
+          "refine": true
+        },
+        {
+          "rtol": 5.719432530342213e-07,
+          "n": 1000,
+          "violations": 31,
+          "violation_rate": 0.031,
+          "p_value": 0.0021958022437049913,
+          "certified": null,
+          "refine": true
+        },
+        {
+          "rtol": 6.172216859059897e-07,
+          "n": 1000,
+          "violations": 33,
+          "violation_rate": 0.033,
+          "p_value": 0.005920605063022655,
+          "certified": null,
+          "refine": true
+        }
+      ]
+    }
+  },
+  "prediction_cost": {
+    "sec_per_orbit": 0.0001091905003413558,
+    "evals_equiv": 1134.448409492247,
+    "sec_per_rhs": 9.624985978007316e-08,
+    "n_rows": 1000
+  },
+  "c_pred_used": 1128.0,
+  "risk_ledger": {
+    "n_policy_runs": 2595,
+    "n_violations": 70,
+    "violation_rate": 0.02697495183044316,
+    "n_diverged": 3,
+    "abstain_rate": 0.0,
+    "median_err_over_tol": 5.320019631485014,
+    "p90_err_over_tol": 237.68563967137896,
+    "cvar90_err_over_tol": 5167.939707863358,
+    "max_err_over_tol": 27665.88660926751,
+    "catastrophic_share": 0.3582089552238806
+  },
+  "wall_seconds": 545.521812915802
+}

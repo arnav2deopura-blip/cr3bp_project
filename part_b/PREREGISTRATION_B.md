@@ -177,4 +177,9 @@ dated entry below.
   reported as the order of the five medians. Expectation (the plan's HB6): both gaps fall as mu falls. Alternative stated now, so it cannot be
   claimed afterwards: since the paradigm gap tracks delta_phys (T1), it can move with mu only through delta_phys. Not done: the cross-mu transfer
   test with dimensionless features (Issue 10) and any claim about Sun-Earth.
+- 2026-10-26, after the two exploratory studies ran: executed as written, with these differences. E3c: the pre-registered 95 % intervals are given for the median error, the
+  violation rate, the win shares (Clopper-Pearson, `e3c_share_intervals.csv`) and the over-prediction rate, but not for the pinball loss or the 90th percentile of the error; the
+  total cost quoted is the median of the per-orbit sums (the figure stacks the two medians). Mu dial: the policy command gained `--mu` and `--n_train` (per-mu split exactly as
+  written); a first run of the analysis step failed on a missing import and a E3c run failed on a column name, both fixed and rerun with no change to any computed quantity. Results:
+  `part_b/RESULTS_E3C_MU_DIAL.md`.
 

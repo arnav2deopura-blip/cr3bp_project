@@ -1,0 +1,47 @@
+{
+  "mu_1e-06_seed31.csv": {
+    "mu": 1e-06,
+    "seed": 31,
+    "sha256": "580f07adfc4d219d0b76160413afc636860d17a25229f3dae44559312eaf4815",
+    "rows": 8000,
+    "usable": 6560,
+    "rk4_censored": 0.002134146341463415,
+    "wall_s": 612
+  },
+  "mu_0.0001_seed32.csv": {
+    "mu": 0.0001,
+    "seed": 32,
+    "sha256": "5ae637fb45b58b870fd3a64fa9d6c4dfecdd6f06f5b5e982019e3457e485795d",
+    "rows": 8000,
+    "usable": 6520,
+    "rk4_censored": 0.0,
+    "wall_s": 482
+  },
+  "mu_0.001_seed33.csv": {
+    "mu": 0.001,
+    "seed": 33,
+    "sha256": "d99f91793b7aeb5530db5efebf99c231f17ef3e6ed247f576a9076ab13595b35",
+    "rows": 8000,
+    "usable": 6595,
+    "rk4_censored": 0.0,
+    "wall_s": 453
+  },
+  "mu_0.0121506_seed34.csv": {
+    "mu": 0.01215058535,
+    "seed": 34,
+    "sha256": "e47df3191d114107058679faf6bd8f542fd15640a5aaaeb307cb3bd4b8bd06b4",
+    "rows": 8000,
+    "usable": 6474,
+    "rk4_censored": 0.0,
+    "wall_s": 446
+  },
+  "mu_0.05_seed35.csv": {
+    "mu": 0.05,
+    "seed": 35,
+    "sha256": "407d8fd2f0a77d3b63830d0c03bcbbcf4774f1a24b0aa2a6795d897c0d8b268d",
+    "rows": 8000,
+    "usable": 6368,
+    "rk4_censored": 0.0,
+    "wall_s": 376
+  }
+}

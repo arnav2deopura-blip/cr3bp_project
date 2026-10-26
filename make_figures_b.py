@@ -360,9 +360,12 @@ def mu_dial(table_csv, out):
             ax.fill_between(mus, t[lo], t[hi], color=color, alpha=0.2, linewidth=0)
         ax.plot(mus, y, color=color, lw=1.8, marker="o", ms=4)
         for m_, v in zip(mus, y):
-            ax.text(m_, v, f"{v:+.2f}" if "gap" in col else f"{v:.1%}", ha="center", va="bottom", fontsize=8, color=INK)
+            ax.annotate(f"{v:+.2f}" if "gap" in col else f"{v:.1%}", (m_, v), textcoords="offset points", xytext=(0, 7), ha="center", fontsize=8, color=INK)
         if "gap" in col:
             ax.axhline(0, color=AXIS, lw=0.8)
+        top = max(float(np.max(t[hi])) if hi else float(np.max(y)), float(np.max(y)))
+        ax.set_ylim(min(0.0, float(np.min(y))) if "gap" in col else 0.0, top * 1.18)
+        ax.set_xlim(mus.min() / 2.5, mus.max() * 2.5)
         ax.set_xscale("log")
         ax.set_xticks(mus)
         ax.set_xticklabels([f"{m_:.2g}" for m_ in mus], fontsize=8, rotation=20)

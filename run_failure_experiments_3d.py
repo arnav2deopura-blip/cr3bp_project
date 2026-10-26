@@ -26,7 +26,7 @@ from orbit_ml_cr3bp import failure_study_3d as fs  # noqa: E402
 from orbit_ml_cr3bp import experiments_b_3d as xb  # noqa: E402
 from orbit_ml_cr3bp import policy_b_3d as pb  # noqa: E402
 from orbit_ml_cr3bp import protocol_3d as proto  # noqa: E402
-from run_failure_study_3d import make_run_dir, save_json, load_partb  # noqa: E402
+from run_failure_study_3d import make_run_dir, save_json, load_partb, _ols_slope  # noqa: E402
 
 
 def load_policy_dir(a):
