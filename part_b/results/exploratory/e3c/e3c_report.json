@@ -1,0 +1,303 @@
+{
+  "table": [
+    {
+      "f": 0.0,
+      "scale": 0.5,
+      "n": 3000,
+      "violation_rate": 0.03333333333333333,
+      "violation_ci95": [
+        0.0272019023585966,
+        0.04039528727732442
+      ],
+      "abs_resid_median": [
+        0.3186722704540159,
+        0.2973034894182386,
+        0.3451425077094925
+      ],
+      "abs_resid_p90": 1.0260899589426957,
+      "pinball": 0.07021695719163198,
+      "over_rate": 0.135,
+      "median_c_int": 1538.0,
+      "median_c_la": 0.0,
+      "median_c_tot_nomodel": 1539.0,
+      "win_RK45_spec_nomodel": 0.004666666666666667,
+      "win_RK45_spec_model1128": 0.0,
+      "win_RK45_cal_nomodel": 0.27,
+      "win_RK45_cal_model1128": 0.0,
+      "win_DOP853_cal_nomodel": 0.17733333333333334,
+      "win_DOP853_cal_model1128": 0.0
+    },
+    {
+      "f": 0.05,
+      "scale": 0.6,
+      "n": 3000,
+      "violation_rate": 0.044,
+      "violation_ci95": [
+        0.03694231552023537,
+        0.05196327677711646
+      ],
+      "abs_resid_median": [
+        0.27770243109338083,
+        0.2603874289919143,
+        0.30061991298803625
+      ],
+      "abs_resid_p90": 0.9915053836696417,
+      "pinball": 0.06802336420839498,
+      "over_rate": 0.141,
+      "median_c_int": 1194.0,
+      "median_c_la": 20.0,
+      "median_c_tot_nomodel": 1223.0,
+      "win_RK45_spec_nomodel": 0.001,
+      "win_RK45_spec_model1128": 0.0,
+      "win_RK45_cal_nomodel": 0.295,
+      "win_RK45_cal_model1128": 0.0,
+      "win_DOP853_cal_nomodel": 0.16933333333333334,
+      "win_DOP853_cal_model1128": 0.0
+    },
+    {
+      "f": 0.1,
+      "scale": 0.6,
+      "n": 3000,
+      "violation_rate": 0.041,
+      "violation_ci95": [
+        0.03418877138310346,
+        0.04872366764054924
+      ],
+      "abs_resid_median": [
+        0.2514535133216915,
+        0.23663963455542475,
+        0.2652050001898209
+      ],
+      "abs_resid_p90": 0.8969848206854336,
+      "pinball": 0.06259004780801022,
+      "over_rate": 0.138,
+      "median_c_int": 956.0,
+      "median_c_la": 38.0,
+      "median_c_tot_nomodel": 993.0,
+      "win_RK45_spec_nomodel": 0.0006666666666666666,
+      "win_RK45_spec_model1128": 0.0,
+      "win_RK45_cal_nomodel": 0.293,
+      "win_RK45_cal_model1128": 0.0,
+      "win_DOP853_cal_nomodel": 0.153,
+      "win_DOP853_cal_model1128": 0.0
+    },
+    {
+      "f": 0.25,
+      "scale": 0.6,
+      "n": 3000,
+      "violation_rate": 0.035,
+      "violation_ci95": [
+        0.028713954679120995,
+        0.04221255036169418
+      ],
+      "abs_resid_median": [
+        0.18015691039427623,
+        0.16937183701968817,
+        0.19210436713038254
+      ],
+      "abs_resid_p90": 0.7507902815268617,
+      "pinball": 0.051353936125868575,
+      "over_rate": 0.13033333333333333,
+      "median_c_int": 880.0,
+      "median_c_la": 80.0,
+      "median_c_tot_nomodel": 981.0,
+      "win_RK45_spec_nomodel": 0.0,
+      "win_RK45_spec_model1128": 0.0,
+      "win_RK45_cal_nomodel": 0.28933333333333333,
+      "win_RK45_cal_model1128": 0.0,
+      "win_DOP853_cal_nomodel": 0.113,
+      "win_DOP853_cal_model1128": 0.0
+    },
+    {
+      "f": 0.5,
+      "scale": 0.6,
+      "n": 3000,
+      "violation_rate": 0.024333333333333332,
+      "violation_ci95": [
+        0.019120808593789316,
+        0.03049934904329282
+      ],
+      "abs_resid_median": [
+        0.12322888736553811,
+        0.1164194585437914,
+        0.1306995743894961
+      ],
+      "abs_resid_p90": 0.4532477932622615,
+      "pinball": 0.035898741092296606,
+      "over_rate": 0.11766666666666667,
+      "median_c_int": 576.0,
+      "median_c_la": 158.0,
+      "median_c_tot_nomodel": 741.0,
+      "win_RK45_spec_nomodel": 0.0,
+      "win_RK45_spec_model1128": 0.0,
+      "win_RK45_cal_nomodel": 0.23866666666666667,
+      "win_RK45_cal_model1128": 0.0,
+      "win_DOP853_cal_nomodel": 0.04,
+      "win_DOP853_cal_model1128": 0.0
+    },
+    {
+      "f": 1.0,
+      "scale": 0.8,
+      "n": 3000,
+      "violation_rate": 0.011,
+      "violation_ci95": [
+        0.007583656339034028,
+        0.01541369339749124
+      ],
+      "abs_resid_median": [
+        0.07077955293826643,
+        0.06760545420319372,
+        0.07534699567296127
+      ],
+      "abs_resid_p90": 0.2247638883494476,
+      "pinball": 0.014141256140243258,
+      "over_rate": 0.13833333333333334,
+      "median_c_int": 312.0,
+      "median_c_la": 302.0,
+      "median_c_tot_nomodel": 635.0,
+      "win_RK45_spec_nomodel": 0.0,
+      "win_RK45_spec_model1128": 0.0,
+      "win_RK45_cal_nomodel": 0.06933333333333333,
+      "win_RK45_cal_model1128": 0.0,
+      "win_DOP853_cal_nomodel": 0.0006666666666666666,
+      "win_DOP853_cal_model1128": 0.0
+    }
+  ],
+  "any_fraction_wins": {
+    "RK45_spec_nomodel": 0.005333333333333333,
+    "RK45_spec_model1128": 0.0,
+    "RK45_cal_nomodel": 0.3516666666666667,
+    "RK45_cal_model1128": 0.0,
+    "DOP853_cal_nomodel": 0.20033333333333334,
+    "DOP853_cal_model1128": 0.0
+  },
+  "groups": [
+    {
+      "by": "regime",
+      "group": "I",
+      "n": 497,
+      "f_match": 0.5,
+      "win_RK45_cal_at_f_match_nomodel": 0.05432595573440644,
+      "resid_f000": 0.22638144975928753,
+      "resid_f005": 0.14742968116362443,
+      "resid_f010": 0.10744237122390388,
+      "resid_f025": 0.08273861782974556,
+      "resid_f050": 0.057752297170441835,
+      "resid_f100": 0.04673985433897476
+    },
+    {
+      "by": "regime",
+      "group": "II",
+      "n": 84,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.047619047619047616,
+      "resid_f000": 0.18487349416831633,
+      "resid_f005": 0.21540425828189558,
+      "resid_f010": 0.25086127994741203,
+      "resid_f025": 0.17297339183507976,
+      "resid_f050": 0.12516339556850625,
+      "resid_f100": 0.051749646582235354
+    },
+    {
+      "by": "regime",
+      "group": "III",
+      "n": 717,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.03905160390516039,
+      "resid_f000": 0.4680338138340385,
+      "resid_f005": 0.4377127389047415,
+      "resid_f010": 0.417067856435016,
+      "resid_f025": 0.314167721943714,
+      "resid_f050": 0.1741310306907362,
+      "resid_f100": 0.08882870468694404
+    },
+    {
+      "by": "regime",
+      "group": "IV",
+      "n": 386,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.10880829015544041,
+      "resid_f000": 0.21126382116211334,
+      "resid_f005": 0.23405567503738428,
+      "resid_f010": 0.25025789295821843,
+      "resid_f025": 0.15612383655750248,
+      "resid_f050": 0.1152390013155182,
+      "resid_f100": 0.06629999358649635
+    },
+    {
+      "by": "regime",
+      "group": "V",
+      "n": 1316,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.09954407294832827,
+      "resid_f000": 0.3304940730246875,
+      "resid_f005": 0.2974552201358028,
+      "resid_f010": 0.25679940369047827,
+      "resid_f025": 0.199032722995665,
+      "resid_f050": 0.1420603746742924,
+      "resid_f100": 0.08224803883626797
+    },
+    {
+      "by": "r2_band",
+      "group": "0.05-0.17",
+      "n": 358,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.013966480446927373,
+      "resid_f000": 0.82011801909582,
+      "resid_f005": 0.6282007353662011,
+      "resid_f010": 0.5974674961645895,
+      "resid_f025": 0.44125784274429736,
+      "resid_f050": 0.254760942111244,
+      "resid_f100": 0.10484158965504853
+    },
+    {
+      "by": "r2_band",
+      "group": "0.17-0.8",
+      "n": 1166,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.03773584905660377,
+      "resid_f000": 0.3126181318556936,
+      "resid_f005": 0.27770243109338083,
+      "resid_f010": 0.2573668401720607,
+      "resid_f025": 0.16309416095933543,
+      "resid_f050": 0.1032989842325372,
+      "resid_f100": 0.05943677701852035
+    },
+    {
+      "by": "r2_band",
+      "group": "<0.05",
+      "n": 576,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.0,
+      "resid_f000": 0.3994736724715855,
+      "resid_f005": 0.28297137331369004,
+      "resid_f010": 0.2474617978104221,
+      "resid_f025": 0.2281537733609984,
+      "resid_f050": 0.1859571186674066,
+      "resid_f100": 0.09288462174693735
+    },
+    {
+      "by": "r2_band",
+      "group": ">0.8",
+      "n": 900,
+      "f_match": 1.0,
+      "win_RK45_cal_at_f_match_nomodel": 0.17666666666666667,
+      "resid_f000": 0.18090190445548104,
+      "resid_f005": 0.17970078921433186,
+      "resid_f010": 0.1696658584533812,
+      "resid_f025": 0.12044276184732794,
+      "resid_f050": 0.0903516441728068,
+      "resid_f100": 0.06268315584677248
+    }
+  ],
+  "levels": [
+    0.0,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    1.0
+  ],
+  "c_pred_pinned": 1128.0,
+  "note": "RK4 only; model cost excluded (nomodel) or the pinned 1,128 for the two-integrator hurdle model added (model1128)"
+}

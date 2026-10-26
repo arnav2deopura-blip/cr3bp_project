@@ -126,6 +126,21 @@ SYSTEMS = {
 }
 
 
+# mu dial (E7, exploratory, pre-registered 2026-10-26): four more mass ratios in the Earth-Moon length unit, with the secondary's
+# collision radius scaled with its Hill radius so that the Earth-Moon value is the Moon's actual radius. The primary keeps Earth's radius.
+# The Earth-Moon and Sun-Earth entries above are unchanged.
+MU_DIAL_VALUES = (1e-6, 1e-4, 1e-3, 0.05)
+
+
+def _dial_entry(mu_value):
+    ratio = (R_MOON_KM / DU_KM) / ((MU / 3.0) ** (1.0 / 3.0))
+    return {"mu": mu_value, "du_km": DU_KM, "r1_km": R_EARTH_KM, "r2_km": ratio * (mu_value / 3.0) ** (1.0 / 3.0) * DU_KM}
+
+
+for _m in MU_DIAL_VALUES:
+    SYSTEMS[f"dial_mu_{_m:g}"] = _dial_entry(_m)
+
+
 def system_params(mu):
     """Length unit and body radii for a mass ratio. Unknown mu falls back to
     the Earth-Moon DU and the legacy COLLISION_RADIUS for both bodies

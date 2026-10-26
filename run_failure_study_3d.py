@@ -95,8 +95,13 @@ def cmd_policy(a):
         if lock:
             raise ValueError(f"{a.data} has a lock file {lock}")
     U = pb.usable_rows(d).reset_index(drop=True)
-    U = fs.add_derived(U)
+    U = fs.add_derived(U, a.mu)
     train, cal, ev = split_rows(U, a.n_cal, a.n_eval, a.seed)
+    if a.n_train:     # fixed-size training slice (mu dial): train rows first, then the rest are evaluation rows
+        perm = np.random.RandomState(a.seed).permutation(len(U))
+        cal = np.sort(perm[:a.n_cal])
+        train = np.sort(perm[a.n_cal:a.n_cal + a.n_train])
+        ev = np.sort(perm[a.n_cal + a.n_train:])
     if a.frozen_calibration:       # the deployed policy (model, scales, rtols) is used exactly as it was; every row is evaluated
         cal, train, ev = np.array([], dtype=int), np.array([], dtype=int), np.arange(len(U))
     feats = {"ftle": pb.FEATS_FTLE, "oracle": pb.FEATS_ORACLE}.get(a.features, pb.FEATS_STATE)
@@ -115,7 +120,7 @@ def cmd_policy(a):
     ev_pred = predict_hurdle(models, ev_df)
 
     # --- certified ML scales (lazy scan = the same "largest certified" value as the full Bonferroni chain)
-    cache = ReferenceCache(MU)
+    cache = ReferenceCache(a.mu)
     scale_rep, scales = {}, {}
     if a.frozen_calibration:
         scales = dict(frozen["scales"])
@@ -123,14 +128,13 @@ def cmd_policy(a):
         cal_rate, rtol_rep, scale_rep = float("nan"), {}, {}
         print(f"  FROZEN calibration: scales {scales}; rtols {rtols}", flush=True)
     for k in ([] if a.frozen_calibration else pb.CANDIDATES):
-        r = pb.certify_scale_lazy(cal_df, cal_pred, k, tol_km=a.tol_km, mu=MU, cache=cache)
+        r = pb.certify_scale_lazy(cal_df, cal_pred, k, tol_km=a.tol_km, mu=a.mu, cache=cache)
         scale_rep[k] = r
         scales[k] = r["chosen_scale"]
         print(f"  scale[{k}] = {r['chosen_scale']}  (n={r['n']}, violations={r['violations']})", flush=True)
 
     # --- realized violation rate of the deployed policy on the calibration rows (target for the equal-risk adaptive rtol)
-    cal_res = None if a.frozen_calibration else pb.evaluate_orbits(cal_df, cal_pred, scales, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs,
-                                 progress=False)
+    cal_res = None if a.frozen_calibration else pb.evaluate_orbits(cal_df, cal_pred, scales, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs, progress=False, mu=a.mu)
     if not a.frozen_calibration:
         cal_ok = cal_res["ml_ok"].fillna(False).astype(bool) & (cal_res["ml_err_km"] <= a.tol_km)
         has = cal_res["ml_integrator"].notna()
@@ -138,19 +142,19 @@ def cmd_policy(a):
         print(f"  deployed-policy violation rate on calibration rows: {cal_rate:.4f} (n={int(has.sum())})", flush=True)
 
     # --- adaptive rtols on the SAME calibration rows (equal n_cal, equal grid size)
-    items = None if a.frozen_calibration else pb.reference_items(cal_df, MU)
+    items = None if a.frozen_calibration else pb.reference_items(cal_df, a.mu)
     if not a.frozen_calibration:
         rtols, rtol_rep = {}, {}
     for m in ([] if a.frozen_calibration else pb.METHODS):
-        r = pb.certify_rtol_lazy(cal_df, m, tol_km=a.tol_km, mu=MU, equal_risk_target=cal_rate, n_jobs=a.n_jobs, items=items)
+        r = pb.certify_rtol_lazy(cal_df, m, tol_km=a.tol_km, mu=a.mu, equal_risk_target=cal_rate, n_jobs=a.n_jobs, items=items)
         rtol_rep[m] = r
         rtols[(m, "cal")] = r["chosen_rtol"]
         rtols[(m, "eqr")] = r["equal_risk_rtol"]
         print(f"  {m}: certified rtol {r['chosen_rtol']}, equal-risk rtol {r['equal_risk_rtol']}", flush=True)
 
     # --- evaluation pass
-    res = pb.evaluate_orbits(ev_df, ev_pred, scales, rtols=rtols, do_spec=not a.no_spec, tol_km=a.tol_km, n_jobs=a.n_jobs)
-    cp = measure_prediction_cost(models, ev_df, pb.CANDIDATES, MU)
+    res = pb.evaluate_orbits(ev_df, ev_pred, scales, rtols=rtols, do_spec=not a.no_spec, tol_km=a.tol_km, n_jobs=a.n_jobs, mu=a.mu)
+    cp = measure_prediction_cost(models, ev_df, pb.CANDIDATES, a.mu)
     raw = pb.candidate_raw_predictions(ev_df, ev_pred)
     c_pred = cp["evals_equiv"] if a.c_pred_fixed is None else a.c_pred_fixed   # pinned in the pre-registration (wall time is noisy)
     led = fs.build_ledger(ev_df, res.merge(raw, on="row_id"), c_pred, c_feat=1.0, tol_km=a.tol_km)
@@ -459,6 +463,8 @@ def main():
     sp.add_argument("--quantile", type=float, default=pb.PINNED_QUANTILE)
     sp.add_argument("--no_spec", action="store_true")
     sp.add_argument("--guard_lock", action="store_true")
+    sp.add_argument("--mu", type=float, default=MU, help="mass ratio of the dataset (mu dial); default Earth-Moon")
+    sp.add_argument("--n_train", type=int, default=0, help="fixed training-slice size (mu dial); 0 = every row not in the calibration/evaluation slices")
     sp.add_argument("--c_pred_fixed", type=float, default=None, help="charge this model-inference cost (RHS-equivalents per orbit) "
                     "instead of the measured one")
     sp.add_argument("--frozen_calibration", action="store_true", help="with --frozen_policy: also reuse its certified scales "

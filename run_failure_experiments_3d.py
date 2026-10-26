@@ -464,6 +464,166 @@ def cmd_e11b(a):
     print("wrote", out)
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# E3c (exploratory, pre-registered 2026-10-26): how much of the trajectory must be seen, and what seeing it costs
+# ---------------------------------------------------------------------------------------------------------------------
+
+def cmd_e3c_features(a):
+    from orbit_ml_cr3bp import lookahead_3d as la
+    out = make_run_dir(a.out_dir, "e3c_features", a)
+    d, _ = load_partb(a.data)
+    U = pb.usable_rows(d).reset_index(drop=True)
+    print(f"lookahead features for {len(U)} usable rows, fractions {la.FRACTIONS}", flush=True)
+    t0 = time.time()
+    df = la.compute_lookahead(U, mu=a.mu, n_jobs=a.n_jobs)
+    df.to_csv(os.path.join(out, "lookahead.csv"), index=False)
+    cap = {la.tag(f): float(df[f"la{la.tag(f)}_capped"].mean()) for f in la.FRACTIONS}
+    med = {la.tag(f): float(df[f"la{la.tag(f)}_nfev"].median()) for f in la.FRACTIONS}
+    save_json({"n": int(len(df)), "capped_share": cap, "median_nfev": med, "wall_s": time.time() - t0}, os.path.join(out, "e3c_features_report.json"))
+    print("capped share", cap, "median nfev", med, f"({time.time() - t0:.0f}s)\nwrote", out)
+
+
+def cmd_e3c(a):
+    from orbit_ml_cr3bp import lookahead_3d as la
+    from orbit_ml_cr3bp.audit_3d import ReferenceCache, clopper_pearson
+    out = make_run_dir(a.out_dir, "e3c", a)
+    U, train, cal, led, rep = load_policy_dir(a)
+    lk = pd.read_csv(a.lookahead, low_memory=False)
+    train, cal, ev = (x.merge(lk, on="row_id", how="left") for x in (train, cal, led))
+    c_pred = a.c_pred
+    cache = ReferenceCache(MU)
+    for i in range(len(cal)):
+        cache.get(i, cal[pb.STATE_COLS].to_numpy(dtype=float)[i], float(cal["sim_time"].iloc[i]))
+    comps = ["RK45_spec", "RK45_cal", "DOP853_cal"]
+    rows, per = [], {}
+    levels = [0.0] + list(la.FRACTIONS)
+    for f in levels:
+        feats = list(xb.FEATS_STATE) + ([] if f == 0 else la.feature_names(f))
+        reg = xb.fit_log_quantile(train, "rk4", a.quantile, features=feats, seed=42)
+
+        def predict(df):
+            dt = 10.0 ** reg.predict(df[feats].to_numpy(dtype=float))
+            n = len(df)
+            return {"rk4": {"feasible": np.ones(n, dtype=bool), "dt": dt},
+                    "leapfrog": {"feasible": np.zeros(n, dtype=bool), "dt": np.full(n, np.nan)}}
+        cal_pred, ev_pred = predict(cal), predict(ev)
+        r = pb.certify_scale_lazy(cal, cal_pred, "rk4", tol_km=a.tol_km, mu=MU, cache=cache)
+        sc = r["chosen_scale"]
+        y = np.log10(ev["dt_rk4"].to_numpy(dtype=float))
+        yh = np.log10(ev_pred["rk4"]["dt"])
+        res = pb.evaluate_orbits(ev, ev_pred, {"rk4": sc, "leapfrog": None}, rtols={}, do_spec=False, tol_km=a.tol_km, n_jobs=a.n_jobs,
+                                 candidates=("rk4",), progress=False)
+        m = ev[["row_id", "regime", "r2_band", "sim_time"] + [f"{c}_nfev" for c in comps]].rename(
+            columns={f"{c}_nfev": c for c in comps}).merge(res, on="row_id", how="left")
+        m["abs_resid"] = np.abs(yh - y)
+        m["over"] = yh > y
+        ok = m["ml_ok"].fillna(False).astype(bool) & (m["ml_err_km"] <= a.tol_km)
+        m["meets"] = ok
+        m["c_la"] = 0.0 if f == 0 else ev[f"la{la.tag(f)}_nfev"].to_numpy(dtype=float)
+        m["c_int"] = m["ml_evals"]
+        m["c_tot_nomodel"] = m["c_la"] + m["c_int"] + 1.0
+        m["c_tot_model"] = m["c_tot_nomodel"] + c_pred
+        per[f] = m
+        n = len(m)
+        k = int((~ok).sum())
+        row = {"f": f, "scale": sc, "n": n, "violation_rate": k / n, "violation_ci95": clopper_pearson(k, n),
+               "abs_resid_median": fs.bootstrap_ci(m["abs_resid"]), "abs_resid_p90": float(m["abs_resid"].quantile(0.9)),
+               "pinball": float(xb.pinball(y, yh, a.quantile).mean()), "over_rate": float(m["over"].mean()),
+               "median_c_int": float(m.loc[ok, "c_int"].median()), "median_c_la": float(m["c_la"].median()),
+               "median_c_tot_nomodel": float(m.loc[ok, "c_tot_nomodel"].median())}
+        for c in comps:
+            for nm, col in (("nomodel", "c_tot_nomodel"), ("model1128", "c_tot_model")):
+                w = ok & (m[col] < m[c])
+                row[f"win_{c}_{nm}"] = float(w.mean())
+        rows.append(row)
+        print(f"f={f:<5} scale {sc}  viol {k / n:.3f}  |resid| med {row['abs_resid_median'][0]:.3f} p90 {row['abs_resid_p90']:.3f}  "
+              f"C_int {row['median_c_int']:.0f} C_la {row['median_c_la']:.0f}  win vs RK45-cal (no model cost) {row['win_RK45_cal_nomodel']:.3f}", flush=True)
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "e3c_by_fraction.csv"), index=False)
+    # any lookahead fraction that makes the orbit cheaper than the comparator at its own certified scale
+    any_win = {}
+    for c in comps:
+        for nm, col in (("nomodel", "c_tot_nomodel"), ("model1128", "c_tot_model")):
+            best = np.min(np.vstack([np.where(per[f]["meets"], per[f][col], np.inf) for f in levels]), axis=0)
+            any_win[f"{c}_{nm}"] = float((best < per[levels[0]][c].to_numpy()).mean())
+    # by group: error curve, f_match (smallest f within 25 % of the f = 1 median error) and the win share there
+    groups = []
+    for by in ("regime", "r2_band"):
+        for g in sorted(per[0.0][by].dropna().unique()):
+            curve = {f: float(per[f].loc[per[f][by] == g, "abs_resid"].median()) for f in levels}
+            target = 1.25 * curve[1.0]
+            fm = next((f for f in levels if curve[f] <= target), None)
+            wins = {f: float((per[f][by] == g)[per[f]["meets"] & (per[f]["c_tot_nomodel"] < per[f]["RK45_cal"])].sum() / max((per[f][by] == g).sum(), 1)) for f in levels}
+            groups.append({"by": by, "group": g, "n": int((per[0.0][by] == g).sum()), "f_match": fm,
+                           "win_RK45_cal_at_f_match_nomodel": wins[fm] if fm is not None else None,
+                           **{f"resid_f{la.tag(f)}": curve[f] for f in levels}})
+    gt = pd.DataFrame(groups)
+    gt.to_csv(os.path.join(out, "e3c_by_group.csv"), index=False)
+    save_json({"table": rows, "any_fraction_wins": any_win, "groups": groups, "levels": levels, "c_pred_pinned": c_pred,
+               "note": "RK4 only; model cost excluded (nomodel) or the pinned 1,128 for the two-integrator hurdle model added (model1128)"},
+              os.path.join(out, "e3c_report.json"))
+    print(gt.round(3).to_string())
+    print("any lookahead fraction wins:", {k: round(v, 4) for k, v in any_win.items()})
+    print("wrote", out)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# E7: the mu dial (exploratory, pre-registered 2026-10-26)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def cmd_mu_dial(a):
+    from orbit_ml_cr3bp.audit_3d import clopper_pearson
+    out = make_run_dir(a.out_dir, "mu_dial", a)
+    rows, detail = [], {}
+    for spec in a.runs:
+        mu_s, path = spec.split("=", 1)
+        mu = float(mu_s)
+        led = pd.read_csv(os.path.join(path, "ledger.csv"), low_memory=False)
+        rep = json.load(open(os.path.join(path, "policy_report.json")))
+        d = led[led["RK45_spec_nfev"].notna() & led["C_fix_star"].notna()].copy()
+        gap = np.log10(d["C_fix_star"] / d["RK45_spec_nfev"])
+        k = int((d["C_fix_star"] < d["RK45_spec_nfev"]).sum())
+        dec = fs.decompose(led, "RK45_spec")
+        okd = dec["total"].notna()
+        ml = led[led["ml_ok"].fillna(False).astype(bool) & led["ml_evals"].notna() & led["RK45_spec_nfev"].notna()]
+        ml_gap = np.log10(ml["ml_evals"] / ml["RK45_spec_nfev"])
+        nv, n = int(led["violation"].sum()), int(led["has_choice"].sum())
+        row = {"mu": mu, "n_usable": rep["n_usable"], "n_train": rep["n_train"], "n_eval": int(len(led)),
+               "fixed_cheaper_share": k / len(d), "fixed_cheaper_ci95": clopper_pearson(k, len(d)),
+               "paradigm_gap_median": fs.bootstrap_ci(gap, n_boot=1000), "paradigm_gap_mean": fs.bootstrap_ci(gap, stat=np.mean, n_boot=1000),
+               "slope_on_log_delta_phys": _ols_slope(d["log_delta_phys"], gap, n_boot=1000),
+               "spearman_delta_gap": fs.spearman_bootstrap(d["log_delta_phys"], gap, n_boot=500)[0],
+               "median_delta_phys": float(d["delta_phys"].median()), "median_min_r2_over_rhill": float((d["min_r2"] / (mu / 3) ** (1 / 3)).median()),
+               "ml_integration_gap_median": fs.bootstrap_ci(ml_gap, n_boot=1000),
+               "violation_rate": nv / n, "violation_ci95": clopper_pearson(nv, n),
+               "scale_rk4": rep["scales"]["rk4"], "scale_leapfrog": rep["scales"]["leapfrog"],
+               "adaptive_spec_nfev_median": float(d["RK45_spec_nfev"].median()), "oracle_fixed_cost_median": float(d["C_fix_star"].median()),
+               "terms_mean_dex": {t: fs.bootstrap_ci(dec.loc[okd, t], stat=np.mean, n_boot=1000) for t in ("P", "S", "Q", "K", "O", "total")}}
+        rows.append(row)
+        print(f"mu={mu:<10g} n_eval {len(led):5d}  fixed cheaper {row['fixed_cheaper_share']:.3f}  P med {row['paradigm_gap_median'][0]:+.3f}  "
+              f"ML-int gap {row['ml_integration_gap_median'][0]:+.3f}  viol {row['violation_rate']:.3f}  scale {row['scale_rk4']}/{row['scale_leapfrog']}  "
+              f"slope {row['slope_on_log_delta_phys'].get('slope', float('nan')):.2f}  median delta {row['median_delta_phys']:.2f}", flush=True)
+    rows.sort(key=lambda r: r["mu"])
+    order = lambda key: [r["mu"] for r in sorted(rows, key=lambda r: (r[key][0] if isinstance(r[key], (list, tuple)) else r[key]))]
+    summary = {"rows": rows, "order_by_paradigm_gap_median_low_to_high": order("paradigm_gap_median"),
+               "order_by_ml_integration_gap_low_to_high": order("ml_integration_gap_median"),
+               "order_by_violation_rate_low_to_high": order("violation_rate"),
+               "note": "descriptive only; the pre-registered expectation is that both gaps fall as mu falls"}
+    save_json(summary, os.path.join(out, "mu_dial_report.json"))
+    flat = pd.DataFrame([{"mu": r["mu"], "n_eval": r["n_eval"], "fixed_cheaper_share": r["fixed_cheaper_share"], "paradigm_gap_median": r["paradigm_gap_median"][0],
+                          "paradigm_gap_lo": r["paradigm_gap_median"][1], "paradigm_gap_hi": r["paradigm_gap_median"][2],
+                          "ml_int_gap_median": r["ml_integration_gap_median"][0], "ml_int_gap_lo": r["ml_integration_gap_median"][1],
+                          "ml_int_gap_hi": r["ml_integration_gap_median"][2], "violation_rate": r["violation_rate"],
+                          "violation_lo": r["violation_ci95"][0], "violation_hi": r["violation_ci95"][1], "slope": r["slope_on_log_delta_phys"].get("slope"),
+                          "median_delta_phys": r["median_delta_phys"], "scale_rk4": r["scale_rk4"], "scale_leapfrog": r["scale_leapfrog"],
+                          **{f"mean_{t}": r["terms_mean_dex"][t][0] for t in ("P", "S", "Q", "K", "O", "total")}} for r in rows])
+    flat.to_csv(os.path.join(out, "mu_dial_table.csv"), index=False)
+    print(flat.round(3).to_string())
+    print("order by paradigm gap:", summary["order_by_paradigm_gap_median_low_to_high"])
+    print("order by ML integration gap:", summary["order_by_ml_integration_gap_low_to_high"])
+    print("wrote", out)
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -518,6 +678,23 @@ def main():
     sp.add_argument("--adaptive", default="DOP853")
     sp.add_argument("--batch_sizes", type=int, nargs="+", default=[32, 128])
     sp.set_defaults(fn=cmd_e11b)
+
+    sp = sub.add_parser("e3c_features")
+    common(sp)
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.set_defaults(fn=cmd_e3c_features)
+
+    sp = sub.add_parser("e3c")
+    common(sp)
+    sp.add_argument("--lookahead", required=True)
+    sp.add_argument("--quantile", type=float, default=0.1)
+    sp.add_argument("--c_pred", type=float, default=1128.0)
+    sp.set_defaults(fn=cmd_e3c)
+
+    sp = sub.add_parser("mu_dial")
+    sp.add_argument("--runs", nargs="+", required=True, help="mu=policy_run_folder pairs")
+    sp.add_argument("--out_dir", default="out_b")
+    sp.set_defaults(fn=cmd_mu_dial)
 
     a = p.parse_args()
     a.fn(a)

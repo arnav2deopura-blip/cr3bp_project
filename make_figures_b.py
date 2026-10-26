@@ -291,9 +291,99 @@ def information(e3a_dir, out):
     return p
 
 
+def lookahead(e3c_dir, ledger_path, out):
+    t = pd.read_csv(os.path.join(e3c_dir, "e3c_by_fraction.csv"))
+    led = pd.read_csv(ledger_path, low_memory=False)
+    led = led[led["meets_tol"]]
+    meds = {c: float(led[f"{c}_nfev"].median()) for c in ("RK45_spec", "RK45_cal")}
+
+    def first(v):
+        return float(str(v).strip("()[] ").split(",")[0]) if isinstance(v, str) else float(v)
+    err = t["abs_resid_median"].apply(first).to_numpy()
+    fs_ = t["f"].to_numpy()
+    xs = np.arange(len(fs_))
+    labels = [f"{v:g}" for v in fs_]
+    fig, axes = plt.subplots(1, 3, figsize=(12.2, 4.0))
+    ax = axes[0]
+    ax.plot(xs, err, color="#2a78d6", lw=1.8, marker="o", ms=4)
+    for x, v in zip(xs, err):
+        ax.text(x, v + 0.012, f"{v:.2f}", ha="center", fontsize=8)
+    ax.set_ylabel("median |log10 prediction / label| (dex)")
+    ax.set_ylim(0, 0.38)
+    ax.set_title("prediction error", fontsize=9.5, loc="left")
+    ax2 = axes[1]
+    ax2.bar(xs, t["median_c_int"], color="#2a78d6", width=0.6, edgecolor=SURFACE, linewidth=1.5, label="integration")
+    ax2.bar(xs, t["median_c_la"], bottom=t["median_c_int"], color="#eb6834", width=0.6, edgecolor=SURFACE, linewidth=1.5, label="lookahead")
+    for c, col, dy in (("RK45_spec", INK, 22), ("RK45_cal", INK2, 22)):
+        ax2.axhline(meds[c], color=col, lw=0.9, ls=(0, (4, 3)))
+        ax2.text(len(xs) - 0.45, meds[c] + dy, f"adaptive {c.replace('_', ' ')}: {meds[c]:.0f}", ha="right", fontsize=7.5, color=col)
+    for x, a_, b_ in zip(xs, t["median_c_int"], t["median_c_la"]):
+        ax2.text(x, a_ + b_ + 25, f"{a_ + b_:.0f}", ha="center", fontsize=8)
+    ax2.set_ylim(0, 1800)
+    ax2.legend(frameon=False, fontsize=8, loc="upper right")
+    ax2.set_ylabel("RHS evaluations per orbit (median)")
+    ax2.set_title("cost", fontsize=9.5, loc="left")
+    ax3 = axes[2]
+    for c, col in (("RK45_cal", "#eb6834"), ("DOP853_cal", "#1baf7a"), ("RK45_spec", "#2a78d6")):
+        y = t[f"win_{c}_nomodel"].to_numpy() * 100
+        ax3.plot(xs, y, color=col, lw=1.8, marker="o", ms=4)
+        ax3.text(xs[0] + 0.1, y[0] + 1.2, c.replace("_", " "), fontsize=8, color=INK2)
+    ax3.set_ylabel("% of orbits")
+    ax3.set_ylim(0, 33)
+    ax3.set_title("share cheaper than adaptive (no model cost)", fontsize=9.5, loc="left")
+    for a_ in axes:
+        a_.set_xticks(xs)
+        a_.set_xticklabels(labels, fontsize=8)
+        a_.set_xlabel("fraction of the horizon integrated first (0 = state only)")
+        a_.yaxis.grid(True, color=GRID, lw=0.5)
+        a_.set_axisbelow(True)
+        _style(a_)
+    fig.suptitle(f"Lookahead buys accuracy, but its cost cancels the saving ({LABEL}, RK4 only, exploratory)", x=0.01, ha="left", fontsize=10)
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    p_ = os.path.join(out, "lookahead.png")
+    fig.savefig(p_, dpi=170)
+    plt.close(fig)
+    return p_
+
+
+def mu_dial(table_csv, out):
+    t = pd.read_csv(table_csv).sort_values("mu")
+    mus = t["mu"].to_numpy()
+    fig, axes = plt.subplots(1, 4, figsize=(13.6, 3.6))
+    specs = [("paradigm_gap_median", "paradigm_gap_lo", "paradigm_gap_hi", "#2a78d6", "paradigm gap (dex, median)"),
+             ("ml_int_gap_median", "ml_int_gap_lo", "ml_int_gap_hi", "#e87ba4", "ML integration gap (dex, median)"),
+             ("fixed_cheaper_share", None, None, "#1baf7a", "share where a perfect fixed step is cheaper"),
+             ("violation_rate", "violation_lo", "violation_hi", "#eb6834", "ML violation rate")]
+    for ax, (col, lo, hi, color, title) in zip(axes, specs):
+        y = t[col].to_numpy()
+        if lo:
+            ax.fill_between(mus, t[lo], t[hi], color=color, alpha=0.2, linewidth=0)
+        ax.plot(mus, y, color=color, lw=1.8, marker="o", ms=4)
+        for m_, v in zip(mus, y):
+            ax.text(m_, v, f"{v:+.2f}" if "gap" in col else f"{v:.1%}", ha="center", va="bottom", fontsize=8, color=INK)
+        if "gap" in col:
+            ax.axhline(0, color=AXIS, lw=0.8)
+        ax.set_xscale("log")
+        ax.set_xticks(mus)
+        ax.set_xticklabels([f"{m_:.2g}" for m_ in mus], fontsize=8, rotation=20)
+        ax.set_xlabel("mass ratio mu")
+        ax.set_title(title, fontsize=9.5, loc="left")
+        ax.yaxis.grid(True, color=GRID, lw=0.5)
+        ax.set_axisbelow(True)
+        _style(ax)
+    fig.suptitle("The mu dial: the same study at five mass ratios, sampling scaled by the Hill radius (exploratory, 95 % bands)", x=0.01, ha="left", fontsize=10)
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    p_ = os.path.join(out, "mu_dial.png")
+    fig.savefig(p_, dpi=170)
+    plt.close(fig)
+    return p_
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["waterfall", "paradigm", "wheremap", "all", "dial", "stepover", "information"])
+    ap.add_argument("what", choices=["waterfall", "paradigm", "wheremap", "all", "dial", "stepover", "information", "lookahead", "mu_dial"])
+    ap.add_argument("--e3c")
+    ap.add_argument("--mu_table")
     ap.add_argument("--sweep_ledger")
     ap.add_argument("--e9")
     ap.add_argument("--e3a")
@@ -312,6 +402,10 @@ def main():
         outs.append(paradigm(a.ledger, a.out))
     if a.what in ("wheremap", "all"):
         outs.append(wheremap(a.decompose, a.ledger, a.out))
+    if a.what == "lookahead":
+        outs.append(lookahead(a.e3c, a.ledger, a.out))
+    if a.what == "mu_dial":
+        outs.append(mu_dial(a.mu_table, a.out))
     if a.what == "dial":
         outs.append(dial(a.sweep_ledger, a.out))
     if a.what == "stepover":
