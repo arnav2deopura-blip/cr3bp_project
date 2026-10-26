@@ -219,6 +219,9 @@ def cmd_policy_c(a):
     gate_info.update({"p_star": p_star, "g_star": g_star})
     pred_cal = pc.apply_gate(raw_cal, p_star=p_star, g_star=g_star, lf_gate=a.lf_gate)
     pred_ev = pc.apply_gate(raw_ev, p_star=p_star, g_star=g_star, lf_gate=a.lf_gate)
+    if a.rk4_only:        # RK4 is the only candidate; leapfrog is never chosen (its conditional risk and gate are not part of the policy)
+        for pr in (pred_cal, pred_ev):
+            pr["leapfrog"]["feasible"] = np.zeros_like(pr["leapfrog"]["feasible"])
     # --- end-to-end certification on the calibration rows
     grid = pc.FIXED_SEQ_GRID if a.grid == "fine" else tuple(__import__("orbit_ml_cr3bp.audit_3d", fromlist=["x"]).LTT_SCALE_GRID)
     ref_cal = pc.reference_final_positions(cal_df, a.mu, a.n_jobs)
@@ -593,9 +596,16 @@ def cmd_sundman_pilot(a):
     M.to_csv(os.path.join(out, "pilot_table.csv"), index=False)
     spec = [r for r in rows if r["comparator"] == "RK45_spec"][0]
     rho_p, rho_ps = spec["rho_logdelta_P"][0], spec["rho_logdelta_Ps"][0]
-    go = (spec["sundman_cheaper"] >= a.go_share) and (rho_ps <= rho_p - a.go_rho_drop) and (rep["rk4s_censored_share"] < 0.02) and \
-         (rep["dense_sweep"]["frac"] < 0.02)
-    rep["go_rule"] = {"share_vs_RK45_spec": a.go_share, "rho_drop": a.go_rho_drop, "censored_below": 0.02, "non_monotone_below": 0.02}
+    # plan 6.5: GO = oracle cheaper than RK45-spec on >= go_share of orbits AND the Spearman of the gap against log delta_phys is at least
+    # go_rho_drop lower than for the physical-time fixed step. Plan 6.3 (label acceptance on the pilot) is reported separately: censored
+    # < 2 %, non-monotone in ds < 2 % on the dense log sweep, convergence slope ~ 4 (the slope is a unit test).
+    go = (spec["sundman_cheaper"] >= a.go_share) and (rho_ps <= rho_p - a.go_rho_drop)
+    rep["go_rule"] = {"share_vs_RK45_spec": a.go_share, "rho_drop": a.go_rho_drop}
+    rep["label_acceptance_63"] = {"censored_below_2pct": bool(rep["rk4s_censored_share"] < 0.02),
+                                  "non_monotone_below_2pct": bool(rep["dense_sweep"]["frac"] < 0.02),
+                                  "label_window_failures_below_2pct": bool(rep["dense_sweep"]["label_window_has_fail"] < 0.02),
+                                  "censored": rep["rk4s_censored_share"], "non_monotone": rep["dense_sweep"]["frac"],
+                                  "label_window_has_fail": rep["dense_sweep"]["label_window_has_fail"]}
     rep["go"] = bool(go)
     rep["go_detail"] = {"sundman_cheaper_RK45_spec": spec["sundman_cheaper"], "rho_P": rho_p, "rho_Ps": rho_ps}
     save_json(rep, os.path.join(out, "sundman_pilot_report.json"))
@@ -716,6 +726,7 @@ def main():
     sp.add_argument("--gate_budget", type=float, default=0.005)
     sp.add_argument("--rule", choices=["fixed_sequence", "bonferroni"], default="fixed_sequence")
     sp.add_argument("--grid", choices=["fine", "partb"], default="fine")
+    sp.add_argument("--rk4_only", action="store_true", help="leapfrog is never chosen")
     sp.add_argument("--by_choice", action="store_true", help="one scale per selected integrator (Mondrian by selection)")
     sp.add_argument("--guard_g", type=float, default=None, help="step-over guard: abort the fixed-step run when dt / tau > g and fall back to RK45 (certified rtol)")
     sp.add_argument("--abstain_rule", choices=["none", "physics"], default="none")

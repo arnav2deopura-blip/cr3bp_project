@@ -26,7 +26,7 @@ from numba import njit
 from .config import MU, EJECTION_RADIUS, collision_radii
 from .physics_3d import (REASON_OK, REASON_COLLISION, REASON_EJECTION, REASON_NONFINITE, REASON_STEP_CAP, _step_rk4_3d_numba)
 
-SUNDMAN_TAU_C = 1.0          # default cap; the pilot chooses among {0.5, 1, 2}
+SUNDMAN_TAU_C = 2.0          # chosen in the pilot from {0.5, 1, 2}: oracle cheaper than RK45-spec on 39.6 / 45.9 / 49.5 % (part_c/results/c4)
 DS_MIN = 1e-4
 DS_MAX = 4.0                 # g <= tau_c, so the physical step stays <= DS_MAX * tau_c
 
