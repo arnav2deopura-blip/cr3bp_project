@@ -8,15 +8,18 @@ MASS_RATIOS_FOR_SENSITIVITY = [0.001, 0.01215058535, 0.5]
 COLLISION_RADIUS = 0.01  # legacy value; physical per-body radii now come from system_params()/collision_radii()
 EJECTION_RADIUS = 10.0
 
-# Per-integrator Jacobi-drift tolerance used by the timestep search and by
-# every downstream validation/audit function. Single source of truth --
-# search_3d.py, modeling_3d.py, and validation_3d.py all import this
-# instead of keeping their own copies.
-INTEGRATOR_TOLERANCES_3D = {"euler": 1e-5, "leapfrog": 1e-5, "rk4": 1e-5}
+# LEGACY Jacobi-drift tolerance. Part A labelled and audited with the Jacobi-drift search; from label pipeline v2 the labels are the
+# final-position accuracy against the DOP853 reference (POSITION_TOL_KM, search_3d accuracy_monotone) and this table only drives the
+# old drift-based search and its validation helpers (search_3d / modeling_3d / validation_3d). It is NOT the accuracy target of the
+# study. The old name is kept as an alias so Part A code and datasets keep working.
+LEGACY_JACOBI_TOLERANCES_3D = {"euler": 1e-5, "leapfrog": 1e-5, "rk4": 1e-5}
+INTEGRATOR_TOLERANCES_3D = LEGACY_JACOBI_TOLERANCES_3D
 
 SAFETY_FACTOR_CANDIDATES_3D = (1.0, 0.98, 0.95, 0.90, 0.85, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30)
 
 # FTLE PARAMETERS
+# FTLE_INTEGRATION_TIME is a FALLBACK only: the pipeline integrates the variational equations over the orbit's own horizon
+# (data_3d: ftle_T = sim_time) and uses this value only when no horizon is given.
 FTLE_INTEGRATION_TIME = 10.0
 FTLE_PERTURBATION = 1e-6
 FTLE_ENABLED = True
@@ -176,7 +179,7 @@ ACCURACY_SIM_TIME_LOG_MIN = 0.0                 # 10^0 = 1 TU
 ACCURACY_SIM_TIME_LOG_MAX = 1.301029995663981   # log10(20) -> 20 TU
 
 # DOP853 reference-trajectory tolerances (physics_3d.reference_trajectory_dense_3d).
-# Tighter than INTEGRATOR_TOLERANCES_3D's role in the old search -- this is a
+# Tighter than LEGACY_JACOBI_TOLERANCES_3D's role in the old search -- this is a
 # ground-truth trajectory, not a stability threshold.
 # PART B (label_pipeline_version 4): ONE truth everywhere. Part A labelled and audited against 1e-11 while the
 # cost comparison used fair_baseline_3d.TRUTH_RTOL = 1e-13 (Issue 3 of the failure-study plan). A 400-orbit

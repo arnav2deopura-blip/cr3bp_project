@@ -184,6 +184,107 @@ def test_gate_threshold_search_meets_its_budget():
     assert (below["infeasible_choice_rate"] > 0.005).all()                  # the smallest threshold that meets the budget
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# C2: osculating periapsis features
+# ---------------------------------------------------------------------------------------------------------------------
+
+def _kepler_periapsis(r0, v0, GM, t_max=400.0):
+    """Next periapsis (radius, time) of the two-body orbit by numerical integration of (r, v) inertial, event r.v = 0 from below."""
+    from scipy.integrate import solve_ivp
+
+    def f(t, y):
+        r = y[:3]
+        return np.concatenate([y[3:], -GM * r / np.linalg.norm(r) ** 3])
+
+    def ev(t, y):
+        return float(np.dot(y[:3], y[3:]))
+    ev.terminal = True
+    ev.direction = 1.0
+    sol = solve_ivp(f, (0.0, t_max), np.concatenate([r0, v0]), method="DOP853", rtol=1e-13, atol=1e-14, events=ev)
+    if sol.t_events[0].size == 0:
+        return None, None
+    return float(np.linalg.norm(sol.y_events[0][0][:3])), float(sol.t_events[0][0])
+
+
+def _rot_state_from_inertial(r_rel, v_in, mu):
+    """Rotating-frame state of a particle at position r_rel from the PRIMARY with inertial velocity v_in (omega = z-hat)."""
+    x, y, z = r_rel[0] - mu, r_rel[1], r_rel[2]
+    return np.array([x, y, z, v_in[0] + r_rel[1], v_in[1] - r_rel[0], v_in[2]])
+
+
+def test_osculating_periapsis_matches_a_two_body_integration():
+    from orbit_ml_cr3bp.osculating_3d import osc_features, OSC_FEATURE_COLS
+    mu = 1e-11
+    GM = 1.0 - mu
+    ix = {c: i for i, c in enumerate(OSC_FEATURE_COLS)}
+    cases = {
+        "elliptic approaching": ([0.8, 0.2, 0.1], [-0.25, 0.35, 0.05]),
+        "elliptic receding": ([0.5, -0.4, 0.2], [0.5, 0.6, -0.1]),
+        "elliptic nearly radial": ([0.7, 0.1, 0.0], [-0.55, 0.12, 0.02]),
+        "hyperbolic approaching": ([1.2, 0.3, -0.2], [-1.6, 0.3, 0.1]),
+    }
+    for name, (r0, v0) in cases.items():
+        r0, v0 = np.array(r0), np.array(v0)
+        rp_num, tp_num = _kepler_periapsis(r0, v0, GM)
+        assert rp_num is not None, name
+        T = 400.0
+        f, fl = osc_features(_rot_state_from_inertial(r0, v0, mu)[None, :], np.array([T]), mu)
+        rp, tp = 10 ** f[0, ix["osc_logrp_1"]], f[0, ix["osc_tpn_1"]] * T
+        assert fl[0, 0] == 0
+        assert abs(rp - rp_num) <= 1e-8 * rp_num, (name, rp, rp_num)
+        assert abs(tp - tp_num) <= 1e-7 * max(tp_num, 1e-3) + 1e-9, (name, tp, tp_num)
+        assert f[0, ix["osc_reach_1"]] == 1.0
+
+
+def test_osculating_periapsis_in_the_cr3bp_at_tiny_mu():
+    """The transform from the rotating frame is exercised end to end: integrate the CR3BP (mu = 1e-11) and watch |r1| reach its minimum."""
+    from scipy.integrate import solve_ivp
+    from orbit_ml_cr3bp.osculating_3d import osc_features, OSC_FEATURE_COLS
+    from orbit_ml_cr3bp.physics_3d import _cr3bp_derivatives_3d_numba
+    mu = 1e-11
+    ix = {c: i for i, c in enumerate(OSC_FEATURE_COLS)}
+    st = _rot_state_from_inertial(np.array([0.8, 0.2, 0.1]), np.array([-0.25, 0.35, 0.05]), mu)
+
+    def f(t, y):
+        return _cr3bp_derivatives_3d_numba(y, mu)
+
+    def ev(t, y):                       # d|r1|/dt = 0 going from negative to positive
+        r = y[:3] - np.array([-mu, 0.0, 0.0])
+        return float(np.dot(r, y[3:6]))
+    ev.terminal = True
+    ev.direction = 1.0
+    sol = solve_ivp(f, (0.0, 200.0), st, method="DOP853", rtol=1e-13, atol=1e-14, events=ev)
+    rp_num, tp_num = np.linalg.norm(sol.y_events[0][0][:3] - np.array([-mu, 0, 0])), sol.t_events[0][0]
+    # the rotating-frame r.v differs from the inertial r.v by omega . (r x r) = 0, so the event is the same periapsis
+    T = 200.0
+    feat, _ = osc_features(st[None, :], np.array([T]), mu)
+    assert abs(10 ** feat[0, ix["osc_logrp_1"]] - rp_num) <= 1e-7 * rp_num
+    assert abs(feat[0, ix["osc_tpn_1"]] * T - tp_num) <= 1e-6 * tp_num
+
+
+def test_osculating_receding_hyperbola_has_no_future_periapsis_and_circular_is_flagged():
+    from orbit_ml_cr3bp.osculating_3d import osc_features, OSC_FEATURE_COLS
+    mu = 1e-11
+    ix = {c: i for i, c in enumerate(OSC_FEATURE_COLS)}
+    st = _rot_state_from_inertial(np.array([1.5, 0.2, 0.1]), np.array([1.4, 0.3, 0.0]), mu)       # fast and outward
+    f, fl = osc_features(st[None, :], np.array([10.0]), mu)
+    assert f[0, ix["osc_tpn_1"]] == 2.0 and f[0, ix["osc_reach_1"]] == 0.0 and f[0, ix["osc_ecc_1"]] > 1.0
+    # a circular inertial orbit at r = 1 is stationary in the rotating frame (n = omega = 1): rotating velocity 0 -> e ~ 0, flag 1
+    st = _rot_state_from_inertial(np.array([0.0, 1.0, 0.0]), np.array([-1.0, 0.0, 0.0]), mu)
+    assert np.allclose(st[3:], 0.0, atol=1e-12)
+    f, fl = osc_features(st[None, :], np.array([10.0]), mu)
+    assert fl[0, 0] == 1 and f[0, ix["osc_ecc_1"]] < 1e-8 and abs(10 ** f[0, ix["osc_logrp_1"]] - 1.0) < 1e-8
+
+
+def test_osculating_features_are_finite_on_random_states():
+    from orbit_ml_cr3bp.osculating_3d import osc_features
+    rng = np.random.RandomState(0)
+    n = 5000
+    st = np.hstack([rng.uniform(-1.5, 1.5, (n, 3)), rng.uniform(-2, 2, (n, 3))])
+    f, fl = osc_features(st, rng.uniform(1, 20, n), 0.01215058535)
+    assert np.isfinite(f).all() and np.isin(fl, (0, 1, 2)).all()
+
+
 def main():
     names = [k for k in sorted(globals()) if k.startswith("test_")]
     for k in names:

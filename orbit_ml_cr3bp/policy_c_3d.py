@@ -24,6 +24,9 @@ from .config import MU, POSITION_TOL_KM, du_km_for_mu
 from .physics_3d import EVALS_PER_STEP_3D, INTEGRATORS_3D, integrate_endpoint_3d, reference_trajectory_dense_3d
 from . import policy_b_3d as pb
 
+from .osculating_3d import OSC_FEATURE_COLS
+
+FEATS_OSC = pb.FEATS_STATE + OSC_FEATURE_COLS      # state + analytic two-body periapsis features (plan 5.2.2)
 CANDIDATES = pb.CANDIDATES
 ALPHA = pb.ALPHA
 DELTA = pb.DELTA
