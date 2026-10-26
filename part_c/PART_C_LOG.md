@@ -147,3 +147,27 @@ Leapfrog costs more than it gains once the certificate is end to end, so the phy
 **Data generation (C6).** v5 costs 0.215 s per orbit single-process against 0.152 for v4 (1.4x; the plan's "> 2x" cut does not apply): D_select 20,000 orbits (seed 42) took 25 minutes on a loaded machine.
 Started: D_train 100,000 (seed 41), D_train_enriched 20,000 (seed 141, weights 0.2933 / 0.1067 / 0.6), D_confirm_C 20,000 (seed 43), D_lock_C 5,000 (seed 44), all tau_c = 2, accuracy_monotone, 100 km, `data_c/`.
 No pipeline file (`data_3d`, `sundman_3d`, `osculating_3d`, `physics_3d`, `search_3d`, `diagnostics_3d`, `config`) is edited while generation runs.
+
+**Arms F and G (D_explore, periapsis features, fine fixed-sequence grid; `part_c/results/c1_c2/arm_F`, `arm_G`).**
+
+| arm | policy | scales | RK4 cond. risk | leapfrog cond. risk (n) | median integration cost | cheaper than RK45-cal / eqr (integration only) |
+|---|---|---|---|---|---|---|
+| E | RK4 + censored-gate leapfrog, one common scale | 0.734 | 3.8 % | 3.6 % (196) | 520 | 44.7 % / 40.2 % |
+| F | RK4 only | 0.80 | 4.5 % [3.8, 5.3] | none | 472 | 47.7 % / 42.0 % |
+| G | RK4 + classifier-gate leapfrog, one scale per selected integrator (plan 1.1.4) | 0.80 / 0.26 | 4.1 % | 0.0 % [0, 1.3] (281) | 486 | 47.3 % / 42.2 % |
+
+Leapfrog adds nothing once the certificate is end to end and the step is predicted from the periapsis features: RK4 alone is cheapest (F), and the by-integrator variant (G) fixes leapfrog's conditional risk only by giving it a scale of 0.26, which cancels its advantage.
+Decision: the physical-time policy of Track 2 is **RK4 only** (leapfrog dropped; plan 2.4 "nothing else to change" is amended by this evidence).
+
+## 4. Decisions recorded before any D_select experiment (2026-10-26)
+
+*Hybrid {Sundman, physical RK4, leapfrog} (plan 6.4.5).* On the pilot (1,602 usable orbits) the oracle Sundman cost is at or below the oracle fixed physical-step cost on 80 % of orbits and strictly below on 60 %; the ratio's 95th percentile is +0.07 dex (log10 of the cost ratio:
+5 % -1.12, 25 % -0.43, median -0.08, 75 % 0.00, 95 % +0.07). A hybrid can therefore gain at most 0.07 dex on 5 % of orbits, less than the error of the step-count model it would need and its extra inference. **Part C uses Sundman alone** (the plan's fallback).
+
+*Selection protocol (all on D_select = seed 42; fixed here, before any D_select number exists).* D_select's usable orbits are split 50/50 (seed 42) into a calibration and an evaluation fold. For every candidate: fit on D_train (100,000 natural orbits, weight 1, plus 20,000 enriched orbits,
+weight p_natural / p_enriched per sampling branch), certify ONE end-to-end scale on the calibration fold (alpha 0.05, delta 0.1, 28-value grid 0.1 ... 1.0), run the policy on the evaluation fold, record per-orbit integration cost. During selection the certificate uses the bisection form of the
+fixed sequence (`fixed_sequence_fast`: it assumes the rejections are a prefix of the sorted grid and agrees with the exact rule whenever they are; tested on 300 simulated monotone curves); the sealed policies are re-certified with the exact ascending rule on D_confirm_C's calibration rows.
+Criterion: the **median total cost per orbit that met the tolerance** (integration + the pinned model overhead, features included); a tie within 2 % goes to the simpler model (linear < fewer trees < more trees). A candidate whose evaluation-fold violation rate exceeds 6 % is excluded (the certificate did not transfer).
+Stages: S1 model class and size at q = 0.1 (linear M0; trees 10x3, 25x3, 50x4, 100x5, 300 trees; for the physical family also the structured target; features state or state + periapsis); S2 quantile q in {0.05, 0.1, 0.2, 0.3, 0.5} for the S1 winner of each family;
+S3 (physical family only) step-over guard g in {0.2, 0.3, 0.5, 1.0, inf} and the abstention rule {none, physics at three thresholds}; S4 (Sundman) nothing further. Overhead gate: the plan's 10 RHS-equivalents, pinned from an idle-machine measurement; if no candidate meets it, the rule is
+recorded in a dated deviation BEFORE any selection cost is read. The frozen policies are then fitted once more with those choices (`freeze_policy`), their overhead pinned (`overhead --pin`), and sealed.

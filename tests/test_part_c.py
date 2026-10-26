@@ -687,6 +687,26 @@ def test_linear_single_policy_matches_its_python_form_and_is_a_quantile():
     assert 0.05 < over < 0.2
 
 
+def test_endpoint_audit_trajectories_match_the_endpoint_kernels():
+    from orbit_ml_cr3bp import endpoint_audit_3d as ea
+    from orbit_ml_cr3bp import sundman_3d as sd
+    from orbit_ml_cr3bp.physics_3d import integrate_endpoint_3d, step_rk4_3d, step_leapfrog_symplectic_3d
+    mu = 0.01215058535
+    for st in _smooth_states(3, 31):
+        T = 3.0
+        for integ, fn in (("rk4", step_rk4_3d), ("leapfrog", step_leapfrog_symplectic_3d)):
+            ts, xs = ea.trajectory_fixed(integ, st, 0.0137, T, mu)
+            ok, _p, cur, _tp, _t, _r = integrate_endpoint_3d(fn, list(st), 0.0137, T, mu, 1_000_000)
+            assert ts[-1] == T and np.array_equal(xs[-1], np.asarray(cur))
+        ts, xs = ea.trajectory_rk4s(st, 0.07, T, mu)
+        r = sd.integrate_endpoint_rk4s(st, 0.07, T, mu, 1_000_000)
+        assert abs(ts[-1] - T) < 1e-12 and np.allclose(xs[-1], np.asarray(r[2]), rtol=1e-12, atol=1e-13)
+        assert (np.diff(ts) > 0).all() and len(ts) - 1 == r[6] + r[7]            # one recorded state per step
+    df = pd.DataFrame([dict(zip(["x", "y", "z", "vx", "vy", "vz"], s_), sim_time=3.0) for s_ in _smooth_states(3, 32)])
+    a = ea.max_error_audit(df, ["rk4", "leapfrog", "rk4s"], [0.01, 0.01, 0.05])
+    assert (a["max_km"] >= a["final_km"] - 1e-12).all() and not a["lucky"].any() and (a["final_km"] < 100).all()
+
+
 def main():
     names = [k for k in sorted(globals()) if k.startswith("test_")]
     for k in names:
