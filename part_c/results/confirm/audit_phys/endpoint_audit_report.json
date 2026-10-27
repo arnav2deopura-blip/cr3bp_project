@@ -1,0 +1,172 @@
+{
+  "n": 1000,
+  "lucky_endpoint": {
+    "k": 5,
+    "share": 0.005,
+    "cp95": [
+      0.0016254195175627604,
+      0.011629470559812147
+    ]
+  },
+  "max_over_tol_median": 0.04816297576099085,
+  "final_over_tol_median": 0.04404005332315879,
+  "share_max_above_tol": 0.064,
+  "share_final_above_tol": 0.059,
+  "by_cell": [
+    {
+      "cell": "III|0.17-0.8|1-3",
+      "n": 44,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.08041993976357587
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "III|0.17-0.8|3-8",
+      "n": 41,
+      "lucky_share": 0.024390243902439025,
+      "cp95": [
+        0.0006173168932865193,
+        0.12855402038414626
+      ],
+      "flag_both_labels": true
+    },
+    {
+      "cell": "III|0.17-0.8|8-20",
+      "n": 37,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.09489058741498987
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "IV|>0.8|1-3",
+      "n": 37,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.09489058741498987
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "IV|>0.8|3-8",
+      "n": 39,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.09025110096033431
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "I|0.17-0.8|1-3",
+      "n": 25,
+      "lucky_share": 0.04,
+      "cp95": [
+        0.0010121996993108454,
+        0.203516913922414
+      ],
+      "flag_both_labels": true
+    },
+    {
+      "cell": "I|0.17-0.8|3-8",
+      "n": 30,
+      "lucky_share": 0.06666666666666667,
+      "cp95": [
+        0.00817813446065631,
+        0.22073540152296187
+      ],
+      "flag_both_labels": true
+    },
+    {
+      "cell": "V|0.05-0.17|3-8",
+      "n": 27,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.12770286761543234
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "V|0.05-0.17|8-20",
+      "n": 33,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.10576281007457927
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "V|0.17-0.8|1-3",
+      "n": 49,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.07251926366427738
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "V|0.17-0.8|3-8",
+      "n": 63,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.05687235233201625
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "V|0.17-0.8|8-20",
+      "n": 84,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.04296491962956506
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "V|>0.8|1-3",
+      "n": 122,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.029784160061428706
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "V|>0.8|3-8",
+      "n": 76,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.047378753866930745
+      ],
+      "flag_both_labels": false
+    },
+    {
+      "cell": "V|>0.8|8-20",
+      "n": 39,
+      "lucky_share": 0.0,
+      "cp95": [
+        0.0,
+        0.09025110096033431
+      ],
+      "flag_both_labels": false
+    }
+  ],
+  "cells_flagged": [
+    "III|0.17-0.8|3-8",
+    "I|0.17-0.8|1-3",
+    "I|0.17-0.8|3-8"
+  ]
+}

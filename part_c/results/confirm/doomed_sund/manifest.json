@@ -1,0 +1,81 @@
+{
+  "command": "doomed",
+  "utc": "20261027T023858Z",
+  "args": {
+    "cmd": "doomed",
+    "frozen": "part_c/frozen/sund/policy_frozen.joblib",
+    "data": "data_c/confirm/cr3bp_3d_training_data_accuracy_monotone_seed43.csv",
+    "scale_from": "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_c/confirm/sund/apply_policy_20261027T013754Z",
+    "out_dir": "out_c/confirm/doomed_sund",
+    "max_rows": 0,
+    "flag_margin": 1.0,
+    "mu": 0.01215058535,
+    "tol_km": 100.0,
+    "fn": "<function cmd_doomed at 0x148e947c0>"
+  },
+  "git_commit": "4c3114e71623e75e6185f180841a7134608ce5f4",
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "argv": [
+    "run_part_c_3d.py",
+    "doomed",
+    "--frozen",
+    "part_c/frozen/sund/policy_frozen.joblib",
+    "--data",
+    "data_c/confirm/cr3bp_3d_training_data_accuracy_monotone_seed43.csv",
+    "--scale_from",
+    "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_c/confirm/sund/apply_policy_20261027T013754Z",
+    "--out_dir",
+    "out_c/confirm/doomed_sund"
+  ],
+  "data_sha256": "9dcbd23601f2431949638b1ea0befdb8a00e7341987504d27a545aebeaa21b50",
+  "data_metadata": {
+    "mu": 0.01215058535,
+    "system": "earth_moon",
+    "label_pipeline_version": 5,
+    "pipeline": "v5",
+    "seeding": "seedsequence",
+    "collision_radius_primary_du": 0.0165738813735692,
+    "collision_radius_secondary_du": 0.004519771071800209,
+    "ejection_radius": 10.0,
+    "label_mode": "accuracy_monotone",
+    "num_orbits": 20000,
+    "base_seed": 43,
+    "ftle_enabled": true,
+    "ftle_method": "variational",
+    "python_version": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+    "numpy_version": "2.4.6",
+    "pandas_version": "3.0.5",
+    "sklearn_version": "1.9.0",
+    "integrator_tolerances": null,
+    "position_tol_km": 100.0,
+    "du_km": 384400.0,
+    "position_tol_du": 0.00026014568158168577,
+    "sim_time_log_range": [
+      0.0,
+      1.301029995663981
+    ],
+    "sampling_weights": {
+      "lagrange": 0.55,
+      "wide": 0.2,
+      "near_moon": 0.25
+    },
+    "sundman_tau_c": 2.0,
+    "sundman_ds_range": [
+      0.0001,
+      4.0
+    ],
+    "ceiling_mode": "physical",
+    "dt_ceiling_abs": 2.0,
+    "reference_rtol": 1e-13,
+    "reference_atol": 1e-13,
+    "reference_max_step": 0.01,
+    "diagnostics_version": 1,
+    "evals_per_step": {
+      "euler": 1,
+      "rk4": 4,
+      "leapfrog": 1,
+      "rk4s": 4
+    },
+    "success_definition": "search reason == REASON_OK"
+  }
+}

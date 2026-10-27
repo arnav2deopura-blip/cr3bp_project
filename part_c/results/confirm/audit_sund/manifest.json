@@ -1,0 +1,27 @@
+{
+  "command": "endpoint_audit",
+  "utc": "20261027T023909Z",
+  "args": {
+    "cmd": "endpoint_audit",
+    "apply_dir": "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_c/confirm/sund/apply_policy_20261027T013754Z",
+    "n": 1000,
+    "min_cell": 20,
+    "seed": 42,
+    "out_dir": "out_c/confirm/audit_sund",
+    "mu": 0.01215058535,
+    "tol_km": 100.0,
+    "fn": "<function cmd_endpoint_audit at 0x127104860>"
+  },
+  "git_commit": "4c3114e71623e75e6185f180841a7134608ce5f4",
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "argv": [
+    "run_part_c_3d.py",
+    "endpoint_audit",
+    "--apply_dir",
+    "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_c/confirm/sund/apply_policy_20261027T013754Z",
+    "--n",
+    "1000",
+    "--out_dir",
+    "out_c/confirm/audit_sund"
+  ]
+}

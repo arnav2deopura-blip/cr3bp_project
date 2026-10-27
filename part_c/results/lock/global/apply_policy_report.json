@@ -1,0 +1,97 @@
+{
+  "args": {
+    "cmd": "apply_policy",
+    "frozen": "part_c/frozen/global/policy_frozen.joblib",
+    "data": "data_c/lock/cr3bp_3d_training_data_accuracy_monotone_seed44.csv",
+    "out_dir": "out_c/lock/global",
+    "n_cal": 4000,
+    "no_cal": true,
+    "scale_from": "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_c/confirm/global/apply_policy_20261027T022127Z",
+    "overhead": null,
+    "seed": 42,
+    "mu": 0.01215058535,
+    "tol_km": 100.0,
+    "n_jobs": 8,
+    "no_spec": false,
+    "fn": "<function cmd_apply_policy at 0x130794540>"
+  },
+  "spec": {
+    "config": {
+      "name": "global_ds",
+      "family": "sundman",
+      "cls": "constant",
+      "features": "osc",
+      "rule": "fixed_sequence",
+      "grid": "global_ds"
+    },
+    "gate": {
+      "lf_gate": "none",
+      "p_star": 0.5,
+      "g_star": 0.0
+    },
+    "features": [],
+    "candidates": [
+      "rk4s"
+    ]
+  },
+  "n_usable": 4020,
+  "n_cal": 0,
+  "certificate": null,
+  "scale": 0.08,
+  "cal_policy_violation_rate": null,
+  "rtol_calibration": {},
+  "summary": {
+    "n_eval": 4020,
+    "scale": 0.08,
+    "risk_ledger": {
+      "n_policy_runs": 4020,
+      "n_violations": 160,
+      "violation_rate": 0.03980099502487562,
+      "n_diverged": 0,
+      "abstain_rate": 0.0,
+      "median_err_over_tol": 1.633333451254471,
+      "p90_err_over_tol": 5.721326681336278,
+      "cvar90_err_over_tol": 31.624090333379353,
+      "max_err_over_tol": 208.98461319385865,
+      "catastrophic_share": 0.05625
+    },
+    "by_integrator": {
+      "rk4s": {
+        "n": 4020,
+        "share": 1.0,
+        "violations": 160,
+        "rate": 0.03980099502487562,
+        "cp95": [
+          0.033970136651521717,
+          0.04631215488564176
+        ],
+        "infeasible_choice": 0
+      }
+    },
+    "fallback_share": 0.0,
+    "abstain_share": 0.0,
+    "median_C_ml_int_met": 484.0,
+    "median_C_ml_tot_met": 484.0,
+    "mean_log10_C_ml_tot_met": 2.7204948319996287,
+    "share_total_cheaper_RK45_spec": 0.015422885572139304,
+    "share_integration_cheaper_RK45_spec": 0.01606217616580311,
+    "share_total_cheaper_DOP853_spec": 0.006716417910447761,
+    "share_integration_cheaper_DOP853_spec": 0.006994818652849741,
+    "share_total_cheaper_RK45_cal": 0.19577114427860698,
+    "share_integration_cheaper_RK45_cal": 0.2038860103626943,
+    "share_total_cheaper_DOP853_cal": 0.06940298507462686,
+    "share_integration_cheaper_DOP853_cal": 0.07227979274611399,
+    "share_total_cheaper_RK45_eqr": 0.0927860696517413,
+    "share_integration_cheaper_RK45_eqr": 0.09663212435233161,
+    "share_total_cheaper_DOP853_eqr": 0.04552238805970149,
+    "share_integration_cheaper_DOP853_eqr": 0.04740932642487047
+  },
+  "rtols": {
+    "RK45|cal": 1.9684194472866112e-07,
+    "RK45|eqr": 4.550805091344911e-07,
+    "DOP853|cal": 1.9684194472866112e-07,
+    "DOP853|eqr": 4.550805091344911e-07
+  },
+  "fallback": null,
+  "wall_seconds": 158.87727689743042
+}

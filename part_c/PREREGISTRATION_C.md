@@ -95,3 +95,8 @@ Stopping rule: each confirmatory step runs once per target (`confirm_log_c.jsonl
 9. Not in the confirmatory family and not done in this round: E8 periodic families, E12 2D control, the guard + abstention combination, Track 4.1.2-4.1.4 (matched resampling, model-size control, dimensionless transfer), E11b measured.
 
 ## Deviations
+- 2026-10-27, after every confirmatory step had run once (`confirm_log_c.jsonl`: apply_sund, apply_phys, apply_global, c1_resid, doomed_sund, doomed_phys, audit_sund, audit_phys on D_confirm_C; apply_sund, apply_phys, apply_global on D_lock_C; the `tests` step is a pure
+  computation on those outputs and is logged only in `part_c/results/confirm/confirm_tests_confirm.json`): two EXPLORATORY additions written before any of their code exists. They add nothing to the Holm family and change nothing above "## Deviations".
+  **Track 4.2, the free-lookahead arm of E3c**: `run_part_c_3d.py e3c_paired --osc_arm` adds, on D_explore with the same splits as E3c, an arm that uses the 13 periapsis features at no lookahead cost (charged 4 evaluations for the features), at the same scale grid and the same risk-matched comparison as the Track 0 errata.
+  Expectation stated now: the arm's median error is about 0.14 dex (`PART_C_LOG.md` section 2, 300 trees), i.e. as good as lookahead at f = 0.5, and at equal realized risk it is cheaper than every f > 0 arm against RK45-cal. **Report writing**: `RESULTS_PART_C.md` and the figures of `make_figures_c.py`
+  (sealed code, run after the tests). `freeze_c.py check` will report `run_part_c_3d.py` as changed after the first addition; no confirmatory step remains to be guarded.
