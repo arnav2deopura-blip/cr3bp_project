@@ -68,7 +68,7 @@ def step_commands(step, target, a):
             prev = _latest(os.path.join(TARGETS["confirm"]["out"], which), "apply_policy")
             cmd += ["--no_cal", "--scale_from", prev]
         elif target == "dry":
-            cmd += ["--n_cal", "1500"]
+            cmd += ["--n_cal", "4000"]
         else:
             cmd += ["--n_cal", "4000"]
         return cmd

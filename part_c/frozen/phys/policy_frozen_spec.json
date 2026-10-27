@@ -1,0 +1,114 @@
+{
+  "config": {
+    "name": "phys_final",
+    "family": "phys",
+    "cls": "trees",
+    "n_iter": 10,
+    "depth": 3,
+    "lr": 0.3,
+    "q": 0.1,
+    "structured": true,
+    "rk4_only": true,
+    "gate": "none",
+    "features": "osc",
+    "abstain_rule": "physics",
+    "abstain_logtau": -1.0,
+    "rule": "fixed_sequence",
+    "grid": "fine",
+    "overhead_rhs": 11.744340661307053
+  },
+  "gate": {
+    "lf_gate": "none",
+    "p_star": 0.5,
+    "g_star": 0.0
+  },
+  "features": [
+    "x",
+    "y",
+    "z",
+    "vx",
+    "vy",
+    "vz",
+    "sim_time",
+    "jacobi_3d",
+    "r1_3d",
+    "r2_3d",
+    "r1_r2_ratio_3d",
+    "c_minus_c_l1_3d",
+    "osc_logrp_1",
+    "osc_logtaup_1",
+    "osc_tpn_1",
+    "osc_reach_1",
+    "osc_logrel_1",
+    "osc_ecc_1",
+    "osc_logrp_2",
+    "osc_logtaup_2",
+    "osc_tpn_2",
+    "osc_reach_2",
+    "osc_logrel_2",
+    "osc_ecc_2",
+    "osc_logtau_hat"
+  ],
+  "candidates": [
+    "rk4"
+  ],
+  "n_train_rows": 94611,
+  "n_select_rows": 16190,
+  "train_files": [
+    "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+    "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv"
+  ],
+  "select_file": "data_c/select/cr3bp_3d_training_data_accuracy_monotone_seed42.csv",
+  "sha256": {
+    "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv": "a0ab5267529ced0e7e5dde0c97e7f00592c977b1fcc247fc9567c780c316d0ab",
+    "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv": "73c2311d0b562cbcf9622e2f15400c70b00fa931152cdbfdad513bb1fd90fdeb",
+    "data_c/select/cr3bp_3d_training_data_accuracy_monotone_seed42.csv": "7b589bf22863d19be3d859631c57bea56092aa8c19ee7d0b7d8aba4407fac07d"
+  },
+  "overhead_measurement": {
+    "policy_ns_per_call": 327.8325,
+    "policy_ns_range": [
+      320.21208,
+      331.06167
+    ],
+    "rhs_ns_per_call": 27.914083,
+    "rhs_ns_range": [
+      26.9105,
+      28.324708
+    ],
+    "features_ns_per_call": 98.44542,
+    "features_ns_range": [
+      97.89375,
+      106.28625
+    ],
+    "rhs_equiv": 11.744340661307053,
+    "rhs_equiv_range": [
+      11.305044345029081,
+      12.302323256721355
+    ],
+    "features_rhs_equiv": 3.52672950066101,
+    "python_dispatch_ns_policy": 3208.0,
+    "python_dispatch_ns_rhs": 458.0,
+    "python_dispatch_rhs_equiv": 7.004366812227074,
+    "repeats": 9,
+    "n_policy_calls": 100000,
+    "n_rhs_calls": 1000000,
+    "kind": "trees",
+    "size": {
+      "rk4": {
+        "n_trees": 10,
+        "n_nodes": 150
+      },
+      "leapfrog": null,
+      "gate": null
+    },
+    "batched_rhs_equiv": 11.769757939030272,
+    "machine": {
+      "platform": "macOS-26.6.2-arm64-arm-64bit",
+      "python": "3.11.16",
+      "numba": "0.67.0",
+      "load_average_1min": 6.9140625,
+      "cpu_count": 10
+    }
+  },
+  "model_file_sha256": "25d3b1225b1cc7729d655fca9723dba0ecd332134386dd25f4d39d71b406ea5f"
+}

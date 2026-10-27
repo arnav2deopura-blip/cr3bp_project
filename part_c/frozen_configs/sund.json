@@ -1,0 +1,2 @@
+{"name": "sund_final", "family": "sundman", "cls": "trees", "n_iter": 25, "depth": 3, "lr": 0.2, "q": 0.2, "structured": false, "features": "osc",
+ "rule": "fixed_sequence", "grid": "fine"}

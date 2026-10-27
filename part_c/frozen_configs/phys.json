@@ -1,0 +1,2 @@
+{"name": "phys_final", "family": "phys", "cls": "trees", "n_iter": 10, "depth": 3, "lr": 0.3, "q": 0.1, "structured": true, "rk4_only": true, "gate": "none",
+ "features": "osc", "abstain_rule": "physics", "abstain_logtau": -1.0, "rule": "fixed_sequence", "grid": "fine"}

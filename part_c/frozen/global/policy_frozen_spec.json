@@ -1,0 +1,20 @@
+{
+  "config": {
+    "name": "global_ds",
+    "family": "sundman",
+    "cls": "constant",
+    "features": "osc",
+    "rule": "fixed_sequence",
+    "grid": "global_ds"
+  },
+  "gate": {
+    "lf_gate": "none",
+    "p_star": 0.5,
+    "g_star": 0.0
+  },
+  "features": [],
+  "candidates": [
+    "rk4s"
+  ],
+  "model_file_sha256": "7c5910673c917d8479867b14d9d25a41ea1905862a0cd14b9984beb1092209eb"
+}
