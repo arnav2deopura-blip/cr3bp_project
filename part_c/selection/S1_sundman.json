@@ -1,0 +1,85 @@
+[
+ {
+  "name": "sund_lin",
+  "family": "sundman",
+  "cls": "linear",
+  "q": 0.1
+ },
+ {
+  "name": "sund_t10x3",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 10,
+  "depth": 3,
+  "lr": 0.3,
+  "q": 0.1,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t25x3",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.1,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t50x4",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 50,
+  "depth": 4,
+  "lr": 0.15,
+  "q": 0.1,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t100x5",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 100,
+  "depth": 5,
+  "lr": 0.1,
+  "q": 0.1,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t300",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 300,
+  "depth": null,
+  "lr": 0.05,
+  "q": 0.1,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_state_t25x3",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.1,
+  "structured": false,
+  "features": "state"
+ },
+ {
+  "name": "sund_state_t300",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 300,
+  "depth": null,
+  "lr": 0.05,
+  "q": 0.1,
+  "structured": false,
+  "features": "state"
+ }
+]

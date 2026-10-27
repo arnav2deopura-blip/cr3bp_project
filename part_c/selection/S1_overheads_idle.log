@@ -1,0 +1,23 @@
+load average at start (5.50390625, 8.126953125, 14.40234375)
+sund_lin                   11.36  range [10.9, 11.92]  rhs_ns 25.4  policy_ns 289
+sund_t10x3                 12.01  range [11.66, 12.11]  rhs_ns 24.6  policy_ns 296  feat 3.74  python-dispatch 6.69
+sund_t25x3                 16.59  range [16.27, 18.72]  rhs_ns 25.3  policy_ns 419  feat 3.69  python-dispatch 6.79
+sund_t50x4                 28.99  range [28.72, 31.33]  rhs_ns 23.8  policy_ns 690  feat 3.91  python-dispatch 7.59
+sund_t100x5                72.39  range [69.29, 75.58]  rhs_ns 24.0  policy_ns 1740  feat 3.86  python-dispatch 8.92
+sund_t300                 332.13  range [326.37, 338.97]  rhs_ns 24.3  policy_ns 8077  feat 3.76  python-dispatch 26.88
+sund_state_t25x3           10.54  range [10.36, 11.7]  rhs_ns 25.9  policy_ns 273  feat 0.12  python-dispatch 6.44
+sund_state_t300           318.50  range [314.56, 362.38]  rhs_ns 25.8  policy_ns 8232  feat 0.12  python-dispatch 29.08
+phys_lin                   10.91  range [10.71, 11.4]  rhs_ns 25.8  policy_ns 281
+phys_t10x3_raw             13.27  range [13.16, 14.59]  rhs_ns 24.7  policy_ns 327  feat 3.75  python-dispatch 6.00
+phys_t10x3_struct          12.83  range [12.47, 14.24]  rhs_ns 25.2  policy_ns 323  feat 3.75  python-dispatch 5.91
+phys_t25x3_raw             16.92  range [15.67, 18.21]  rhs_ns 24.4  policy_ns 413  feat 3.77  python-dispatch 6.89
+phys_t25x3_struct          17.19  range [15.54, 17.74]  rhs_ns 24.4  policy_ns 419  feat 3.78  python-dispatch 6.79
+phys_t50x4_raw             26.97  range [23.72, 30.94]  rhs_ns 26.1  policy_ns 704  feat 3.41  python-dispatch 6.90
+phys_t50x4_struct          28.63  range [26.83, 30.42]  rhs_ns 24.1  policy_ns 690  feat 3.84  python-dispatch 6.42
+phys_t100x5_raw            72.02  range [70.06, 75.04]  rhs_ns 24.2  policy_ns 1744  feat 3.83  python-dispatch 9.64
+phys_t100x5_struct         71.33  range [68.99, 73.31]  rhs_ns 24.1  policy_ns 1721  feat 3.87  python-dispatch 8.83
+phys_t300_raw             318.35  range [314.4, 336.29]  rhs_ns 24.2  policy_ns 7695  feat 3.79  python-dispatch 24.11
+phys_t300_struct          356.96  range [347.46, 363.44]  rhs_ns 24.4  policy_ns 8725  feat 3.75  python-dispatch 26.11
+phys_state_t300_raw       295.85  range [287.39, 301.8]  rhs_ns 24.3  policy_ns 7176  feat 0.12  python-dispatch 24.08
+phys_state_t25x3_raw       10.65  range [10.52, 11.63]  rhs_ns 25.7  policy_ns 273  feat 0.12  python-dispatch 6.37
+load average at end (4.689453125, 5.89404296875, 11.6005859375)

@@ -1,0 +1,67 @@
+[
+ {
+  "name": "phys_t10x3_struct_q0.05",
+  "family": "phys",
+  "cls": "trees",
+  "n_iter": 10,
+  "depth": 3,
+  "lr": 0.3,
+  "q": 0.05,
+  "structured": true,
+  "rk4_only": true,
+  "gate": "none",
+  "features": "osc"
+ },
+ {
+  "name": "phys_t10x3_struct_q0.1",
+  "family": "phys",
+  "cls": "trees",
+  "n_iter": 10,
+  "depth": 3,
+  "lr": 0.3,
+  "q": 0.1,
+  "structured": true,
+  "rk4_only": true,
+  "gate": "none",
+  "features": "osc"
+ },
+ {
+  "name": "phys_t10x3_struct_q0.2",
+  "family": "phys",
+  "cls": "trees",
+  "n_iter": 10,
+  "depth": 3,
+  "lr": 0.3,
+  "q": 0.2,
+  "structured": true,
+  "rk4_only": true,
+  "gate": "none",
+  "features": "osc"
+ },
+ {
+  "name": "phys_t10x3_struct_q0.3",
+  "family": "phys",
+  "cls": "trees",
+  "n_iter": 10,
+  "depth": 3,
+  "lr": 0.3,
+  "q": 0.3,
+  "structured": true,
+  "rk4_only": true,
+  "gate": "none",
+  "features": "osc"
+ },
+ {
+  "name": "phys_t10x3_struct_q0.5",
+  "family": "phys",
+  "cls": "trees",
+  "n_iter": 10,
+  "depth": 3,
+  "lr": 0.3,
+  "q": 0.5,
+  "structured": true,
+  "rk4_only": true,
+  "gate": "none",
+  "features": "osc"
+ }
+]

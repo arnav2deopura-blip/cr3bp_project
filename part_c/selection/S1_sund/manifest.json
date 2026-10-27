@@ -1,0 +1,42 @@
+{
+  "command": "select",
+  "utc": "20261026T233903Z",
+  "args": {
+    "cmd": "select",
+    "train": [
+      "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+      "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv"
+    ],
+    "train_enriched": [
+      "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv"
+    ],
+    "select": "data_c/select/cr3bp_3d_training_data_accuracy_monotone_seed42.csv",
+    "configs": "part_c/selection/S1_sundman.json",
+    "out_dir": "out_c/select_S1_sund",
+    "seed": 42,
+    "mu": 0.01215058535,
+    "tol_km": 100.0,
+    "n_jobs": 6,
+    "max_train": 0,
+    "fn": "<function cmd_select at 0x12f5802c0>"
+  },
+  "git_commit": "acc970e9dfd5da6fa30a3cfd1623550b246eadad",
+  "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+  "argv": [
+    "run_part_c_3d.py",
+    "select",
+    "--train",
+    "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+    "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv",
+    "--train_enriched",
+    "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv",
+    "--select",
+    "data_c/select/cr3bp_3d_training_data_accuracy_monotone_seed42.csv",
+    "--configs",
+    "part_c/selection/S1_sundman.json",
+    "--out_dir",
+    "out_c/select_S1_sund",
+    "--n_jobs",
+    "6"
+  ]
+}

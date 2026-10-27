@@ -1,0 +1,57 @@
+[
+ {
+  "name": "sund_t25x3_q0.05",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.05,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t25x3_q0.1",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.1,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t25x3_q0.2",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.2,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t25x3_q0.3",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.3,
+  "structured": false,
+  "features": "osc"
+ },
+ {
+  "name": "sund_t25x3_q0.5",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.5,
+  "structured": false,
+  "features": "osc"
+ }
+]
