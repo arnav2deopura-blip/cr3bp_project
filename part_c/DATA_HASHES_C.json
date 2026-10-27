@@ -1,0 +1,277 @@
+{
+ "D_train": {
+  "path": "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+  "sha256": "a0ab5267529ced0e7e5dde0c97e7f00592c977b1fcc247fc9567c780c316d0ab",
+  "bytes": 94328399,
+  "metadata": {
+   "mu": 0.01215058535,
+   "system": "earth_moon",
+   "label_pipeline_version": 5,
+   "pipeline": "v5",
+   "seeding": "seedsequence",
+   "collision_radius_primary_du": 0.0165738813735692,
+   "collision_radius_secondary_du": 0.004519771071800209,
+   "ejection_radius": 10.0,
+   "label_mode": "accuracy_monotone",
+   "num_orbits": 100000,
+   "base_seed": 41,
+   "ftle_enabled": true,
+   "ftle_method": "variational",
+   "python_version": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+   "numpy_version": "2.4.6",
+   "pandas_version": "3.0.5",
+   "sklearn_version": "1.9.0",
+   "integrator_tolerances": null,
+   "position_tol_km": 100.0,
+   "du_km": 384400.0,
+   "position_tol_du": 0.00026014568158168577,
+   "sim_time_log_range": [
+    0.0,
+    1.301029995663981
+   ],
+   "sampling_weights": {
+    "lagrange": 0.55,
+    "wide": 0.2,
+    "near_moon": 0.25
+   },
+   "sundman_tau_c": 2.0,
+   "sundman_ds_range": [
+    0.0001,
+    4.0
+   ],
+   "ceiling_mode": "physical",
+   "dt_ceiling_abs": 2.0,
+   "reference_rtol": 1e-13,
+   "reference_atol": 1e-13,
+   "reference_max_step": 0.01,
+   "diagnostics_version": 1,
+   "evals_per_step": {
+    "euler": 1,
+    "rk4": 4,
+    "leapfrog": 1,
+    "rk4s": 4
+   },
+   "success_definition": "search reason == REASON_OK"
+  }
+ },
+ "D_train_enriched": {
+  "path": "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv",
+  "sha256": "73c2311d0b562cbcf9622e2f15400c70b00fa931152cdbfdad513bb1fd90fdeb",
+  "bytes": 18574824,
+  "metadata": {
+   "mu": 0.01215058535,
+   "system": "earth_moon",
+   "label_pipeline_version": 5,
+   "pipeline": "v5",
+   "seeding": "seedsequence",
+   "collision_radius_primary_du": 0.0165738813735692,
+   "collision_radius_secondary_du": 0.004519771071800209,
+   "ejection_radius": 10.0,
+   "label_mode": "accuracy_monotone",
+   "num_orbits": 20000,
+   "base_seed": 141,
+   "ftle_enabled": true,
+   "ftle_method": "variational",
+   "python_version": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+   "numpy_version": "2.4.6",
+   "pandas_version": "3.0.5",
+   "sklearn_version": "1.9.0",
+   "integrator_tolerances": null,
+   "position_tol_km": 100.0,
+   "du_km": 384400.0,
+   "position_tol_du": 0.00026014568158168577,
+   "sim_time_log_range": [
+    0.0,
+    1.301029995663981
+   ],
+   "sampling_weights": {
+    "lagrange": 0.2933,
+    "wide": 0.1067,
+    "near_moon": 0.6
+   },
+   "sundman_tau_c": 2.0,
+   "sundman_ds_range": [
+    0.0001,
+    4.0
+   ],
+   "ceiling_mode": "physical",
+   "dt_ceiling_abs": 2.0,
+   "reference_rtol": 1e-13,
+   "reference_atol": 1e-13,
+   "reference_max_step": 0.01,
+   "diagnostics_version": 1,
+   "evals_per_step": {
+    "euler": 1,
+    "rk4": 4,
+    "leapfrog": 1,
+    "rk4s": 4
+   },
+   "success_definition": "search reason == REASON_OK"
+  }
+ },
+ "D_select": {
+  "path": "data_c/select/cr3bp_3d_training_data_accuracy_monotone_seed42.csv",
+  "sha256": "7b589bf22863d19be3d859631c57bea56092aa8c19ee7d0b7d8aba4407fac07d",
+  "bytes": 18847494,
+  "metadata": {
+   "mu": 0.01215058535,
+   "system": "earth_moon",
+   "label_pipeline_version": 5,
+   "pipeline": "v5",
+   "seeding": "seedsequence",
+   "collision_radius_primary_du": 0.0165738813735692,
+   "collision_radius_secondary_du": 0.004519771071800209,
+   "ejection_radius": 10.0,
+   "label_mode": "accuracy_monotone",
+   "num_orbits": 20000,
+   "base_seed": 42,
+   "ftle_enabled": true,
+   "ftle_method": "variational",
+   "python_version": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+   "numpy_version": "2.4.6",
+   "pandas_version": "3.0.5",
+   "sklearn_version": "1.9.0",
+   "integrator_tolerances": null,
+   "position_tol_km": 100.0,
+   "du_km": 384400.0,
+   "position_tol_du": 0.00026014568158168577,
+   "sim_time_log_range": [
+    0.0,
+    1.301029995663981
+   ],
+   "sampling_weights": {
+    "lagrange": 0.55,
+    "wide": 0.2,
+    "near_moon": 0.25
+   },
+   "sundman_tau_c": 2.0,
+   "sundman_ds_range": [
+    0.0001,
+    4.0
+   ],
+   "ceiling_mode": "physical",
+   "dt_ceiling_abs": 2.0,
+   "reference_rtol": 1e-13,
+   "reference_atol": 1e-13,
+   "reference_max_step": 0.01,
+   "diagnostics_version": 1,
+   "evals_per_step": {
+    "euler": 1,
+    "rk4": 4,
+    "leapfrog": 1,
+    "rk4s": 4
+   },
+   "success_definition": "search reason == REASON_OK"
+  }
+ },
+ "D_confirm_C": {
+  "path": "data_c/confirm/cr3bp_3d_training_data_accuracy_monotone_seed43.csv",
+  "sha256": "9dcbd23601f2431949638b1ea0befdb8a00e7341987504d27a545aebeaa21b50",
+  "bytes": 18850415,
+  "metadata": {
+   "mu": 0.01215058535,
+   "system": "earth_moon",
+   "label_pipeline_version": 5,
+   "pipeline": "v5",
+   "seeding": "seedsequence",
+   "collision_radius_primary_du": 0.0165738813735692,
+   "collision_radius_secondary_du": 0.004519771071800209,
+   "ejection_radius": 10.0,
+   "label_mode": "accuracy_monotone",
+   "num_orbits": 20000,
+   "base_seed": 43,
+   "ftle_enabled": true,
+   "ftle_method": "variational",
+   "python_version": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+   "numpy_version": "2.4.6",
+   "pandas_version": "3.0.5",
+   "sklearn_version": "1.9.0",
+   "integrator_tolerances": null,
+   "position_tol_km": 100.0,
+   "du_km": 384400.0,
+   "position_tol_du": 0.00026014568158168577,
+   "sim_time_log_range": [
+    0.0,
+    1.301029995663981
+   ],
+   "sampling_weights": {
+    "lagrange": 0.55,
+    "wide": 0.2,
+    "near_moon": 0.25
+   },
+   "sundman_tau_c": 2.0,
+   "sundman_ds_range": [
+    0.0001,
+    4.0
+   ],
+   "ceiling_mode": "physical",
+   "dt_ceiling_abs": 2.0,
+   "reference_rtol": 1e-13,
+   "reference_atol": 1e-13,
+   "reference_max_step": 0.01,
+   "diagnostics_version": 1,
+   "evals_per_step": {
+    "euler": 1,
+    "rk4": 4,
+    "leapfrog": 1,
+    "rk4s": 4
+   },
+   "success_definition": "search reason == REASON_OK"
+  }
+ },
+ "D_lock_C": {
+  "path": "data_c/lock/cr3bp_3d_training_data_accuracy_monotone_seed44.csv",
+  "sha256": "3f5a11a8d4f0d9ce7e2b8a7b13d8fe30734707facdeb313b8acea89232835767",
+  "bytes": 4706373,
+  "metadata": {
+   "mu": 0.01215058535,
+   "system": "earth_moon",
+   "label_pipeline_version": 5,
+   "pipeline": "v5",
+   "seeding": "seedsequence",
+   "collision_radius_primary_du": 0.0165738813735692,
+   "collision_radius_secondary_du": 0.004519771071800209,
+   "ejection_radius": 10.0,
+   "label_mode": "accuracy_monotone",
+   "num_orbits": 5000,
+   "base_seed": 44,
+   "ftle_enabled": true,
+   "ftle_method": "variational",
+   "python_version": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+   "numpy_version": "2.4.6",
+   "pandas_version": "3.0.5",
+   "sklearn_version": "1.9.0",
+   "integrator_tolerances": null,
+   "position_tol_km": 100.0,
+   "du_km": 384400.0,
+   "position_tol_du": 0.00026014568158168577,
+   "sim_time_log_range": [
+    0.0,
+    1.301029995663981
+   ],
+   "sampling_weights": {
+    "lagrange": 0.55,
+    "wide": 0.2,
+    "near_moon": 0.25
+   },
+   "sundman_tau_c": 2.0,
+   "sundman_ds_range": [
+    0.0001,
+    4.0
+   ],
+   "ceiling_mode": "physical",
+   "dt_ceiling_abs": 2.0,
+   "reference_rtol": 1e-13,
+   "reference_atol": 1e-13,
+   "reference_max_step": 0.01,
+   "diagnostics_version": 1,
+   "evals_per_step": {
+    "euler": 1,
+    "rk4": 4,
+    "leapfrog": 1,
+    "rk4s": 4
+   },
+   "success_definition": "search reason == REASON_OK"
+  }
+ }
+}

@@ -1,0 +1,15 @@
+[
+ "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+ "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv",
+ "data_c/select/cr3bp_3d_training_data_accuracy_monotone_seed42.csv",
+ "data_c/confirm/cr3bp_3d_training_data_accuracy_monotone_seed43.csv",
+ "data_c/lock/cr3bp_3d_training_data_accuracy_monotone_seed44.csv",
+ "part_c/frozen/phys/policy_frozen.joblib",
+ "part_c/frozen/sund/policy_frozen.joblib",
+ "part_c/frozen/global/policy_frozen.joblib",
+ "part_c/frozen/partb_refit/policy_frozen.joblib",
+ "part_c/frozen/phys/policy_frozen_spec.json",
+ "part_c/frozen/sund/policy_frozen_spec.json",
+ "part_c/frozen/global/policy_frozen_spec.json",
+ "part_c/frozen/partb_refit/policy_frozen_spec.json"
+]

@@ -707,6 +707,28 @@ def test_endpoint_audit_trajectories_match_the_endpoint_kernels():
     assert (a["max_km"] >= a["final_km"] - 1e-12).all() and not a["lucky"].any() and (a["final_km"] < 100).all()
 
 
+def test_matched_subsample_matches_the_target_histogram():
+    from orbit_ml_cr3bp import mu_dial_3d as md
+    rng = np.random.RandomState(4)
+    vals = {1e-6: rng.normal(1.2, 0.8, 20000), 1e-3: rng.normal(0.6, 0.7, 20000), 0.05: rng.normal(0.0, 0.6, 20000)}
+    masks, info = md.matched_subsample(vals, target_edges=np.linspace(-1.5, 3.0, 10), seed=1, min_per_bin=200)
+    edges = np.array(info["edges"])
+    target = np.array(info["target_share"])
+    assert abs(target.sum() - 1.0) < 1e-12 and (target > 0).any()
+    for mu, v in vals.items():
+        kept = v[masks[mu]]
+        h = np.histogram(kept, bins=edges)[0].astype(float)
+        assert h.sum() > 500
+        share = h / h.sum()
+        err = np.sqrt(np.maximum(target * (1 - target), 1e-12) / h.sum())
+        z = np.abs(share - target) / np.maximum(err, 1e-9)
+        pop = target > 0
+        assert (z[pop] < 5).all(), (mu, np.round(share[pop], 3), np.round(target[pop], 3))
+        assert h[~pop].sum() == 0                                  # nothing is kept from a bin some system does not populate
+    # bins that some system does not populate get no weight in the target
+    assert (np.array(info["populated"]) == (target > 0)).all()
+
+
 def main():
     names = [k for k in sorted(globals()) if k.startswith("test_")]
     for k in names:
