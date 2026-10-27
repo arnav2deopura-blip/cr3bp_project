@@ -123,3 +123,9 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
   radius; Earth-Moon and Sun-Earth unchanged); `run_failure_study_3d.py policy` gains `--mu` and `--n_train`; `run_failure_experiments_3d.py` gains `e3c_features`, `e3c`, `mu_dial`.
 - Datasets (untracked, `data_b/mu_dial/`, hashes in `part_b/results/exploratory/mu_dial/dataset_hashes.json`): seeds 31-35.
 
+
+# 2026-10-27: Part C (see part_c/PART_C_LOG.md, part_c/RESULTS_PART_C.md)
+- New: `orbit_ml_cr3bp/{osculating,sundman,guard,compiled_model,policy_c,doomed,endpoint_audit,confirm_c}_3d.py`, `run_part_c_3d.py`, `run_confirm_c_3d.py`, `freeze_c.py`, `make_figures_c.py`, `tests/test_part_c.py`, `part_c/`.
+- Changed (backward compatible): `config.py` (LEGACY_JACOBI_TOLERANCES_3D with the old name as alias), `physics_3d.py` (`Rk4sStep`, "rk4s" registry entries, endpoint dispatch), `search_3d.py` (`step_func=`), `data_3d.py` + `generate_3d_data.py` (pipeline v5, `--tau_c`, `--sampling_weights`),
+  `failure_study_3d.py` (lever surface, Sundman decomposition), `mu_dial_3d.py` (Hill strata, matched subsample, dimensionless features), `make_figures_b.py` (CI band on one panel). Part B tests still pass (`tests/test_phase0.py` 9/9, `tests/test_failure_study.py`).
+- Part B / A are reproduced from their own commits (68a43ff / 68a554b), not from this tree; `freeze_b.py check` reports the changed files.

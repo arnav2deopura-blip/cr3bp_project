@@ -124,12 +124,18 @@ def cmd_e3c_paired(a):
     arms = {0.0: list(xb.FEATS_STATE)}
     for f in a.fractions:
         arms[f] = list(xb.FEATS_STATE) + la.feature_names(f)
+    fr_all = list(a.fractions)
+    if a.osc_arm:     # Track 4.2: the periapsis features as a free lookahead (arm key -1; charged 4 evaluations for the features)
+        from orbit_ml_cr3bp.osculating_3d import add_osc_features, OSC_FEATURE_COLS
+        train, ev = add_osc_features(train, MU), add_osc_features(ev, MU)
+        arms[-1.0] = list(xb.FEATS_STATE) + OSC_FEATURE_COLS
+        fr_all.append(-1.0)
     regs = {f: xb.fit_log_quantile(train, "rk4", a.quantile, features=ft, seed=42) for f, ft in arms.items()}
     scales = list(a.scales)
     per, rows = {}, []
     t0 = time.time()
     for f, ft in arms.items():
-        c_la = 0.0 if f == 0 else ev[f"la{la.tag(f)}_nfev"].to_numpy(dtype=float)
+        c_la = 0.0 if f == 0 else (4.0 if f < 0 else ev[f"la{la.tag(f)}_nfev"].to_numpy(dtype=float))
         for s in scales:
             m = _eval_rk4(ft, regs[f], ev, None, s, comps, a.tol_km, a.n_jobs, c_la)
             per[(f, s)] = m
@@ -149,7 +155,7 @@ def cmd_e3c_paired(a):
     paired = {}
     for comp in comps:
         for (s0, s1) in a.paired_scales:
-            for f1 in a.fractions:
+            for f1 in fr_all:
                 m0, m1 = per[(0.0, s0)], per[(f1, s1)]
                 w0 = (m0["meets"] & (m0["c_tot"] < m0[comp])).to_numpy()
                 w1 = (m1["meets"] & (m1["c_tot"] < m1[comp])).to_numpy()
@@ -1146,6 +1152,7 @@ def main():
     sp.add_argument("--paired_scales", type=float, nargs=2, action="append", default=[[0.5, 0.6], [0.5, 0.5], [0.6, 0.6]],
                     help="(scale of f = 0, scale of f > 0) pairs for the McNemar test")
     sp.add_argument("--risk_targets", type=float, nargs="+", default=[0.03, 0.035, 0.04])
+    sp.add_argument("--osc_arm", action="store_true", help="Track 4.2: add the periapsis-feature arm (free lookahead)")
     sp.set_defaults(fn=cmd_e3c_paired)
 
     sp = sub.add_parser("osc_diag")

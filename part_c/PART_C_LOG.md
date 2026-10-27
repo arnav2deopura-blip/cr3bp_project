@@ -243,3 +243,12 @@ Doomed orbits (descriptive, D_select, 3,810 reference-divergent orbits, `sund`):
 primary 14.8 %, escape 0.4 %) and under the relaxed rule (reference event inside the detecting step) on 96.6 % (escape 46.8 %: far from the bodies the physical step is long). The physical crash flag (osculating periapsis inside the body, reached before T) has recall 80.7 % overall
 (primary 97.9 %, secondary 83.4 %, escape 0 %), precision 96.2 %, and fires on 0.76 % of usable orbits.
 Endpoint audit (Track 1.4, 600 `sund` runs): max checkpoint error above tolerance with final error within: 2.0 % [1.0, 3.5]; max above tol on 6.2 % of runs against 4.2 % for the final error alone. Four merged cells exceed the 2 % rule in this small sample (n >= 20 per cell); the rule is applied to the confirmatory audit.
+
+## 7. Confirmatory run and lock (2026-10-27; sealed 01:37:44Z, git ea3b6df; log `confirm_log_c.jsonl`, outputs `part_c/results/confirm`, `lock`)
+
+Order run, once each: apply_sund, apply_phys, apply_global, c1_resid, (tests), doomed_sund, doomed_phys, audit_sund, audit_phys on D_confirm_C; apply_sund, apply_phys, apply_global on D_lock_C. The seal check printed OK before the tests and the runner re-checked before each step.
+Result: C1, C3, C4, C5 supported, C2 not (`RESULTS_PART_C.md` section 2); every expectation written on D_select held within sampling error. Realized violation: Sundman 4.39 % [4.03, 4.77], physical time 4.77 % [4.40, 5.17], global step 3.64 %. Lock: Sundman 4.28 %, 70.0 % cheaper than RK45 at equal risk.
+Process notes: (i) one stdin-driven multiprocessing job (the first D_select reference-position cache) could not start its spawn workers and left a stray Python process for about 35 minutes; found with `ps`, killed, rerun from a script file; it affected timings of other jobs only. (ii) An unrelated `node` process from another project
+(PID 58534, about 24 h old at 100 % of one core) was running throughout and is not mine; the timings in sections 2 and 5 were taken at load averages of 5-7 because of it and of other jobs. (iii) One over-broad `git add -A` briefly staged the repository's pre-existing untracked files (`archive/`, `data/`, `RESULTS_REPORT.md*`); the local commit was undone
+(`git reset --soft`) and recommitted with explicit paths; nothing was pushed and those files are untouched.
+Track 4.2 (the periapsis arm of E3c) was run after the confirmatory steps under the dated deviation; result in `part_b/RESULTS_E3C_MU_DIAL.md` E6.
