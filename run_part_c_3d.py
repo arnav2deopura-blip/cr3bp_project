@@ -1092,6 +1092,34 @@ def cmd_doomed(a):
     print("wrote", out)
 
 
+def cmd_endpoint_audit(a):
+    """Track 1.4: re-run the chosen fixed-step runs of a policy with the trajectory recorded and compare the maximum checkpoint error with the final one."""
+    from orbit_ml_cr3bp import endpoint_audit_3d as ea
+    from orbit_ml_cr3bp.audit_3d import clopper_pearson
+    out = make_run_dir(a.out_dir, "endpoint_audit", a)
+    led = read_ledger(os.path.join(a.apply_dir, "ledger.csv"))
+    led["cell"] = fs.assign_cells(led)
+    L = led[led["ml_integrator"].isin(["rk4", "leapfrog", "rk4s"]) & led["ml_ok"]].sample(min(a.n, int(led["ml_ok"].sum())), random_state=a.seed).reset_index(drop=True)
+    res = ea.max_error_audit(L, L["ml_integrator"].tolist(), L["ml_dt"].tolist(), a.mu, a.tol_km)
+    L = L.join(res.set_index("i"))
+    L["max_over_tol"] = L["max_km"] / a.tol_km
+    L["final_over_tol"] = L["final_km"] / a.tol_km
+    L[["row_id", "ml_integrator", "cell", "regime", "h_band", "final_km", "max_km", "lucky"]].to_csv(os.path.join(out, "endpoint_audit.csv"), index=False)
+    ok = L[~L["failed"].fillna(True).astype(bool)]
+    k = int(ok["lucky"].sum())
+    rep = {"n": int(len(ok)), "lucky_endpoint": {"k": k, "share": k / max(len(ok), 1), "cp95": list(clopper_pearson(k, len(ok)))},
+           "max_over_tol_median": float(ok["max_over_tol"].median()), "final_over_tol_median": float(ok["final_over_tol"].median()),
+           "share_max_above_tol": float((ok["max_km"] > a.tol_km).mean()), "share_final_above_tol": float((ok["final_km"] > a.tol_km).mean()), "by_cell": []}
+    for c, g in ok.groupby("cell"):
+        if len(g) >= a.min_cell:
+            kk = int(g["lucky"].sum())
+            rep["by_cell"].append({"cell": c, "n": int(len(g)), "lucky_share": kk / len(g), "cp95": list(clopper_pearson(kk, len(g))), "flag_both_labels": bool(kk / len(g) > 0.02)})
+    rep["cells_flagged"] = [r["cell"] for r in rep["by_cell"] if r["flag_both_labels"]]
+    save_json(rep, os.path.join(out, "endpoint_audit_report.json"))
+    print(json.dumps(proto.json_safe({k_: v for k_, v in rep.items() if k_ != "by_cell"}), indent=1))
+    print("wrote", out)
+
+
 def json_brief(cond):
     return {k: f"{v['violations']}/{v['n']}={v['rate']:.3f}" for k, v in cond.items()}
 
@@ -1152,6 +1180,16 @@ def main():
     sp.add_argument("--comp", default="RK45_spec")
     sp.add_argument("--out_dir", default="out_c")
     sp.set_defaults(fn=cmd_mu_strata)
+
+    sp = sub.add_parser("endpoint_audit")
+    sp.add_argument("--apply_dir", required=True)
+    sp.add_argument("--n", type=int, default=1000)
+    sp.add_argument("--min_cell", type=int, default=20)
+    sp.add_argument("--seed", type=int, default=42)
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.add_argument("--tol_km", type=float, default=POSITION_TOL_KM)
+    sp.set_defaults(fn=cmd_endpoint_audit)
 
     sp = sub.add_parser("doomed")
     sp.add_argument("--frozen", required=True)
