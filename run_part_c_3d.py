@@ -1006,6 +1006,92 @@ def cmd_overhead(a):
         print("pinned overhead_rhs =", spec["config"]["overhead_rhs"])
 
 
+def cmd_doomed(a):
+    """Track 1.3: run a frozen policy on the reference-divergent orbits of a v5 dataset and judge the OUTCOME (event type and time); separate ledger.
+    Also the physical crash flag (osculating periapsis inside a body, reached before T) against the reference outcome."""
+    import joblib
+    from orbit_ml_cr3bp import policy_c_3d as pc
+    from orbit_ml_cr3bp import doomed_3d as dd
+    from orbit_ml_cr3bp.audit_3d import clopper_pearson
+    from orbit_ml_cr3bp.sundman_3d import integrate_endpoint_rk4s, SUNDMAN_TAU_C
+    from orbit_ml_cr3bp.config import collision_radii, du_km_for_mu
+    out = make_run_dir(a.out_dir, "doomed", a)
+    fz = joblib.load(a.frozen)
+    models, spec = fz["models"], fz["spec"]
+    cfg, gate = spec["config"], spec["gate"]
+    scale = float(json.load(open(os.path.join(a.scale_from, "apply_policy_report.json")))["scale"])
+    d = pd.read_csv(a.data, low_memory=False)
+    for c in ("ftle_nan", "reference_divergent"):
+        d[c] = d[c].map({True: True, False: False, "True": True, "False": False}).fillna(False).astype(bool)
+    d["row_id"] = np.arange(len(d))
+    D = d[d["reference_divergent"] & d["reference_outcome"].isin(["primary_collision", "secondary_collision", "ejection"])].reset_index(drop=True)
+    if a.max_rows and len(D) > a.max_rows:
+        D = D.sample(a.max_rows, random_state=0).reset_index(drop=True)
+    cands = tuple(models["candidates"])
+    raw = pc.predict_raw_c(models, D)
+    pred = pc.apply_gate(raw, lf_gate=models["lf_gate"])
+    idx, raw_dt = pc.choose_unscaled(pred, cands)
+    abst = pc.abstain_flags(D, cfg["abstain_rule"], cfg.get("abstain_logtau")) if cfg.get("abstain_rule", "none") != "none" else np.zeros(len(D), bool)
+    rc1, rc2 = collision_radii(a.mu)
+    tol_du = a.tol_km / du_km_for_mu(a.mu)
+    rows = []
+    for i in range(len(D)):
+        st = D[pb.STATE_COLS].to_numpy(dtype=float)[i]
+        T = float(D["sim_time"].iloc[i])
+        ref_code = dd.NAME_TO_CODE[D["reference_outcome"].iloc[i]]
+        t_ref = float(D["t_end"].iloc[i])
+        rec = {"row_id": int(D["row_id"].iloc[i]), "ref_outcome": D["reference_outcome"].iloc[i], "t_ref": t_ref, "abstained": bool(abst[i])}
+        if abst[i]:
+            rows.append(rec)
+            continue
+        step = float(raw_dt[i]) * scale
+        if cands == ("rk4s",):
+            ok, prev, curr, t_prev, t, reason, ns, nf = integrate_endpoint_rk4s(st, step, T, a.mu, 4_000_000, tau_c=SUNDMAN_TAU_C)
+            if ok:
+                run = {"event": 0, "t_last_good": T, "speed": float(np.linalg.norm(np.asarray(curr)[3:])), "dt": step, "finite": True, "steps": ns + nf}
+            else:
+                x = np.asarray(curr)
+                r1 = np.sqrt((x[0] + a.mu) ** 2 + x[1] ** 2 + x[2] ** 2) / rc1
+                r2 = np.sqrt((x[0] + a.mu - 1) ** 2 + x[1] ** 2 + x[2] ** 2) / rc2
+                ev = 3 if reason == 2 else (1 if r1 < r2 else 2)
+                run = {"event": ev if reason in (1, 2) else 0, "t_last_good": float(t), "speed": float(np.linalg.norm(x[3:])), "dt": float(step), "finite": reason != 3,
+                       "steps": ns + nf}
+        else:
+            run = dd.run_until_event(cands[idx[i]], st, step, T, a.mu)
+        ag = dd.agreement(run, ref_code, t_ref, tol_du)
+        rec.update({"run_event": run["event"], "t_run": run["t_last_good"], "step": step, "steps": run["steps"], **ag})
+        rows.append(rec)
+    L = pd.DataFrame(rows)
+    L.to_csv(os.path.join(out, "doomed_ledger.csv"), index=False)
+    run = L[~L["abstained"]]
+    rep = {"policy": cfg["name"], "scale": scale, "n_doomed": int(len(L)), "abstained_share": float(L["abstained"].mean()),
+           "n_run": int(len(run)), "by_outcome": {}}
+    for key, g in [("all", run)] + [(k, v) for k, v in run.groupby("ref_outcome")]:
+        n = len(g)
+        row = {"n": int(n)}
+        for col in ("same_type", "strict", "relaxed"):
+            k_ = int(g[col].sum())
+            row[col] = {"k": k_, "share": k_ / max(n, 1), "cp95": list(clopper_pearson(k_, n))}
+        row["not_detected"] = float((g["run_event"] == 0).mean()) if n else float("nan")
+        rep["by_outcome"][key] = row
+    # the free physical crash flag against the reference outcome, over usable + doomed orbits
+    from orbit_ml_cr3bp.osculating_3d import add_osc_features
+    A = add_osc_features(d[~d["ftle_nan"]].reset_index(drop=True), a.mu)
+    f1, f2, anyf = dd.crash_flag_physical(A, A["sim_time"].to_numpy(), a.mu, margin=a.flag_margin)
+    A["flag"] = anyf
+    A["doomed"] = A["reference_divergent"]
+    flag = {}
+    for key, m in [("all", A["doomed"])] + [(o, A["reference_outcome"] == o) for o in ("primary_collision", "secondary_collision", "ejection")]:
+        tp = int((A["flag"] & m).sum())
+        flag[key] = {"n": int(m.sum()), "recall": tp / max(int(m.sum()), 1)}
+    flag["precision_any_doomed"] = float((A["doomed"] & A["flag"]).sum() / max(int(A["flag"].sum()), 1))
+    flag["flag_rate_usable"] = float(A.loc[~A["doomed"], "flag"].mean())
+    rep["physical_crash_flag"] = flag
+    save_json(rep, os.path.join(out, "doomed_report.json"))
+    print(json.dumps(proto.json_safe(rep), indent=1))
+    print("wrote", out)
+
+
 def json_brief(cond):
     return {k: f"{v['violations']}/{v['n']}={v['rate']:.3f}" for k, v in cond.items()}
 
@@ -1066,6 +1152,17 @@ def main():
     sp.add_argument("--comp", default="RK45_spec")
     sp.add_argument("--out_dir", default="out_c")
     sp.set_defaults(fn=cmd_mu_strata)
+
+    sp = sub.add_parser("doomed")
+    sp.add_argument("--frozen", required=True)
+    sp.add_argument("--data", required=True)
+    sp.add_argument("--scale_from", required=True, help="the apply_policy run folder whose certified scale is used")
+    sp.add_argument("--out_dir", default="out_c")
+    sp.add_argument("--max_rows", type=int, default=0)
+    sp.add_argument("--flag_margin", type=float, default=1.0)
+    sp.add_argument("--mu", type=float, default=MU)
+    sp.add_argument("--tol_km", type=float, default=POSITION_TOL_KM)
+    sp.set_defaults(fn=cmd_doomed)
 
     sp = sub.add_parser("overhead")
     sp.add_argument("--frozen", required=True)
