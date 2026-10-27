@@ -221,3 +221,25 @@ was not run. The physical-time policy is therefore the 10 x 3 structured RK4 mod
 **Frozen policies (fitted once on D_train with the weights above; `part_c/frozen/`, specs in `policy_frozen_spec.json`).** `phys`: RK4 only, trees 10 x 3 (lr 0.3), q = 0.1, structured target, periapsis features, abstention rule (osc_reach_2 = 1 and log10 tau_hat < -1.0), common scale, fixed sequence on the 28-value grid;
 `sund`: Sundman RK4, trees 25 x 3 (lr 0.2), q = 0.2, periapsis features, common scale, fixed sequence; `global`: Sundman RK4 with no model (the control of C5: one fictitious step certified on a 33-value grid 0.01 ... 2.56); `partb_refit`: Part B's state-only HGB (300 trees, lr 0.05, q = 0.1) fitted on the same weighted D_train (for C1).
 **Pinned overheads (idle-ish machine, load average 6.5-6.9 of which one unrelated process held a core; median of 9 repeats): phys 11.74, sund 15.04 RHS-equivalents per orbit (features included; Python-dispatched single calls: 7.0 and 6.5).** These are the values charged in every confirmatory ledger.
+
+## 6. Plan 2.5 checkpoint: the frozen policies on D_select (dry run; outputs in `part_c/results/dry`; development data, written into the pre-registration as expectations)
+
+`run_confirm_c_3d.py run apply_* --target dry`: 4,000 calibration rows, 12,190 evaluation orbits of D_select (the policy's own choices were made on D_select, so these numbers are optimistic by selection, mildly: three tuned parameters).
+
+| policy | certified scale | realized violation [95 % CP] | median total cost | cheaper than RK45-spec / DOP853-spec | RK45-cal / DOP853-cal | RK45-eqr / DOP853-eqr |
+|---|---|---|---|---|---|---|
+| Part B (D_confirm) | 0.5 / 0.5 | 3.9 % | 1,400 + 1,128 | 0 / 0 % | 0 / 0 % | 0 / 0 % |
+| `phys` (RK4, 10 trees, abstention) | 0.734 | 4.1 % | 536 | 0.3 / 0.7 % | 32.6 / 19.2 % | 26.1 / 14.8 % |
+| `sund` (Sundman, 25 trees, q = 0.2) | 0.872 | 4.3 % [3.95, 4.68] | **231** | 8.7 / 6.1 % | **81.5 / 58.6 %** | **69.9 / 50.4 %** |
+| `global` (no model) | 0.08 | 3.7 % | 464 | 1.4 / 0.6 % | 19.5 / 6.6 % | 8.1 / 4.0 % |
+
+Mean cost-gap decomposition against RK45-spec (dex, orbits that met the tolerance): Part B (D_confirm) paradigm +0.21, selection +0.03, prediction +0.38, safety scale +0.30, overhead +0.50, total **+1.41**;
+`phys`: +0.12, +0.002, +0.33, +0.14, +0.04, total **+0.62**; `sund`: paradigm -0.006, prediction +0.10, safety scale +0.06, overhead +0.07, rounding -0.01, total **+0.21** (a factor 1.6 above RK45-spec on a geometric-mean basis; Part B: 26x).
+Against the realistic comparators `sund` is cheaper: total -0.21 dex vs RK45-cal, -0.12 vs RK45-eqr. Lever surface of the `sund` ledger (reduction still needed for a 50 % share vs RK45-eqr: none, it is already above 50 %; vs RK45-spec at O = 15: +0.29 dex).
+Per term what each change bought (means, D_select vs Part B's D_confirm; not the same orbits): overhead 0.50 -> 0.07 (compiled 25-tree model, 15 RHS-equivalents instead of 1,128); paradigm 0.21 -> -0.006 (Sundman time);
+prediction 0.38 -> 0.10 (periapsis features + Sundman target; physical time 0.33); safety scale 0.30 -> 0.06 (end-to-end fixed sequence, a more accurate model, q = 0.2; physical time 0.14).
+
+Doomed orbits (descriptive, D_select, 3,810 reference-divergent orbits, `sund`): the Sundman run ends in the same event type as the reference on **100 %** (primary collision 613 / 613, secondary 2,966 / 2,966, escape 231 / 231; none runs through to T); the event time agrees under the plan's strict rule on 46.8 % (secondary 57.0 %,
+primary 14.8 %, escape 0.4 %) and under the relaxed rule (reference event inside the detecting step) on 96.6 % (escape 46.8 %: far from the bodies the physical step is long). The physical crash flag (osculating periapsis inside the body, reached before T) has recall 80.7 % overall
+(primary 97.9 %, secondary 83.4 %, escape 0 %), precision 96.2 %, and fires on 0.76 % of usable orbits.
+Endpoint audit (Track 1.4, 600 `sund` runs): max checkpoint error above tolerance with final error within: 2.0 % [1.0, 3.5]; max above tol on 6.2 % of runs against 4.2 % for the final error alone. Four merged cells exceed the 2 % rule in this small sample (n >= 20 per cell); the rule is applied to the confirmatory audit.

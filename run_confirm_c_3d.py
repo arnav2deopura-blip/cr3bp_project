@@ -38,7 +38,7 @@ TARGETS = {
     "lock": {"data": "data_c/lock/cr3bp_3d_training_data_accuracy_monotone_seed44.csv", "out": "out_c/lock"},
     "dry": {"data": "data_c/select/cr3bp_3d_training_data_accuracy_monotone_seed42.csv", "out": "out_c/dry"},
 }
-ORDER = ["apply_phys", "apply_sund", "apply_global", "c1_resid"]
+ORDER = ["apply_phys", "apply_sund", "apply_global", "c1_resid", "doomed_sund", "doomed_phys", "audit_sund", "audit_phys"]
 
 
 def _logged():
@@ -72,6 +72,12 @@ def step_commands(step, target, a):
         else:
             cmd += ["--n_cal", "4000"]
         return cmd
+    if step.startswith("doomed_") or step.startswith("audit_"):
+        which = step.split("_", 1)[1]
+        prev = _latest(os.path.join(out, which), "apply_policy")
+        if step.startswith("doomed_"):
+            return [PY, "run_part_c_3d.py", "doomed", "--frozen", FROZEN[which], "--data", t["data"], "--scale_from", prev, "--out_dir", os.path.join(out, "doomed_" + which)]
+        return [PY, "run_part_c_3d.py", "endpoint_audit", "--apply_dir", prev, "--n", "1000", "--out_dir", os.path.join(out, "audit_" + which)]
     if step == "c1_resid":
         return [PY, "run_part_c_3d.py", "c1_resid", "--data", t["data"], "--phys", FROZEN["phys"], "--partb", FROZEN["partb_refit"],
                 "--cal_ids", os.path.join(_latest(os.path.join(out, "phys"), "apply_policy") or "", "cal_row_ids.csv"), "--out_dir", os.path.join(out, "c1")]
