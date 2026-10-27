@@ -97,7 +97,7 @@ def paradigm(sund, out, label, comp="RK45_spec", n_bins=12):
     ax.yaxis.grid(True, color=fb.GRID, lw=0.5)
     ax.set_axisbelow(True)
     fb._style(ax)
-    ax.set_title(f"The time transformation removes the dependence on the timescale range ({label}; median and quartiles)", fontsize=9, loc="left")
+    ax.set_title(f"The time transformation removes the dependence on the timescale range\n({label}; median and quartiles per bin)", fontsize=9, loc="left")
     fig.tight_layout()
     p = os.path.join(out, "paradigm.png")
     fig.savefig(p, dpi=170)
