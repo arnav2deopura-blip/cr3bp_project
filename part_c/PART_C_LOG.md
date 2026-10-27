@@ -16,7 +16,7 @@ The plan recommends or defaults on each; I follow it unless the user says otherw
 | 1 | Run Track 3 (Sundman) at all? | Yes, behind the pilot go/no-go of plan 6.5. | The plan recommends it; the pilot is exploratory and cheap, and a no-go drops C3-C5 before the seal. |
 | 2 | Overhead gate | 10 RHS-equivalents (single-call, features included). | From the lever surface (C0 below): with O = 50 no comparator except RK45-cal is within reach at delta 0.6 dex; the plan's number is kept. |
 | 3 | D_train size | 100k natural + 20k enriched, reduced to 60k + 12k if pipeline v5 is more than 2x slower than v4 (plan 8.1). | The plan's own rule. |
-| 4 | Delete `RESULTS_REPORT.md.bak` (0.8) | NOT done. The file is byte-identical to `RESULTS_REPORT.md` (checked with `cmp`) but it is untracked, so `git rm` does not apply and the deletion would be permanent; the plan says it needs the user's OK. | Left for the user. |
+| 4 | Delete `RESULTS_REPORT.md.bak` (0.8) | **Done on 2026-10-27 after the user's explicit OK** (checked first with `cmp`: byte-identical to `RESULTS_REPORT.md`; untracked, so it was removed with `rm`, not committed). Earlier text: NOT done. The file is byte-identical to `RESULTS_REPORT.md` (checked with `cmp`) but it is untracked, so `git rm` does not apply and the deletion would be permanent; the plan says it needs the user's OK. | Left for the user. |
 | 5 | E8 families and E12 2D control | After C8 (the plan's default for optional work), if time allows. | Optional in the plan. |
 | 6 | Partial Track 2 gains: confirmatory C2 or descriptive only? | Decided at the seal (C7) from the D_select share; C2 stays in the family only if the pre-registered expectation can be written honestly. | Needs the D_select number first. |
 

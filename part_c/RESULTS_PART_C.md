@@ -92,7 +92,7 @@ Part A / B excluded them. Run exactly like usable orbits, **the Sundman policy e
 ## 9. Plan items: done / not done
 
 Done: Track 0 errata (E1-E5, T2 addendum, mu-dial figure band); lever surface; end-to-end certification, leapfrog gate (exercised, then dropped), housekeeping; periapsis features; compiled models and the cost protocol; the Sundman integrator, labels, pilot (GO) and policy; guard kernels with fallback, abstention, fine-grid fixed sequence;
-v5 data; selection; pre-registration, seal, confirmatory run, lock; doomed ledger and crash flag; endpoint audit; mu strata (4.1.1); the free-lookahead arm (4.2). **Not done**: 0.8 (deleting `RESULTS_REPORT.md.bak`: it is byte-identical to `RESULTS_REPORT.md` but untracked, so the deletion is permanent and needs your OK); 4.1.2-4.1.4 (matched resampling, model-size control, dimensionless transfer); 4.3 (measured batching); 4.4 (E8); 4.5 (E12);
+v5 data; selection; pre-registration, seal, confirmatory run, lock; doomed ledger and crash flag; endpoint audit; mu strata (4.1.1); the free-lookahead arm (4.2). 0.8 (`RESULTS_REPORT.md.bak` deleted on 2026-10-27 after the user's OK; it was byte-identical to `RESULTS_REPORT.md`). **Not done**: 4.1.2-4.1.4 (matched resampling, model-size control, dimensionless transfer); 4.3 (measured batching); 4.4 (E8); 4.5 (E12);
 the guard + abstention combination; the Sundman policy with a leapfrog-like symplectic transform.
 
 ## 10. Reproduce
