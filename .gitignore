@@ -12,3 +12,5 @@ out_b/
 # Part C working data and run folders (outputs worth keeping are copied to part_c/results)
 data_c/
 out_c/
+data_d/
+out_d/

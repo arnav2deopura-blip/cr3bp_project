@@ -1,0 +1,22 @@
+{
+ "set": "confirm",
+ "frac": 0.01,
+ "n_top": 163,
+ "lambda_T_threshold": 10.800738563443629,
+ "scale": 0.8,
+ "unpredictable": 0,
+ "unpredictable_share": 0.0,
+ "median_disagreement_km": {
+  "tight": 0.00010170338991960443,
+  "lsoda": 0.0008406748886292474
+ },
+ "max_disagreement_km": {
+  "tight": 0.007354221585414908,
+  "lsoda": 0.22847380349827123
+ },
+ "policy_violation_rate_top": 0.25153374233128833,
+ "policy_violation_rate_top_vs_tight_reference": 0.25153374233128833,
+ "label_flips": 0,
+ "policy_violation_rate_top_excl_unpredictable": 0.25153374233128833,
+ "policy_violation_rate_all": 0.025900808889615164
+}

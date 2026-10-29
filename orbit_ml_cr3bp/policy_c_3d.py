@@ -98,6 +98,10 @@ def predict_raw_c(models, df):
     if "linear" in models:             # M0: one linear quantile regressor per candidate (compiled_model_3d.fit_linear_single)
         from .compiled_model_3d import predict_linear_single
         return {k: {"logdt": predict_linear_single(models["linear"][k], df), "score": np.full(len(df), np.inf)} for k in models["candidates"]}
+    if models.get("rule") is not None:  # Part D physics rule (rules_d.py): a few coefficients on free quantities, certified like the model
+        from .rules_d import predict_rule
+        ld = predict_rule(models["rule"], df)
+        return {k: {"logdt": ld, "score": np.full(len(df), np.inf)} for k in models["candidates"]}
     if models.get("constant"):          # the non-ML control: every orbit gets raw step 1, so the certified scale IS the one global step
         return {k: {"logdt": np.zeros(len(df)), "score": np.full(len(df), np.inf)} for k in models["candidates"]}
     X = df[models["features"]].to_numpy(dtype=float)

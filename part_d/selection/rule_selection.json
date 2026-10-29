@@ -1,0 +1,22 @@
+{
+ "winner": {
+  "name": "rule_THR",
+  "q": 0.1
+ },
+ "criterion": "median total cost per met orbit; 2 % ties to fewer coefficients; eval-fold violation rate <= 6 %",
+ "best_median": 307.31932269015255,
+ "within_2pct": [
+  {
+   "name": "rule_THR",
+   "q": 0.1,
+   "median_c_tot_met": 307.31932269015255,
+   "n_params": 4.0
+  },
+  {
+   "name": "rule_THR",
+   "q": 0.2,
+   "median_c_tot_met": 307.31932269015255,
+   "n_params": 4.0
+  }
+ ]
+}

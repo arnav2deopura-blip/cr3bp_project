@@ -1,0 +1,39 @@
+{
+ "n_states": 100,
+ "dt=0.2": {
+  "leapfrog": {
+   "max_defect": 0.00024998923057573867,
+   "median_defect": 1.1408696209969094e-10,
+   "finite": 100
+  },
+  "rk4": {
+   "max_defect": 151.48481736772854,
+   "median_defect": 5.168250357696575e-05,
+   "finite": 100
+  }
+ },
+ "dt=0.05": {
+  "leapfrog": {
+   "max_defect": 8.51160657834346e-07,
+   "median_defect": 1.0603949704434951e-10,
+   "finite": 100
+  },
+  "rk4": {
+   "max_defect": 152.76823275130906,
+   "median_defect": 3.966113248817112e-08,
+   "finite": 100
+  }
+ },
+ "dt=0.01": {
+  "leapfrog": {
+   "max_defect": 4.4857248013918736e-07,
+   "median_defect": 1.0212094957322928e-10,
+   "finite": 100
+  },
+  "rk4": {
+   "max_defect": 0.4845359939041697,
+   "median_defect": 1.0899858793322892e-10,
+   "finite": 100
+  }
+ }
+}

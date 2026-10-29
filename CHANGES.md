@@ -129,3 +129,11 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
 - Changed (backward compatible): `config.py` (LEGACY_JACOBI_TOLERANCES_3D with the old name as alias), `physics_3d.py` (`Rk4sStep`, "rk4s" registry entries, endpoint dispatch), `search_3d.py` (`step_func=`), `data_3d.py` + `generate_3d_data.py` (pipeline v5, `--tau_c`, `--sampling_weights`),
   `failure_study_3d.py` (lever surface, Sundman decomposition), `mu_dial_3d.py` (Hill strata, matched subsample, dimensionless features), `make_figures_b.py` (CI band on one panel). Part B tests still pass (`tests/test_phase0.py` 9/9, `tests/test_failure_study.py`).
 - Part B / A are reproduced from their own commits (68a43ff / 68a554b), not from this tree; `freeze_b.py check` reports the changed files.
+
+
+# 2026-10-28: Part D (see part_d/PART_D_LOG.md, part_d/PREREGISTRATION_D.md, part_d/RESULTS_PART_D.md)
+- New: `orbit_ml_cr3bp/{compiled_solvers,rules,deploy,strata,periodic,confirm_d,exploratory}_*.py` (the `_d` modules; `confirm_d_3d.py`, `exploratory_d.py` keep the package's naming), `run_part_d_3d.py`, `run_confirm_d_3d.py`, `run_explore_d_3d.py`, `freeze_d.py`, `fetch_jpl_d.py`, `gen_part_d.sh`,
+  `tests/test_part_d.py` (16 checks), `part_d/` (pre-registration, log, results, references.bib, frozen rules, selection, hashes). Datasets (untracked, `data_d/`): seeds 52 (select), 53 (confirm), 54 (lock), 55 (replication), JPL responses `data_d/jpl/`.
+- Changed in an existing module: `policy_c_3d.predict_raw_c` gains a 4-line branch for `models["rule"]` (a Part D physics rule). Part C models never take it; `tests/test_part_c.py`, `tests/test_phase0.py`, `tests/test_failure_study.py` still pass.
+- `freeze_c.py check` reports the tree as changed relative to Part C's seal, as expected (new files, the branch above); Part C is reproduced from commit `4586803`.
+- `.gitignore`: `data_d/`, `out_d/`. Nothing was committed or pushed.

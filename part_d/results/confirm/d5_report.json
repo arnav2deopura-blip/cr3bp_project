@@ -1,0 +1,175 @@
+{
+ "target": "confirm",
+ "mu_jpl": 0.01215058560962404,
+ "mu_config": 0.01215058535,
+ "scale_part_c": 0.8724061861322062,
+ "rtols_part_c": {
+  "RK45|cal": 1.9684194472866112e-07,
+  "RK45|eqr": 5.719432530342213e-07,
+  "DOP853|cal": 1.9684194472866112e-07,
+  "DOP853|eqr": 6.660846290809154e-07
+ },
+ "n_members_sampled": 1071,
+ "n_members_kept": 942,
+ "n_runs": 3018,
+ "n_ref_reached": 2979,
+ "n_in_range_trusted": 1647,
+ "tolerance_km_project": 100.0,
+ "tolerance_km_in_jpl_units": 101.3796214436207,
+ "D5": {
+  "p": 1.0,
+  "family_balanced_rate": 0.700275423687229,
+  "ci95": [
+   0.6777777809240421,
+   0.7226407819767725
+  ],
+  "threshold": 0.1,
+  "n_runs": 1647,
+  "n_families": 11,
+  "per_family": {
+   "axial_L1": {
+    "n": 102,
+    "violations": 102,
+    "rate": 1.0,
+    "n_clusters": 51,
+    "cp95": [
+     0.964480673342116,
+     1.0
+    ]
+   },
+   "axial_L2": {
+    "n": 102,
+    "violations": 102,
+    "rate": 1.0,
+    "n_clusters": 51,
+    "cp95": [
+     0.964480673342116,
+     1.0
+    ]
+   },
+   "butterfly": {
+    "n": 218,
+    "violations": 96,
+    "rate": 0.44036697247706424,
+    "n_clusters": 51,
+    "cp95": [
+     0.3733884160516766,
+     0.5089895832024744
+    ]
+   },
+   "dro": {
+    "n": 97,
+    "violations": 46,
+    "rate": 0.4742268041237113,
+    "n_clusters": 45,
+    "cp95": [
+     0.37188983734633363,
+     0.5781796439962006
+    ]
+   },
+   "halo_L1": {
+    "n": 74,
+    "violations": 34,
+    "rate": 0.4594594594594595,
+    "n_clusters": 13,
+    "cp95": [
+     0.34291959170623343,
+     0.5793443273251749
+    ]
+   },
+   "halo_L2": {
+    "n": 266,
+    "violations": 88,
+    "rate": 0.3308270676691729,
+    "n_clusters": 48,
+    "cp95": [
+     0.27457367160484564,
+     0.39090020000844017
+    ]
+   },
+   "lyapunov_L1": {
+    "n": 102,
+    "violations": 80,
+    "rate": 0.7843137254901961,
+    "n_clusters": 51,
+    "cp95": [
+     0.6918596356032034,
+     0.8596204908865406
+    ]
+   },
+   "lyapunov_L2": {
+    "n": 70,
+    "violations": 59,
+    "rate": 0.8428571428571429,
+    "n_clusters": 35,
+    "cp95": [
+     0.7362002347836887,
+     0.9188562364495522
+    ]
+   },
+   "resonant": {
+    "n": 412,
+    "violations": 169,
+    "rate": 0.41019417475728154,
+    "n_clusters": 330,
+    "cp95": [
+     0.3622804416674079,
+     0.45940725552379086
+    ]
+   },
+   "vertical_L1": {
+    "n": 102,
+    "violations": 98,
+    "rate": 0.9607843137254902,
+    "n_clusters": 51,
+    "cp95": [
+     0.9026290375228655,
+     0.989213348667306
+    ]
+   },
+   "vertical_L2": {
+    "n": 102,
+    "violations": 102,
+    "rate": 1.0,
+    "n_clusters": 51,
+    "cp95": [
+     0.964480673342116,
+     1.0
+    ]
+   }
+  }
+ },
+ "not_trusted_reference": {
+  "in_range_runs": 102,
+  "of": 1749
+ },
+ "oracle_label": {
+  "n": 1647,
+  "median_log10_raw_over_oracle": 0.15478352680608493,
+  "share_policy_step_above_oracle": 0.6678809957498482,
+  "by_group_median": {
+   "axial_L1": 0.3746406353136266,
+   "axial_L2": 0.5032930611317131,
+   "butterfly": 0.0477501028004148,
+   "dro": 0.06181512116909326,
+   "halo_L1": 0.011117746537124778,
+   "halo_L2": -0.06666853103387331,
+   "lyapunov_L1": 0.33584751681495073,
+   "lyapunov_L2": 0.30570754725492244,
+   "resonant": 0.005803706594711835,
+   "vertical_L1": 0.5265178082562124,
+   "vertical_L2": 0.4893731943092103
+  }
+ },
+ "recalibrated_on_dry_sample": {
+  "scale": 0.18340080864093425,
+  "n_dry_runs": 1599,
+  "note": "runs of one orbit are correlated, so this certificate is optimistic; descriptive",
+  "test_violation_rate": 0.03460837887067395,
+  "test_violation_rate_family_balanced": 0.041647232424331306,
+  "share_cheaper_RK45_eqr": 0.0,
+  "share_cheaper_DOP853_eqr": 0.0,
+  "share_cheaper_RK45_cal": 0.0,
+  "median_C_tot_met": 3299.0367948123885
+ }
+}

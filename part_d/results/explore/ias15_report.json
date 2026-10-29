@@ -1,0 +1,15 @@
+{
+ "n": 300,
+ "n_ias15_ok": 300,
+ "median_ias15_steps": 11.0,
+ "median_log10_epsilon": -1.0,
+ "median_ns": {
+  "ias15_oracle_epsilon": 217332.9703509,
+  "policy": 6390.313722897938,
+  "DP54_PI_eqr": 9161.914027149322
+ },
+ "total_ns_ratio_ias15_over_policy": 28.848005203041403,
+ "total_ns_ratio_ias15_over_DP54_PI_eqr": 28.842452344820103,
+ "share_ias15_faster_than_policy": 0.0,
+ "share_ias15_faster_than_DP54_PI_eqr": 0.0
+}

@@ -1,0 +1,34 @@
+{
+ "from": "/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/out_d/confirm/d1/d1_20261028T214846Z",
+ "n_usable": 4074,
+ "arms": {
+  "sund": {
+   "scale": 0.8,
+   "violations": 100,
+   "violation_rate": 0.024545900834560628,
+   "viol_cp95": [
+    0.020015091306148126,
+    0.029774815850508767
+   ],
+   "median_C_tot_met": 260.0884928412447,
+   "share_cheaper_RK45_cal": 0.783014236622484,
+   "share_cheaper_DOP853_cal": 0.5400098183603338,
+   "share_cheaper_RK45_eqr": 0.7027491408934707,
+   "share_cheaper_DOP853_eqr": 0.4887088856161021
+  },
+  "rule_THR": {
+   "scale": 0.8724061861322062,
+   "violations": 176,
+   "violation_rate": 0.043200785468826705,
+   "viol_cp95": [
+    0.037164752742365983,
+    0.04990237144063475
+   ],
+   "median_C_tot_met": 323.31932269015255,
+   "share_cheaper_RK45_cal": 0.6431026018654885,
+   "share_cheaper_DOP853_cal": 0.4020618556701031,
+   "share_cheaper_RK45_eqr": 0.523073146784487,
+   "share_cheaper_DOP853_eqr": 0.34216985763377517
+  }
+ }
+}

@@ -1,0 +1,463 @@
+{
+ "n_strata": 17,
+ "methods": {
+  "RK45": {
+   "overall_comparator_violation_rate": 0.014643450439918784,
+   "overall_policy_violation_rate": 0.023872515843228942,
+   "share_policy_cheaper": 0.562173137266966,
+   "cp95": [
+    0.5545045697701825,
+    0.5698194450803207
+   ],
+   "by_h_band": {
+    "1-3": 0.7526109660574413,
+    "3-8": 0.7117251680358476,
+    "8-20": 0.1495072342210107
+   },
+   "by_regime": {
+    "I": 0.8325178773052314,
+    "II": 0.5072202166064982,
+    "III": 0.4814159292035398,
+    "IV": 0.5803996194100857,
+    "V": 0.5039370078740157
+   },
+   "median_comparator_nfev_met": 302.0,
+   "median_policy_total_met": 271.03679481238856,
+   "strata": [
+    {
+     "stratum": "II-III|far|1-3",
+     "n": 812,
+     "comparator_rtol": 7.626985859023451e-06,
+     "comparator_violation_rate": 0.023399014778325122,
+     "comparator_cp95": [
+      0.014145155071214525,
+      0.03630008999331288
+     ],
+     "policy_violation_rate": 0.017241379310344827,
+     "share_policy_cheaper": 0.7549261083743842
+    },
+    {
+     "stratum": "II-III|far|3-8",
+     "n": 601,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.0016638935108153079,
+     "comparator_cp95": [
+      4.2125249119902855e-05,
+      0.009235438489467066
+     ],
+     "policy_violation_rate": 0.014975041597337771,
+     "share_policy_cheaper": 0.8019966722129783
+    },
+    {
+     "stratum": "II-III|far|8-20",
+     "n": 485,
+     "comparator_rtol": 1.9684194472866112e-07,
+     "comparator_violation_rate": 0.004123711340206186,
+     "comparator_cp95": [
+      0.0004997913019840691,
+      0.014816243355441289
+     ],
+     "policy_violation_rate": 0.02268041237113402,
+     "share_policy_cheaper": 0.1360824742268041
+    },
+    {
+     "stratum": "II-III|peri0.05-0.17|h*",
+     "n": 983,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.021363173957273652,
+     "comparator_cp95": [
+      0.013271609164208933,
+      0.032471257340930364
+     ],
+     "policy_violation_rate": 0.023397761953204477,
+     "share_policy_cheaper": 0.38555442522889116
+    },
+    {
+     "stratum": "II-III|peri<0.05|1-3",
+     "n": 565,
+     "comparator_rtol": 2.2539339047347933e-06,
+     "comparator_violation_rate": 0.005309734513274336,
+     "comparator_cp95": [
+      0.0010963362991350707,
+      0.01543827672321685
+     ],
+     "policy_violation_rate": 0.021238938053097345,
+     "share_policy_cheaper": 0.6336283185840708
+    },
+    {
+     "stratum": "II-III|peri<0.05|3-8",
+     "n": 507,
+     "comparator_rtol": 1.9684194472866112e-07,
+     "comparator_violation_rate": 0.0019723865877712033,
+     "comparator_cp95": [
+      4.993525809347306e-05,
+      0.010940016375896571
+     ],
+     "policy_violation_rate": 0.007889546351084813,
+     "share_policy_cheaper": 0.3668639053254438
+    },
+    {
+     "stratum": "II-III|peri<0.05|8-20",
+     "n": 447,
+     "comparator_rtol": 5.8170913293743575e-08,
+     "comparator_violation_rate": 0.013422818791946308,
+     "comparator_cp95": [
+      0.004941441637446415,
+      0.028985633613930323
+     ],
+     "policy_violation_rate": 0.029082774049217,
+     "share_policy_cheaper": 0.06040268456375839
+    },
+    {
+     "stratum": "IV-V|far|1-3",
+     "n": 3142,
+     "comparator_rtol": 2.5808615404180768e-05,
+     "comparator_violation_rate": 0.021642266072565246,
+     "comparator_cp95": [
+      0.01684430284699357,
+      0.02735697466069018
+     ],
+     "policy_violation_rate": 0.031190324633991087,
+     "share_policy_cheaper": 0.6791852323360916
+    },
+    {
+     "stratum": "IV-V|far|3-8",
+     "n": 2753,
+     "comparator_rtol": 2.2539339047347933e-06,
+     "comparator_violation_rate": 0.007991282237559027,
+     "comparator_cp95": [
+      0.005014673983800529,
+      0.01207403574508764
+     ],
+     "policy_violation_rate": 0.02397384671267708,
+     "share_policy_cheaper": 0.7508172902288412
+    },
+    {
+     "stratum": "IV-V|far|8-20",
+     "n": 2516,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.02106518282988871,
+     "comparator_cp95": [
+      0.01581811152909491,
+      0.02746412374191559
+     ],
+     "policy_violation_rate": 0.030604133545310015,
+     "share_policy_cheaper": 0.07511923688394277
+    },
+    {
+     "stratum": "IV-V|peri0.05-0.17|h*",
+     "n": 456,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.013157894736842105,
+     "comparator_cp95": [
+      0.0048436115840064615,
+      0.02841799268916516
+     ],
+     "policy_violation_rate": 0.02631578947368421,
+     "share_policy_cheaper": 0.5175438596491229
+    },
+    {
+     "stratum": "I|far|1-3",
+     "n": 641,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.0046801872074883,
+     "comparator_cp95": [
+      0.0009662090195587477,
+      0.013616083451459374
+     ],
+     "policy_violation_rate": 0.0187207488299532,
+     "share_policy_cheaper": 0.9812792511700468
+    },
+    {
+     "stratum": "I|far|3-8",
+     "n": 504,
+     "comparator_rtol": 1.9684194472866112e-07,
+     "comparator_violation_rate": 0.003968253968253968,
+     "comparator_cp95": [
+      0.00048093576834062223,
+      0.01426058989085487
+     ],
+     "policy_violation_rate": 0.01984126984126984,
+     "share_policy_cheaper": 0.9722222222222222
+    },
+    {
+     "stratum": "I|far|8-20",
+     "n": 402,
+     "comparator_rtol": 5.8170913293743575e-08,
+     "comparator_violation_rate": 0.01990049751243781,
+     "comparator_cp95": [
+      0.00862982766362081,
+      0.03883400217231254
+     ],
+     "policy_violation_rate": 0.014925373134328358,
+     "share_policy_cheaper": 0.8034825870646766
+    },
+    {
+     "stratum": "I|peri<0.05|1-3",
+     "n": 378,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.021164021164021163,
+     "comparator_cp95": [
+      0.009180355537271877,
+      0.04127418548410544
+     ],
+     "policy_violation_rate": 0.0,
+     "share_policy_cheaper": 0.8597883597883598
+    },
+    {
+     "stratum": "I|peri<0.05|h*",
+     "n": 628,
+     "comparator_rtol": 5.8170913293743575e-08,
+     "comparator_violation_rate": 0.012738853503184714,
+     "comparator_cp95": [
+      0.005515341785158978,
+      0.024945662093966196
+     ],
+     "policy_violation_rate": 0.01910828025477707,
+     "share_policy_cheaper": 0.6130573248407644
+    },
+    {
+     "stratum": "pooled-small",
+     "n": 433,
+     "comparator_rtol": 1.9684194472866112e-07,
+     "comparator_violation_rate": 0.016166281755196306,
+     "comparator_cp95": [
+      0.0065237533727961206,
+      0.03302379982259676
+     ],
+     "policy_violation_rate": 0.020785219399538105,
+     "share_policy_cheaper": 0.5727482678983834
+    }
+   ]
+  },
+  "DOP853": {
+   "overall_comparator_violation_rate": 0.02454931397280502,
+   "overall_policy_violation_rate": 0.023872515843228942,
+   "share_policy_cheaper": 0.2350950593736541,
+   "cp95": [
+    0.22859276182016722,
+    0.241692285536828
+   ],
+   "by_h_band": {
+    "1-3": 0.40877937336814624,
+    "3-8": 0.22628827483196415,
+    "8-20": 0.02180750681484588
+   },
+   "by_regime": {
+    "I": 0.5318027850959729,
+    "II": 0.20216606498194944,
+    "III": 0.20859671302149177,
+    "IV": 0.14985727878211227,
+    "V": 0.1654974946313529
+   },
+   "median_comparator_nfev_met": 194.0,
+   "median_policy_total_met": 271.03679481238856,
+   "strata": [
+    {
+     "stratum": "II-III|far|1-3",
+     "n": 812,
+     "comparator_rtol": 0.0002955209235202888,
+     "comparator_violation_rate": 0.038177339901477834,
+     "comparator_cp95": [
+      0.026084378072629873,
+      0.053754177176840834
+     ],
+     "policy_violation_rate": 0.017241379310344827,
+     "share_policy_cheaper": 0.22660098522167488
+    },
+    {
+     "stratum": "II-III|far|3-8",
+     "n": 601,
+     "comparator_rtol": 2.2539339047347933e-06,
+     "comparator_violation_rate": 0.013311148086522463,
+     "comparator_cp95": [
+      0.005763855953112858,
+      0.02605908390891865
+     ],
+     "policy_violation_rate": 0.014975041597337771,
+     "share_policy_cheaper": 0.20465890183028287
+    },
+    {
+     "stratum": "II-III|far|8-20",
+     "n": 485,
+     "comparator_rtol": 1.9684194472866112e-07,
+     "comparator_violation_rate": 0.01443298969072165,
+     "comparator_cp95": [
+      0.005821981639568362,
+      0.02951032754819401
+     ],
+     "policy_violation_rate": 0.02268041237113402,
+     "share_policy_cheaper": 0.006185567010309278
+    },
+    {
+     "stratum": "II-III|peri0.05-0.17|h*",
+     "n": 983,
+     "comparator_rtol": 1.9684194472866112e-07,
+     "comparator_violation_rate": 0.009155645981688708,
+     "comparator_cp95": [
+      0.0041948473235524615,
+      0.01730884047555207
+     ],
+     "policy_violation_rate": 0.023397761953204477,
+     "share_policy_cheaper": 0.29094608341810785
+    },
+    {
+     "stratum": "II-III|peri<0.05|1-3",
+     "n": 565,
+     "comparator_rtol": 7.626985859023451e-06,
+     "comparator_violation_rate": 0.0035398230088495575,
+     "comparator_cp95": [
+      0.0004289768403950505,
+      0.012728071710042239
+     ],
+     "policy_violation_rate": 0.021238938053097345,
+     "share_policy_cheaper": 0.4814159292035398
+    },
+    {
+     "stratum": "II-III|peri<0.05|3-8",
+     "n": 507,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.01972386587771203,
+     "comparator_cp95": [
+      0.009497893312121537,
+      0.0359730384218794
+     ],
+     "policy_violation_rate": 0.007889546351084813,
+     "share_policy_cheaper": 0.03747534516765286
+    },
+    {
+     "stratum": "II-III|peri<0.05|8-20",
+     "n": 447,
+     "comparator_rtol": 5.8170913293743575e-08,
+     "comparator_violation_rate": 0.029082774049217,
+     "comparator_cp95": [
+      0.015574327787162341,
+      0.04921899810220307
+     ],
+     "policy_violation_rate": 0.029082774049217,
+     "share_policy_cheaper": 0.0
+    },
+    {
+     "stratum": "IV-V|far|1-3",
+     "n": 3142,
+     "comparator_rtol": 0.001,
+     "comparator_violation_rate": 0.03882877148313176,
+     "comparator_cp95": [
+      0.03234720517818218,
+      0.046185755906503013
+     ],
+     "policy_violation_rate": 0.031190324633991087,
+     "share_policy_cheaper": 0.2606619987269255
+    },
+    {
+     "stratum": "IV-V|far|3-8",
+     "n": 2753,
+     "comparator_rtol": 2.5808615404180768e-05,
+     "comparator_violation_rate": 0.029785688339992736,
+     "comparator_cp95": [
+      0.02375800814806367,
+      0.036838400933121185
+     ],
+     "policy_violation_rate": 0.02397384671267708,
+     "share_policy_cheaper": 0.1482019614965492
+    },
+    {
+     "stratum": "IV-V|far|8-20",
+     "n": 2516,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.02066772655007949,
+     "comparator_cp95": [
+      0.015473221880367694,
+      0.02701551853360418
+     ],
+     "policy_violation_rate": 0.030604133545310015,
+     "share_policy_cheaper": 0.007154213036565978
+    },
+    {
+     "stratum": "IV-V|peri0.05-0.17|h*",
+     "n": 456,
+     "comparator_rtol": 2.2539339047347933e-06,
+     "comparator_violation_rate": 0.02412280701754386,
+     "comparator_cp95": [
+      0.012102131128810898,
+      0.0427517766966556
+     ],
+     "policy_violation_rate": 0.02631578947368421,
+     "share_policy_cheaper": 0.34649122807017546
+    },
+    {
+     "stratum": "I|far|1-3",
+     "n": 641,
+     "comparator_rtol": 2.2539339047347933e-06,
+     "comparator_violation_rate": 0.014040561622464899,
+     "comparator_cp95": [
+      0.006439804235165093,
+      0.0264854364333374
+     ],
+     "policy_violation_rate": 0.0187207488299532,
+     "share_policy_cheaper": 0.8393135725429017
+    },
+    {
+     "stratum": "I|far|3-8",
+     "n": 504,
+     "comparator_rtol": 1.9684194472866112e-07,
+     "comparator_violation_rate": 0.013888888888888888,
+     "comparator_cp95": [
+      0.005601802690200231,
+      0.028406061065096452
+     ],
+     "policy_violation_rate": 0.01984126984126984,
+     "share_policy_cheaper": 0.6666666666666666
+    },
+    {
+     "stratum": "I|far|8-20",
+     "n": 402,
+     "comparator_rtol": 5.8170913293743575e-08,
+     "comparator_violation_rate": 0.029850746268656716,
+     "comparator_cp95": [
+      0.0155174916847792,
+      0.051562321709895005
+     ],
+     "policy_violation_rate": 0.014925373134328358,
+     "share_policy_cheaper": 0.09950248756218906
+    },
+    {
+     "stratum": "I|peri<0.05|1-3",
+     "n": 378,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.010582010582010581,
+     "comparator_cp95": [
+      0.0028905585609366007,
+      0.026871158977281758
+     ],
+     "policy_violation_rate": 0.0,
+     "share_policy_cheaper": 0.6322751322751323
+    },
+    {
+     "stratum": "I|peri<0.05|h*",
+     "n": 628,
+     "comparator_rtol": 1.7190722018585745e-08,
+     "comparator_violation_rate": 0.0,
+     "comparator_cp95": [
+      0.0,
+      0.005856793591838331
+     ],
+     "policy_violation_rate": 0.01910828025477707,
+     "share_policy_cheaper": 0.37579617834394907
+    },
+    {
+     "stratum": "pooled-small",
+     "n": 433,
+     "comparator_rtol": 6.660846290809154e-07,
+     "comparator_violation_rate": 0.046189376443418015,
+     "comparator_cp95": [
+      0.02843858354979265,
+      0.07043650594159735
+     ],
+     "policy_violation_rate": 0.020785219399538105,
+     "share_policy_cheaper": 0.3279445727482679
+    }
+   ]
+  }
+ }
+}

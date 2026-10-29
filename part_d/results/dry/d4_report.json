@@ -1,0 +1,112 @@
+{
+ "target": "dry",
+ "n_cal": 4050,
+ "n_eval": 4051,
+ "n_strata": 7,
+ "fallback_rtol_RK45_cal": 1.9684194472866112e-07,
+ "overhead_rhs": 15.036794812388587,
+ "strata": {
+  "II-III|far|h*": {
+   "scale": 0.8724061861322062,
+   "n_cal": 429,
+   "reason": null
+  },
+  "II-III|r2*|h*": {
+   "scale": 0.733603234563737,
+   "n_cal": 645,
+   "reason": null
+  },
+  "IV-V|far|1-3": {
+   "scale": 0.8724061861322062,
+   "n_cal": 785,
+   "reason": null
+  },
+  "IV-V|far|3-8": {
+   "scale": 0.8724061861322062,
+   "n_cal": 718,
+   "reason": null
+  },
+  "IV-V|far|8-20": {
+   "scale": 0.5656854249492381,
+   "n_cal": 643,
+   "reason": null
+  },
+  "I|r2*|h*": {
+   "scale": 0.8724061861322062,
+   "n_cal": 640,
+   "reason": null
+  },
+  "pooled-small": {
+   "scale": 0.6168843301631763,
+   "n_cal": 190,
+   "reason": null
+  }
+ },
+ "marginal_scale": 0.8,
+ "strat": {
+  "cal_violation_rate": 0.022962962962962963,
+  "rtols": {
+   "RK45|cal": 1.9684194472866112e-07,
+   "RK45|eqr": 3.355330418925871e-07,
+   "DOP853|cal": 1.9684194472866112e-07,
+   "DOP853|eqr": 2.669749957287928e-07
+  },
+  "violation_rate": 0.024685262898049863,
+  "abstain_share": 0.0
+ },
+ "marginal": {
+  "cal_violation_rate": 0.028395061728395062,
+  "rtols": {
+   "RK45|cal": 1.9684194472866112e-07,
+   "RK45|eqr": 3.907614969977506e-07,
+   "DOP853|cal": 1.9684194472866112e-07,
+   "DOP853|eqr": 3.1091885438021287e-07
+  },
+  "violation_rate": 0.026166378671932857,
+  "abstain_share": 0.0
+ },
+ "D4": {
+  "p": 0.0007425660796127988,
+  "p_strata": 0.0007425660796127988,
+  "p_cost": 4.953040176037561e-119,
+  "n_reported_strata": 6,
+  "level": 0.07,
+  "worst_stratum": {
+   "group": "I|r2*|h*",
+   "n": 676,
+   "rate": 0.03994082840236687,
+   "cp_hi": 0.05758198936597177
+  },
+  "max_cp_hi": 0.05762303879956934,
+  "share_cheaper": 0.6800789928412737,
+  "share_ci95": [
+   0.6654657716582696,
+   0.6944320645979114
+  ],
+  "overall_violation_rate": 0.024685262898049863,
+  "abstain_share": 0.0,
+  "comparator": "RK45_eqr"
+ },
+ "D4_marginal_policy_for_contrast": {
+  "p": 0.30920745734547767,
+  "p_strata": 0.30920745734547767,
+  "p_cost": 9.326623956372777e-179,
+  "n_reported_strata": 6,
+  "level": 0.07,
+  "worst_stratum": {
+   "group": "IV-V|far|8-20",
+   "n": 581,
+   "rate": 0.06368330464716007,
+   "cp_hi": 0.08671363125335974
+  },
+  "max_cp_hi": 0.08671363125335974,
+  "share_cheaper": 0.7200691187361146,
+  "share_ci95": [
+   0.7059648931065339,
+   0.7338552854165241
+  ],
+  "overall_violation_rate": 0.026166378671932857,
+  "abstain_share": 0.0,
+  "comparator": "RK45_eqr"
+ }
+}

@@ -1,0 +1,166 @@
+{
+ "load_avg_start": [
+  2.4658203125,
+  5.7724609375,
+  8.7802734375
+ ],
+ "sund": {
+  "policy_ns_per_call": 293.92,
+  "policy_ns_range": [
+   292.75834,
+   295.10792
+  ],
+  "rhs_ns_per_call": 18.268958,
+  "rhs_ns_range": [
+   18.011959,
+   18.436041
+  ],
+  "features_ns_per_call": 69.35458,
+  "features_ns_range": [
+   68.32,
+   70.71083
+  ],
+  "rhs_equiv": 16.088492841244694,
+  "rhs_equiv_range": [
+   15.879675034352548,
+   16.383999097488505
+  ],
+  "features_rhs_equiv": 3.796307375604016,
+  "python_dispatch_ns_policy": 2208.0,
+  "python_dispatch_ns_rhs": 333.0,
+  "python_dispatch_rhs_equiv": 6.63063063063063,
+  "repeats": 7,
+  "n_policy_calls": 100000,
+  "n_rhs_calls": 1000000,
+  "pinned_part_c": 15.036794812388587
+ },
+ "rule_T": {
+  "policy_ns_per_call": 37.54209,
+  "policy_ns_range": [
+   37.08042,
+   38.50625
+  ],
+  "rhs_ns_per_call": 18.303833,
+  "rhs_ns_range": [
+   18.109375,
+   18.629375
+  ],
+  "rhs_equiv": 2.0510507280087182,
+  "rhs_equiv_range": [
+   1.9904274834770355,
+   2.126315789473684
+  ],
+  "repeats": 7,
+  "kind": "rule"
+ },
+ "rule_TH": {
+  "policy_ns_per_call": 37.8275,
+  "policy_ns_range": [
+   36.79458,
+   38.00875
+  ],
+  "rhs_ns_per_call": 18.260333,
+  "rhs_ns_range": [
+   18.092125,
+   18.489791
+  ],
+  "rhs_equiv": 2.0715668219194034,
+  "rhs_equiv_range": [
+   1.9899943704068912,
+   2.1008449808963845
+  ],
+  "repeats": 7,
+  "kind": "rule"
+ },
+ "rule_TP": {
+  "policy_ns_per_call": 134.16583,
+  "policy_ns_range": [
+   132.31875,
+   138.01666
+  ],
+  "rhs_ns_per_call": 18.479792,
+  "rhs_ns_range": [
+   18.138292,
+   18.612542
+  ],
+  "rhs_equiv": 7.260137451763526,
+  "rhs_equiv_range": [
+   7.109117604677533,
+   7.609132105713151
+  ],
+  "repeats": 7,
+  "kind": "rule"
+ },
+ "rule_THP": {
+  "policy_ns_per_call": 135.63834,
+  "policy_ns_range": [
+   133.0775,
+   137.3025
+  ],
+  "rhs_ns_per_call": 18.255,
+  "rhs_ns_range": [
+   18.128916,
+   18.482459
+  ],
+  "rhs_equiv": 7.430202136400986,
+  "rhs_equiv_range": [
+   7.200205340642173,
+   7.573674013382819
+  ],
+  "repeats": 7,
+  "kind": "rule"
+ },
+ "rule_THR": {
+  "policy_ns_per_call": 134.21625,
+  "policy_ns_range": [
+   133.01709,
+   139.01833
+  ],
+  "rhs_ns_per_call": 18.33725,
+  "rhs_ns_range": [
+   18.03075,
+   18.693125
+  ],
+  "rhs_equiv": 7.319322690152558,
+  "rhs_equiv_range": [
+   7.1158294827643855,
+   7.710069187360481
+  ],
+  "repeats": 7,
+  "kind": "rule"
+ },
+ "rule_THPD": {
+  "policy_ns_per_call": 133.78291,
+  "policy_ns_range": [
+   133.26292,
+   138.43959
+  ],
+  "rhs_ns_per_call": 18.371625,
+  "rhs_ns_range": [
+   18.04275,
+   18.745916
+  ],
+  "rhs_equiv": 7.282040102603879,
+  "rhs_equiv_range": [
+   7.1089041474420345,
+   7.672865278297377
+  ],
+  "repeats": 7,
+  "kind": "rule"
+ },
+ "lin33": {
+  "policy_ns_per_call": 208.84292,
+  "rhs_ns_per_call": 18.337792,
+  "rhs_equiv": 11.388662277334152,
+  "rhs_equiv_range": [
+   11.172535508727893,
+   12.04949322545226
+  ],
+  "repeats": 7
+ },
+ "load_avg_end": [
+  2.34814453125,
+  5.69287109375,
+  8.734375
+ ]
+}

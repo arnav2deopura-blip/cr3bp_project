@@ -1,0 +1,151 @@
+% Part D, Tier 0.1: citation audit. One entry per source the plan, the code or the report relies on.
+% The field `verified` says what was actually opened on 2026-10-28 (the record page of the DOI / arXiv ID / handle, read for title, authors and venue):
+%   record-opened      the arXiv / publisher / repository record was fetched and the fields below match it
+%   doi-resolves       the DOI redirected to the publisher, but the publisher page (blocked or login-walled) was not read; bibliographic data from memory
+%   search-confirmed   title, venue and pages were confirmed by a web search result, the publisher page was not opened
+%   NOT-VERIFIED       could not be checked in this audit; do not cite until a person has opened it
+% Entries of the literature review that the plan found pointing to the wrong source (plan section 2) are NOT reproduced here: replace them from this file.
+
+@article{preto1999,
+  author = {Preto, Miguel and Tremaine, Scott},
+  title = {A class of symplectic integrators with adaptive timestep for separable {H}amiltonian systems},
+  journal = {The Astronomical Journal}, volume = {118}, pages = {2532--2541}, year = {1999},
+  doi = {10.1086/301102}, eprint = {astro-ph/9906322},
+  note = {verified: record-opened (arXiv abs/astro-ph/9906322). Confirms the plan's belief about arXiv:astro-ph/9906322.}
+}
+
+@article{wang2020,
+  author = {Wang, Long and Nitadori, Keigo},
+  title = {Step-size effect in the time-transformed leapfrog integrator on elliptic and hyperbolic orbits},
+  journal = {Monthly Notices of the Royal Astronomical Society}, year = {2020},
+  doi = {10.1093/mnras/staa2295}, eprint = {2007.15352},
+  note = {verified: record-opened (arXiv abs/2007.15352; comments say accepted by MNRAS; volume and pages not shown on the record).}
+}
+
+@article{mikkola1999,
+  author = {Mikkola, Seppo and Tanikawa, Kiyotaka},
+  title = {Algorithmic regularization of the few-body problem},
+  journal = {Monthly Notices of the Royal Astronomical Society}, volume = {310}, pages = {745}, year = {1999},
+  doi = {10.1046/j.1365-8711.1999.02982.x},
+  note = {verified: search-confirmed (volume and first page from a 2008 review by Mikkola; DOI from an aggregator). Abstract and full text not opened.}
+}
+
+@inproceedings{berry2002,
+  author = {Berry, Matthew M. and Healy, Liam M.},
+  title = {The generalized {S}undman transformation for propagation of high-eccentricity elliptical orbits},
+  booktitle = {Spaceflight Mechanics 2002}, series = {Advances in the Astronautical Sciences}, volume = {112}, pages = {127--146}, year = {2002},
+  editor = {Alfriend and Neta and Luu and Hilton Walker},
+  url = {http://hdl.handle.net/1903/3013},
+  note = {verified: record-opened (UMD DRUM handle 1903/3013). No DOI on the record.}
+}
+
+@article{rein2015,
+  author = {Rein, Hanno and Spiegel, David S.},
+  title = {{IAS15}: a fast, adaptive, high-order integrator for gravitational dynamics, accurate to machine precision over a billion orbits},
+  journal = {Monthly Notices of the Royal Astronomical Society}, year = {2015},
+  doi = {10.1093/mnras/stu2164}, eprint = {1409.4779},
+  note = {verified: record-opened (arXiv abs/1409.4779). The abstract does NOT contain the figure '~100 steps per orbit' that the plan asks to check; check the paper body before quoting any step count.}
+}
+
+@article{rein2012,
+  author = {Rein, Hanno and Liu, Shang-Fei},
+  title = {{REBOUND}: an open-source multi-purpose {N}-body code for collisional dynamics},
+  journal = {Astronomy \& Astrophysics}, volume = {537}, year = {2012},
+  doi = {10.1051/0004-6361/201118085}, eprint = {1110.4876},
+  note = {verified: record-opened (arXiv abs/1110.4876).}
+}
+
+@article{pham2024,
+  author = {Pham, Dang and Rein, Hanno and Spiegel, David S.},
+  title = {A new timestep criterion for {N}-body simulations},
+  journal = {The Open Journal of Astrophysics}, volume = {7}, year = {2024},
+  doi = {10.21105/astro.2401.02849}, eprint = {2401.02849},
+  note = {verified: record-opened (arXiv abs/2401.02849). An in-run controller built on acceleration, jerk and snap for IAS15; not a pre-simulation predictor, so not a like-for-like baseline for Part C.}
+}
+
+@article{boekholt2015,
+  author = {Boekholt, Tjarda and Portegies Zwart, Simon},
+  title = {On the reliability of {N}-body simulations},
+  journal = {Computational Astrophysics and Cosmology}, volume = {2}, pages = {2}, year = {2015}, eprint = {1411.6671},
+  note = {verified: record-opened (arXiv abs/1411.6671: title, authors, year). Journal reference not shown on the arXiv page; volume and article number from memory.}
+}
+
+@article{mcgreivy2024,
+  author = {McGreivy, Nick and Hakim, Ammar},
+  title = {Weak baselines and reporting biases lead to overoptimism in machine learning for fluid-related partial differential equations},
+  journal = {Nature Machine Intelligence}, year = {2024},
+  doi = {10.1038/s42256-024-00897-5}, eprint = {2407.07218},
+  note = {verified: record-opened (arXiv abs/2407.07218; related DOI listed on the record).}
+}
+
+@article{angelopoulos2021,
+  author = {Angelopoulos, Anastasios N. and Bates, Stephen and Cand{\`e}s, Emmanuel J. and Jordan, Michael I. and Lei, Lihua},
+  title = {Learn then {T}est: calibrating predictive algorithms to achieve risk control},
+  journal = {arXiv preprint}, year = {2021}, eprint = {2110.01052},
+  note = {verified: record-opened (arXiv abs/2110.01052, v5). The fixed-sequence testing used in Parts B-D is the 'fixed sequence testing' procedure of this paper; check the published version before citing a journal.}
+}
+
+@article{dellnitz2023,
+  author = {Dellnitz, Michael and H{\"u}llermeier, Eyke and L{\"u}cke, Marvin and Ober-Bl{\"o}baum, Sina and Offen, Christian and Peitz, Sebastian and Pfannschmidt, Karlson},
+  title = {Efficient time stepping for numerical integration using reinforcement learning},
+  journal = {SIAM Journal on Scientific Computing}, volume = {45}, number = {2}, pages = {A579--A595}, year = {2023},
+  doi = {10.1137/21M1412682}, eprint = {2104.03562},
+  note = {verified: record-opened (arXiv abs/2104.03562). The abstract pairs quadrature rules / ODE solvers with data-driven time-stepping controllers, motivated by chaotic systems; the review's description as 'a hierarchical meta-learner' is NOT confirmed by the abstract. Read the paper before calling it 'the main counterpoint'.}
+}
+
+@article{sazulibarrena2025,
+  author = {Saz Ulibarrena, Veronica and Portegies Zwart, Simon},
+  title = {Reinforcement learning for adaptive time-stepping in the chaotic gravitational three-body problem},
+  journal = {Communications in Nonlinear Science and Numerical Simulation}, volume = {145}, year = {2025}, eprint = {2502.12809},
+  note = {verified: record-opened (arXiv abs/2502.12809: accepted for publication in CNSNS) and search-confirmed (volume 145, June 2025). Not the 'Soria-Carro \& Akella' item that review entry [18] points to.}
+}
+
+@article{nosek2018,
+  author = {Nosek, Brian A. and Ebersole, Charles R. and DeHaven, Alexander C. and Mellor, David T.},
+  title = {The preregistration revolution},
+  journal = {Proceedings of the National Academy of Sciences}, volume = {115}, number = {11}, pages = {2600--2606}, year = {2018},
+  doi = {10.1073/pnas.1708274114},
+  note = {verified: search-confirmed (PMC record PMC5856500 appears in the search; PNAS page returned 403). Review entry [64] points to arXiv:2510.11595 (AI governance), which is a different paper.}
+}
+
+@article{strobl2008,
+  author = {Strobl, Carolin and Boulesteix, Anne-Laure and Kneib, Thomas and Augustin, Thomas and Zeileis, Achim},
+  title = {Conditional variable importance for random forests},
+  journal = {BMC Bioinformatics}, volume = {9}, pages = {307}, year = {2008},
+  doi = {10.1186/1471-2105-9-307},
+  note = {verified: doi-resolves (redirects to the BMC record, which the fetcher would not read). Authors and title from memory: check before citing.}
+}
+
+@article{dormand1980,
+  author = {Dormand, J. R. and Prince, P. J.},
+  title = {A family of embedded {R}unge--{K}utta formulae},
+  journal = {Journal of Computational and Applied Mathematics}, volume = {6}, number = {1}, pages = {19--26}, year = {1980},
+  doi = {10.1016/0771-050X(80)90013-3},
+  note = {verified: search-confirmed (several bibliographic databases agree). Publisher page not read.}
+}
+
+@book{hairer1993,
+  author = {Hairer, Ernst and N{\o}rsett, Syvert P. and Wanner, Gerhard},
+  title = {Solving Ordinary Differential Equations {I}: Nonstiff Problems},
+  publisher = {Springer}, year = {1993}, edition = {2nd},
+  note = {verified: NOT-VERIFIED in this audit (textbook; the DOPRI5 PI controller constants and the initial-step rule used in compiled_solvers_d.py follow this book through SciPy's documentation, check Section II.4).}
+}
+
+@misc{jpl_periodic_orbits,
+  author = {{NASA/JPL Solar System Dynamics}},
+  title = {Three-Body Periodic Orbits {API}, version 1.0},
+  howpublished = {\url{https://ssd-api.jpl.nasa.gov/doc/periodic_orbits.html}}, year = {2020},
+  note = {verified: record-opened (documentation page read 2026-10-28; the responses were fetched and saved raw with SHA-256 in part_d/DATA_HASHES_D.json). Earth-Moon mass ratio in the responses: 1.215058560962404e-2; length unit 389703.264829278 km; time unit 382981.289129055 s.}
+}
+
+@inproceedings{short2011,
+  author = {Short, Cody R. and Howell, Kathleen C. and Tricoche, Xavier M.},
+  title = {Lagrangian coherent structures in the restricted three-body problem},
+  booktitle = {AAS/AIAA Space Flight Mechanics Meeting}, year = {2011},
+  note = {verified: search-confirmed that a paper of this title by Short, Tricoche and Howell exists (Purdue listing); the author ORDER and the paper number are garbled in the search metadata. NOT-VERIFIED; open the PDF before citing.}
+}
+
+% Not found / not verifiable in this audit (all after the knowledge cutoff or without a resolvable record): arXiv:2607.23501, arXiv:2608.17032, Litteri et al. 2026,
+% Chen et al. 2026, the 2026 J. Sci. Comput. controller paper, Soria-Carro \& Akella, JGCD 49(3). Open each publisher page before citing any of them.
+% Review entries [8], [10], [11], [12], [18], [21], [43], [47], [48], [57], [64] resolve to the wrong source (plan section 2): replace with the entries above or with a
+% source a person has opened.

@@ -1,0 +1,45 @@
+{
+ "config": {
+  "name": "rule_THPD_final",
+  "family": "sundman",
+  "cls": "rule",
+  "rule_name": "rule_THPD",
+  "q": 0.1,
+  "features": [
+   "lT",
+   "reg",
+   "tau",
+   "dC"
+  ],
+  "rule": "fixed_sequence",
+  "grid": "fine",
+  "overhead_rhs": 7.282040102603879
+ },
+ "gate": {
+  "lf_gate": "none",
+  "p_star": 0.5,
+  "g_star": 0.0
+ },
+ "features": [
+  "lT",
+  "reg",
+  "tau",
+  "dC"
+ ],
+ "candidates": [
+  "rk4s"
+ ],
+ "n_train_rows": 94611,
+ "coef": {
+  "lT": -0.5537598564039392,
+  "reg": 0.030691248867781722,
+  "tau": 0.09985668343093847,
+  "dC": -0.004745104077491706
+ },
+ "b": -0.5230554460475894,
+ "train_files": [
+  "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+  "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv"
+ ],
+ "model_file_sha256": "fdcf0c179acbe3118009cb69969061317205141d2a0b3b617f656eb24251ec1f"
+}

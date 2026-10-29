@@ -1,0 +1,39 @@
+{
+ "config": {
+  "name": "rule_TP_final",
+  "family": "sundman",
+  "cls": "rule",
+  "rule_name": "rule_TP",
+  "q": 0.1,
+  "features": [
+   "lT",
+   "tau"
+  ],
+  "rule": "fixed_sequence",
+  "grid": "fine",
+  "overhead_rhs": 7.260137451763526
+ },
+ "gate": {
+  "lf_gate": "none",
+  "p_star": 0.5,
+  "g_star": 0.0
+ },
+ "features": [
+  "lT",
+  "tau"
+ ],
+ "candidates": [
+  "rk4s"
+ ],
+ "n_train_rows": 94611,
+ "coef": {
+  "lT": -0.5393144947815521,
+  "tau": 0.1253620309770661
+ },
+ "b": -0.4124913292946299,
+ "train_files": [
+  "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+  "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv"
+ ],
+ "model_file_sha256": "631306fae2449350366f8129e2d635a2208d2b4b5fdc811c4211d961efb980d1"
+}

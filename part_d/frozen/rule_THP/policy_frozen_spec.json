@@ -1,0 +1,42 @@
+{
+ "config": {
+  "name": "rule_THP_final",
+  "family": "sundman",
+  "cls": "rule",
+  "rule_name": "rule_THP",
+  "q": 0.2,
+  "features": [
+   "lT",
+   "reg",
+   "tau"
+  ],
+  "rule": "fixed_sequence",
+  "grid": "fine",
+  "overhead_rhs": 7.430202136400986
+ },
+ "gate": {
+  "lf_gate": "none",
+  "p_star": 0.5,
+  "g_star": 0.0
+ },
+ "features": [
+  "lT",
+  "reg",
+  "tau"
+ ],
+ "candidates": [
+  "rk4s"
+ ],
+ "n_train_rows": 94611,
+ "coef": {
+  "lT": -0.5613558941967528,
+  "reg": 0.03592911113004617,
+  "tau": 0.12587444616045035
+ },
+ "b": -0.44041045416148006,
+ "train_files": [
+  "data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+  "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv"
+ ],
+ "model_file_sha256": "c72cb4001cbda2d98136e70bc4e4e1d8f228f5af2576675ae3621471d5587010"
+}

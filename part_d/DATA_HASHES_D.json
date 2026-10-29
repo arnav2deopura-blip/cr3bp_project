@@ -1,0 +1,181 @@
+{
+ "datasets": {
+  "data_d/select/cr3bp_3d_training_data_accuracy_monotone_seed52.csv": "a4f7dbc3b47b2f8725eae93e8f1325bfd508285d6fccf13fef53183cb25cebbb",
+  "data_d/confirm/cr3bp_3d_training_data_accuracy_monotone_seed53.csv": "8b3de773b6bf61203ed4322e28dc59c07f1bb924588e6ac1c048b1f82c12c5c0",
+  "data_d/lock/cr3bp_3d_training_data_accuracy_monotone_seed54.csv": "31048d5249d73068aa44a1929d328c9727d73fcb49baa30a1bad5a66f319c8a0",
+  "data_d/replication/cr3bp_3d_training_data_accuracy_monotone_seed55.csv": "319ca7778678a678acb1d4515d1854db09c9d7905f7b66fd1aee90ce0ecb1a11"
+ },
+ "jpl": {
+  "data_d/jpl/axial_L1.json": "1ebc1cd1974e6436feb8841538e67a11b28b49ef733410e00fb2fbdbc09f1587",
+  "data_d/jpl/axial_L2.json": "9b08c42603e1793269b2ab0ef66bf3dbebd066707029d75c1b7278ad5bbfc532",
+  "data_d/jpl/butterfly_N.json": "0cb3c1c06c7924b3084e1549e403ef239709ac03e837cb66c84f7a9de05d40a9",
+  "data_d/jpl/butterfly_S.json": "61486f4070c4c2c46542db418db87357ed1dfa4a2614a6003b1d49b16449e940",
+  "data_d/jpl/dro.json": "07884024a7855fe713c8369463d7159ce98b9ba4cd800e80ee0db4cc9f7fa9f5",
+  "data_d/jpl/halo_L1_N.json": "f93748398ccff30a7b4a9380614d4e4635aeb5ae9f1685499fd07a6cdd635aba",
+  "data_d/jpl/halo_L1_S.json": "a7a335e89a26dfdf2c6fe43815667789bc118bf85f8730e33e16c8cf77fd90bb",
+  "data_d/jpl/halo_L2_N.json": "af69ea64934ca41d4af625fba1cf32cc22810b2e84b389581620d0c34ab81a72",
+  "data_d/jpl/halo_L2_S.json": "8e6194fc69606efc1ff3b142e5321b18b6617f6d2ec1a82e574faf89e50f8676",
+  "data_d/jpl/jpl_hashes.json": "9c3db7e61a23f4a56f6ea97719039dbd2d0334136b2b5df2c8bf99bcd8f6a104",
+  "data_d/jpl/lyapunov_L1.json": "8cb5e12040e7e6a595e54626a64d422ab629324a90494adaafd941152f6ed208",
+  "data_d/jpl/lyapunov_L2.json": "ce74644eed2dea273539ede2ae8dbc3887eb8569ea7f88d8ba8cc2c5c83fa9ce",
+  "data_d/jpl/resonant_12.json": "8828d3f788b575372d2d25af8d3cac954e4abb41dba4089bcb1d13104a034d92",
+  "data_d/jpl/resonant_13.json": "504c68fa739c088a2f5903dd9ceec192ff5038e9142475a6fbb82bde0139f570",
+  "data_d/jpl/resonant_21.json": "08a75c1a2e02cc3db8aa7f70fc5dc9c0732905185393639ca1c3a79a06bdcd64",
+  "data_d/jpl/resonant_23.json": "5aaed56bdd131fd2b8984770a9ac874e048a8e6085bc1da1c7f42c81c5a786ef",
+  "data_d/jpl/resonant_31.json": "65403ffa46b1a78aca43d00190671a2a654824be89e48b5b37f687aaf84e640f",
+  "data_d/jpl/resonant_32.json": "bcb89cdb27ba1978901a9cbbf3c9f4f1ccefd82a5fc7b48467b65be98ab4b73c",
+  "data_d/jpl/resonant_34.json": "b77287a0b233e593be36aaadfc135e550ac3b52594050827478820ed108ee4b9",
+  "data_d/jpl/resonant_43.json": "f99bcf616f317ba3496595d22d15b2b267189143f7016161631639ecd08e228e",
+  "data_d/jpl/vertical_L1.json": "19a4545ca561820a6e214a90db6a981f1b848e397f40bc923996a6e4c3816fb8",
+  "data_d/jpl/vertical_L2.json": "8fba86caf40f48b5d8de1b274b4db79b1dbd7cc7629621f0ac9d288f7a8b3bd7"
+ },
+ "jpl_fetch_log": {
+  "halo_L1_N": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=halo&libr=1&branch=N",
+   "http_status": 200,
+   "bytes": 1249917,
+   "sha256": "f93748398ccff30a7b4a9380614d4e4635aeb5ae9f1685499fd07a6cdd635aba",
+   "count": "5731"
+  },
+  "halo_L1_S": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=halo&libr=1&branch=S",
+   "http_status": 200,
+   "bytes": 1249931,
+   "sha256": "a7a335e89a26dfdf2c6fe43815667789bc118bf85f8730e33e16c8cf77fd90bb",
+   "count": "5731"
+  },
+  "halo_L2_N": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=halo&libr=2&branch=N",
+   "http_status": 200,
+   "bytes": 334462,
+   "sha256": "af69ea64934ca41d4af625fba1cf32cc22810b2e84b389581620d0c34ab81a72",
+   "count": "1535"
+  },
+  "halo_L2_S": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=halo&libr=2&branch=S",
+   "http_status": 200,
+   "bytes": 334366,
+   "sha256": "8e6194fc69606efc1ff3b142e5321b18b6617f6d2ec1a82e574faf89e50f8676",
+   "count": "1535"
+  },
+  "lyapunov_L1": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=lyapunov&libr=1",
+   "http_status": 200,
+   "bytes": 677630,
+   "sha256": "8cb5e12040e7e6a595e54626a64d422ab629324a90494adaafd941152f6ed208",
+   "count": "3108"
+  },
+  "lyapunov_L2": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=lyapunov&libr=2",
+   "http_status": 200,
+   "bytes": 937630,
+   "sha256": "ce74644eed2dea273539ede2ae8dbc3887eb8569ea7f88d8ba8cc2c5c83fa9ce",
+   "count": "4298"
+  },
+  "vertical_L1": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=vertical&libr=1",
+   "http_status": 200,
+   "bytes": 1458659,
+   "sha256": "19a4545ca561820a6e214a90db6a981f1b848e397f40bc923996a6e4c3816fb8",
+   "count": "6670"
+  },
+  "vertical_L2": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=vertical&libr=2",
+   "http_status": 200,
+   "bytes": 2111065,
+   "sha256": "8fba86caf40f48b5d8de1b274b4db79b1dbd7cc7629621f0ac9d288f7a8b3bd7",
+   "count": "9651"
+  },
+  "axial_L1": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=axial&libr=1",
+   "http_status": 200,
+   "bytes": 544748,
+   "sha256": "1ebc1cd1974e6436feb8841538e67a11b28b49ef733410e00fb2fbdbc09f1587",
+   "count": "2498"
+  },
+  "axial_L2": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=axial&libr=2",
+   "http_status": 200,
+   "bytes": 479418,
+   "sha256": "9b08c42603e1793269b2ab0ef66bf3dbebd066707029d75c1b7278ad5bbfc532",
+   "count": "2198"
+  },
+  "dro": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=dro",
+   "http_status": 200,
+   "bytes": 2370438,
+   "sha256": "07884024a7855fe713c8369463d7159ce98b9ba4cd800e80ee0db4cc9f7fa9f5",
+   "count": "10998"
+  },
+  "butterfly_N": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=butterfly&branch=N",
+   "http_status": 200,
+   "bytes": 705808,
+   "sha256": "0cb3c1c06c7924b3084e1549e403ef239709ac03e837cb66c84f7a9de05d40a9",
+   "count": "3238"
+  },
+  "butterfly_S": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=butterfly&branch=S",
+   "http_status": 200,
+   "bytes": 705808,
+   "sha256": "61486f4070c4c2c46542db418db87357ed1dfa4a2614a6003b1d49b16449e940",
+   "count": "3238"
+  },
+  "resonant_12": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=12",
+   "http_status": 200,
+   "bytes": 2613327,
+   "sha256": "8828d3f788b575372d2d25af8d3cac954e4abb41dba4089bcb1d13104a034d92",
+   "count": "11998"
+  },
+  "resonant_21": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=21",
+   "http_status": 200,
+   "bytes": 1592360,
+   "sha256": "08a75c1a2e02cc3db8aa7f70fc5dc9c0732905185393639ca1c3a79a06bdcd64",
+   "count": "7467"
+  },
+  "resonant_13": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=13",
+   "http_status": 200,
+   "bytes": 4309290,
+   "sha256": "504c68fa739c088a2f5903dd9ceec192ff5038e9142475a6fbb82bde0139f570",
+   "count": "19782"
+  },
+  "resonant_31": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=31",
+   "http_status": 200,
+   "bytes": 2648972,
+   "sha256": "65403ffa46b1a78aca43d00190671a2a654824be89e48b5b37f687aaf84e640f",
+   "count": "12156"
+  },
+  "resonant_23": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=23",
+   "http_status": 200,
+   "bytes": 2071137,
+   "sha256": "5aaed56bdd131fd2b8984770a9ac874e048a8e6085bc1da1c7f42c81c5a786ef",
+   "count": "9507"
+  },
+  "resonant_32": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=32",
+   "http_status": 200,
+   "bytes": 1767221,
+   "sha256": "bcb89cdb27ba1978901a9cbbf3c9f4f1ccefd82a5fc7b48467b65be98ab4b73c",
+   "count": "8215"
+  },
+  "resonant_34": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=34",
+   "http_status": 200,
+   "bytes": 2331960,
+   "sha256": "b77287a0b233e593be36aaadfc135e550ac3b52594050827478820ed108ee4b9",
+   "count": "10717"
+  },
+  "resonant_43": {
+   "url": "https://ssd-api.jpl.nasa.gov/periodic_orbits.api?sys=earth-moon&family=resonant&branch=43",
+   "http_status": 200,
+   "bytes": 1632525,
+   "sha256": "f99bcf616f317ba3496595d22d15b2b267189143f7016161631639ecd08e228e",
+   "count": "7517"
+  }
+ }
+}
