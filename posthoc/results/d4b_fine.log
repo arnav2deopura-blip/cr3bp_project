@@ -1,0 +1,10 @@
+coarse_sealed RK45: share 0.5622, ratio of totals 0.922, comparator violations 0.0146 (10s)
+coarse_sealed DOP853: share 0.2351, ratio of totals 0.740, comparator violations 0.0245 (17s)
+fine RK45: share 0.4254, ratio of totals 0.872, comparator violations 0.0305 (27s)
+fine DOP853: share 0.2065, ratio of totals 0.690, comparator violations 0.0303 (37s)
+            grid comparator   share  aggregate_ratio  mean_log_ratio  comparator_violation_rate
+0  coarse_sealed       RK45  0.5622           0.9223          0.0166                     0.0146
+1  coarse_sealed     DOP853  0.2351           0.7396         -0.1221                     0.0245
+2           fine       RK45  0.4254           0.8725         -0.0273                     0.0305
+3           fine     DOP853  0.2065           0.6895         -0.1405                     0.0303
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/d4b_fine_20261030T180730Z

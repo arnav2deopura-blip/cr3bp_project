@@ -147,6 +147,11 @@ def s4():
     sd = latest("posthoc/results/seeds_*")
     if sd and os.path.exists(os.path.join(sd, "seeds_summary.csv")):
         write(pd.read_csv(os.path.join(sd, "seeds_summary.csv")), "S4_Table_posthoc_fit_seeds.csv")
+    for pat, f, name in (("atol_*", "atol_summary.csv", "S4_Table_posthoc_atol.csv"), ("d4b_fine_*", "d4b_fine_summary.csv", "S4_Table_posthoc_d4b_fine_grid.csv"),
+                         ("compiled_*", "compiled_summary.csv", "S4_Table_posthoc_compiled_comparators.csv")):
+        d = latest(f"posthoc/results/{pat}")
+        if d and os.path.exists(os.path.join(d, f)):
+            write(pd.read_csv(os.path.join(d, f)), name)
     tq = latest("posthoc/results/three_quarters_*")
     if tq:
         r = json.load(open(os.path.join(tq, "three_quarters_report.json")))

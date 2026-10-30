@@ -1,0 +1,82 @@
+/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/run_posthoc.py:173: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  Se, Te, re_ = S[ev], T[ev], ref[ev]
+policy re-run reproduces the sealed ledger on all 12192 orbits (523s)
+policy scale at delta 0.05: 0.8724061861322062 (sealed 0.8724061861322062 at 0.1)
+  RK45 rtol 1.000e-10: 0 violations, mean nfev 5508, capped 0 (571s)
+  RK45 rtol 1.334e-10: 0 violations, mean nfev 5207, capped 0 (604s)
+  RK45 rtol 1.778e-10: 0 violations, mean nfev 4922, capped 0 (643s)
+  RK45 rtol 2.371e-10: 0 violations, mean nfev 4653, capped 0 (681s)
+  RK45 rtol 3.162e-10: 0 violations, mean nfev 4400, capped 0 (712s)
+  RK45 rtol 4.217e-10: 0 violations, mean nfev 4160, capped 0 (738s)
+  RK45 rtol 5.623e-10: 0 violations, mean nfev 3934, capped 0 (763s)
+  RK45 rtol 7.499e-10: 0 violations, mean nfev 3721, capped 0 (792s)
+  RK45 rtol 1.000e-09: 0 violations, mean nfev 3521, capped 0 (821s)
+  RK45 rtol 1.334e-09: 0 violations, mean nfev 3332, capped 0 (843s)
+  RK45 rtol 1.778e-09: 0 violations, mean nfev 3153, capped 0 (862s)
+  RK45 rtol 2.371e-09: 0 violations, mean nfev 2985, capped 0 (879s)
+  RK45 rtol 3.162e-09: 0 violations, mean nfev 2827, capped 0 (896s)
+  RK45 rtol 4.217e-09: 0 violations, mean nfev 2679, capped 0 (914s)
+  RK45 rtol 5.623e-09: 0 violations, mean nfev 2539, capped 0 (929s)
+  RK45 rtol 7.499e-09: 0 violations, mean nfev 2409, capped 0 (943s)
+  RK45 rtol 1.000e-08: 0 violations, mean nfev 2288, capped 0 (955s)
+  RK45 rtol 1.334e-08: 1 violations, mean nfev 2176, capped 0 (966s)
+  RK45 rtol 1.778e-08: 1 violations, mean nfev 2071, capped 0 (977s)
+  RK45 rtol 2.371e-08: 1 violations, mean nfev 1974, capped 0 (987s)
+  RK45 rtol 3.162e-08: 1 violations, mean nfev 1882, capped 0 (997s)
+  RK45 rtol 4.217e-08: 4 violations, mean nfev 1795, capped 0 (1006s)
+  RK45 rtol 5.623e-08: 7 violations, mean nfev 1711, capped 0 (1015s)
+  RK45 rtol 7.499e-08: 10 violations, mean nfev 1632, capped 0 (1024s)
+  RK45 rtol 1.000e-07: 20 violations, mean nfev 1555, capped 0 (1032s)
+  RK45 rtol 1.334e-07: 32 violations, mean nfev 1481, capped 0 (1040s)
+  RK45 rtol 1.778e-07: 45 violations, mean nfev 1411, capped 0 (1047s)
+  RK45 rtol 2.371e-07: 67 violations, mean nfev 1343, capped 0 (1054s)
+  RK45 rtol 3.162e-07: 89 violations, mean nfev 1277, capped 0 (1061s)
+  RK45 rtol 4.217e-07: 120 violations, mean nfev 1213, capped 0 (1067s)
+  RK45 rtol 5.623e-07: 166 violations, mean nfev 1152, capped 0 (1073s)
+  RK45 rtol 7.499e-07: 211 violations, mean nfev 1093, capped 0 (1078s)
+RK45: certified rtol (fine, fixed sequence) 5.62341325190349e-07 [sealed 1.9684194472866112e-07]; delta 0.05: 5.62341325190349e-07; equal-risk at delta 0.05 5.719432530342213e-07
+  DOP853 rtol 1.000e-10: 0 violations, mean nfev 2414, capped 0 (1125s)
+  DOP853 rtol 1.334e-10: 0 violations, mean nfev 2345, capped 0 (1135s)
+  DOP853 rtol 1.778e-10: 0 violations, mean nfev 2277, capped 0 (1144s)
+  DOP853 rtol 2.371e-10: 0 violations, mean nfev 2210, capped 0 (1154s)
+  DOP853 rtol 3.162e-10: 0 violations, mean nfev 2144, capped 0 (1163s)
+  DOP853 rtol 4.217e-10: 0 violations, mean nfev 2081, capped 0 (1173s)
+  DOP853 rtol 5.623e-10: 0 violations, mean nfev 2019, capped 0 (1182s)
+  DOP853 rtol 7.499e-10: 0 violations, mean nfev 1959, capped 0 (1191s)
+  DOP853 rtol 1.000e-09: 0 violations, mean nfev 1899, capped 0 (1200s)
+  DOP853 rtol 1.334e-09: 0 violations, mean nfev 1843, capped 0 (1208s)
+  DOP853 rtol 1.778e-09: 0 violations, mean nfev 1788, capped 0 (1216s)
+  DOP853 rtol 2.371e-09: 0 violations, mean nfev 1732, capped 0 (1224s)
+  DOP853 rtol 3.162e-09: 0 violations, mean nfev 1679, capped 0 (1232s)
+  DOP853 rtol 4.217e-09: 0 violations, mean nfev 1628, capped 0 (1240s)
+  DOP853 rtol 5.623e-09: 0 violations, mean nfev 1579, capped 0 (1248s)
+  DOP853 rtol 7.499e-09: 0 violations, mean nfev 1531, capped 0 (1256s)
+  DOP853 rtol 1.000e-08: 1 violations, mean nfev 1484, capped 0 (1263s)
+  DOP853 rtol 1.334e-08: 2 violations, mean nfev 1438, capped 0 (1272s)
+  DOP853 rtol 1.778e-08: 2 violations, mean nfev 1396, capped 0 (1281s)
+  DOP853 rtol 2.371e-08: 7 violations, mean nfev 1353, capped 0 (1289s)
+  DOP853 rtol 3.162e-08: 9 violations, mean nfev 1311, capped 0 (1295s)
+  DOP853 rtol 4.217e-08: 14 violations, mean nfev 1272, capped 0 (1303s)
+  DOP853 rtol 5.623e-08: 19 violations, mean nfev 1232, capped 0 (1310s)
+  DOP853 rtol 7.499e-08: 28 violations, mean nfev 1194, capped 0 (1315s)
+  DOP853 rtol 1.000e-07: 40 violations, mean nfev 1158, capped 0 (1321s)
+  DOP853 rtol 1.334e-07: 48 violations, mean nfev 1124, capped 0 (1329s)
+  DOP853 rtol 1.778e-07: 59 violations, mean nfev 1088, capped 0 (1335s)
+  DOP853 rtol 2.371e-07: 80 violations, mean nfev 1057, capped 0 (1340s)
+  DOP853 rtol 3.162e-07: 103 violations, mean nfev 1025, capped 0 (1344s)
+  DOP853 rtol 4.217e-07: 134 violations, mean nfev 995, capped 0 (1349s)
+  DOP853 rtol 5.623e-07: 165 violations, mean nfev 965, capped 0 (1353s)
+  DOP853 rtol 7.499e-07: 193 violations, mean nfev 937, capped 0 (1357s)
+DOP853: certified rtol (fine, fixed sequence) 5.62341325190349e-07 [sealed 1.9684194472866112e-07]; delta 0.05: 5.62341325190349e-07; equal-risk at delta 0.05 6.660846290809154e-07
+                                                           comparison  rtol  comparator_violation_rate  policy_violation_rate   share  aggregate_ratio  mean_log_ratio
+0         RK45 certified, sealed (Bonferroni, coarse grid, delta 0.1)   0.0                     0.0127                 0.0439  0.8239           1.0122          0.2083
+1    RK45 certified, symmetric (fixed sequence, fine grid, delta 0.1)   0.0                     0.0410                 0.0439  0.7156           0.8400          0.1259
+2                                 RK45 equal-risk, sealed (delta 0.1)   0.0                     0.0411                 0.0439  0.7142           0.8373          0.1246
+3        RK45 certified, symmetric, delta 0.05 (policy at delta 0.05)   0.0                     0.0410                 0.0439  0.7156           0.8400          0.1259
+4                  RK45 equal-risk, delta 0.05 (policy at delta 0.05)   0.0                     0.0411                 0.0439  0.7142           0.8373          0.1246
+5       DOP853 certified, sealed (Bonferroni, coarse grid, delta 0.1)   0.0                     0.0190                 0.0439  0.5862           0.7832          0.0463
+6  DOP853 certified, symmetric (fixed sequence, fine grid, delta 0.1)   0.0                     0.0402                 0.0439  0.5180           0.7024          0.0001
+7                               DOP853 equal-risk, sealed (delta 0.1)   0.0                     0.0436                 0.0439  0.5057           0.6905         -0.0074
+8      DOP853 certified, symmetric, delta 0.05 (policy at delta 0.05)   0.0                     0.0402                 0.0439  0.5180           0.7024          0.0001
+9                DOP853 equal-risk, delta 0.05 (policy at delta 0.05)   0.0                     0.0436                 0.0439  0.5057           0.6905         -0.0074
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/symmetric_c_confirm_20261030T172317Z

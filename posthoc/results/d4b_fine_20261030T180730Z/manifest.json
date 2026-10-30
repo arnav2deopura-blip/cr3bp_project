@@ -1,0 +1,15 @@
+{
+ "command": "d4b_fine",
+ "args": {
+  "cmd": "d4b_fine",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "fn": "<function cmd_d4b_fine at 0x1213fd120>"
+ },
+ "utc": "20261030T180730Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "d4b_fine"
+ ]
+}

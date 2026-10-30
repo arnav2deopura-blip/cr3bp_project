@@ -1,0 +1,19 @@
+{
+ "command": "symmetric_c_confirm",
+ "args": {
+  "cmd": "symmetric",
+  "set": "c_confirm",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "n_jobs": 8,
+  "fn": "<function cmd_symmetric at 0x1677fccc0>"
+ },
+ "utc": "20261030T172317Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "symmetric",
+  "--set",
+  "c_confirm"
+ ]
+}

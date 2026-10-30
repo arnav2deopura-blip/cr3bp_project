@@ -1,0 +1,25 @@
+== tests/test_phase0.py
+PASS test_fsal_leapfrog_bit_identical
+PASS test_hill_thresholds
+PASS test_legacy_labels_reproduce
+== tests/test_failure_study.py
+Saved metadata to cr3bp_3d_training_data_accuracy_monotone_seed777_metadata.json
+PASS test_lazy_scale_equals_full_chain
+PASS test_spec_search_matches_original
+== tests/test_part_c.py
+ok   test_sundman_step_shrinks_near_a_body
+ok   test_sundman_with_constant_g_is_classical_rk4
+30 passed
+== tests/test_part_d.py
+test_strata_cover_every_row_and_merge_small_cells ...
+  ok
+16 tests passed
+== tests/test_posthoc.py
+ok test_stratified_bootstrap_keeps_group_sizes
+ok test_vector_atol_equals_scalar
+13 tests passed
+== tests/test_hardening.py
+ok test_segment_crossing_detected_between_endpoints
+ok test_usable_rows_equivalence_on_every_dataset
+5 tests passed
+done

@@ -1,0 +1,16 @@
+{
+ "command": "atol",
+ "args": {
+  "cmd": "atol",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "n_jobs": 8,
+  "fn": "<function cmd_atol at 0x14a9ed080>"
+ },
+ "utc": "20261030T174652Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "atol"
+ ]
+}

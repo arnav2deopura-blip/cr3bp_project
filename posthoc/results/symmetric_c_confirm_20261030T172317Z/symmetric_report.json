@@ -1,0 +1,696 @@
+{
+ "label": "POST HOC (posthoc/README.md P7, P8 delta = 0.05)",
+ "set": "c_confirm",
+ "sealed_run": "out_c/confirm/sund/apply_policy_20261027T013754Z",
+ "n_cal": 4000,
+ "n_eval": 12192,
+ "overhead_rhs": 15.036794812388587,
+ "sealed_scale": 0.8724061861322062,
+ "policy_rerun_matches_sealed": 12192,
+ "grid": {
+  "min": 1e-10,
+  "max": 0.001,
+  "n": 57,
+  "step_dex": 0.125
+ },
+ "sealed_rtols": {
+  "RK45|cal": 1.9684194472866112e-07,
+  "RK45|eqr": 5.719432530342213e-07,
+  "DOP853|cal": 1.9684194472866112e-07,
+  "DOP853|eqr": 6.660846290809154e-07
+ },
+ "scale_delta05": 0.8724061861322062,
+ "cal_violation_rate_delta05": 0.04325,
+ "cal_violation_rate_sealed": 0.04325,
+ "methods": {
+  "RK45": {
+   "certified_rtol_delta01": 5.62341325190349e-07,
+   "certified_rtol_delta05": 5.62341325190349e-07,
+   "equal_risk_rtol_delta05": 5.719432530342213e-07,
+   "chain": [
+    {
+     "rtol": 1e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.778279410038923e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 2.371373705661655e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 3.1622776601683795e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 4.2169650342858224e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 5.623413251903491e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324559e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.7782794100389228e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 2.3713737056616553e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 3.1622776601683795e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 4.216965034285823e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 5.623413251903491e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324558e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1e-08,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-08,
+     "n": 4000,
+     "violations": 1,
+     "violation_rate": 0.00025,
+     "p_value": 1.6587676639538309e-87,
+     "certified": true
+    },
+    {
+     "rtol": 1.7782794100389228e-08,
+     "n": 4000,
+     "violations": 1,
+     "violation_rate": 0.00025,
+     "p_value": 1.6587676639538309e-87,
+     "certified": true
+    },
+    {
+     "rtol": 2.371373705661655e-08,
+     "n": 4000,
+     "violations": 1,
+     "violation_rate": 0.00025,
+     "p_value": 1.6587676639538309e-87,
+     "certified": true
+    },
+    {
+     "rtol": 3.162277660168379e-08,
+     "n": 4000,
+     "violations": 1,
+     "violation_rate": 0.00025,
+     "p_value": 1.6587676639538309e-87,
+     "certified": true
+    },
+    {
+     "rtol": 4.2169650342858225e-08,
+     "n": 4000,
+     "violations": 4,
+     "violation_rate": 0.001,
+     "p_value": 6.532519700733859e-82,
+     "certified": true
+    },
+    {
+     "rtol": 5.6234132519034905e-08,
+     "n": 4000,
+     "violations": 7,
+     "violation_rate": 0.00175,
+     "p_value": 2.9341975240528e-77,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324559e-08,
+     "n": 4000,
+     "violations": 10,
+     "violation_rate": 0.0025,
+     "p_value": 3.8362648232516375e-73,
+     "certified": true
+    },
+    {
+     "rtol": 1e-07,
+     "n": 4000,
+     "violations": 20,
+     "violation_rate": 0.005,
+     "p_value": 9.933235227122072e-62,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-07,
+     "n": 4000,
+     "violations": 32,
+     "violation_rate": 0.008,
+     "p_value": 6.883837522211403e-51,
+     "certified": true
+    },
+    {
+     "rtol": 1.7782794100389227e-07,
+     "n": 4000,
+     "violations": 45,
+     "violation_rate": 0.01125,
+     "p_value": 2.3042678497952487e-41,
+     "certified": true
+    },
+    {
+     "rtol": 2.3713737056616554e-07,
+     "n": 4000,
+     "violations": 67,
+     "violation_rate": 0.01675,
+     "p_value": 8.335232390253594e-29,
+     "certified": true
+    },
+    {
+     "rtol": 3.162277660168379e-07,
+     "n": 4000,
+     "violations": 89,
+     "violation_rate": 0.02225,
+     "p_value": 1.843757253979853e-19,
+     "certified": true
+    },
+    {
+     "rtol": 4.2169650342858225e-07,
+     "n": 4000,
+     "violations": 120,
+     "violation_rate": 0.03,
+     "p_value": 2.885311801031349e-10,
+     "certified": true
+    },
+    {
+     "rtol": 5.62341325190349e-07,
+     "n": 4000,
+     "violations": 166,
+     "violation_rate": 0.0415,
+     "p_value": 0.0064161841303744995,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324558e-07,
+     "n": 4000,
+     "violations": 211,
+     "violation_rate": 0.05275,
+     "p_value": 0.7988937913098519,
+     "certified": false
+    }
+   ],
+   "eqr05_chain": null,
+   "cal_mean_nfev": {
+    "1.000000e-10": 5508.4235,
+    "1.333521e-10": 5206.7495,
+    "1.778279e-10": 4921.538,
+    "2.371374e-10": 4652.816,
+    "3.162278e-10": 4399.5635,
+    "4.216965e-10": 4160.0525,
+    "5.623413e-10": 3934.076,
+    "7.498942e-10": 3721.208,
+    "1.000000e-09": 3520.625,
+    "1.333521e-09": 3331.628,
+    "1.778279e-09": 3152.564,
+    "2.371374e-09": 2985.248,
+    "3.162278e-09": 2826.548,
+    "4.216965e-09": 2678.5205,
+    "5.623413e-09": 2538.977,
+    "7.498942e-09": 2409.2,
+    "1.000000e-08": 2287.7075,
+    "1.333521e-08": 2175.6485,
+    "1.778279e-08": 2071.1105,
+    "2.371374e-08": 1973.72,
+    "3.162278e-08": 1882.013,
+    "4.216965e-08": 1794.7865,
+    "5.623413e-08": 1711.238,
+    "7.498942e-08": 1631.648,
+    "1.000000e-07": 1554.671,
+    "1.333521e-07": 1481.318,
+    "1.778279e-07": 1410.6635,
+    "2.371374e-07": 1342.5815,
+    "3.162278e-07": 1276.9145,
+    "4.216965e-07": 1213.4015,
+    "5.623413e-07": 1152.098,
+    "7.498942e-07": 1093.0205
+   },
+   "cal_capped": {
+    "1.000000e-10": 0,
+    "1.333521e-10": 0,
+    "1.778279e-10": 0,
+    "2.371374e-10": 0,
+    "3.162278e-10": 0,
+    "4.216965e-10": 0,
+    "5.623413e-10": 0,
+    "7.498942e-10": 0,
+    "1.000000e-09": 0,
+    "1.333521e-09": 0,
+    "1.778279e-09": 0,
+    "2.371374e-09": 0,
+    "3.162278e-09": 0,
+    "4.216965e-09": 0,
+    "5.623413e-09": 0,
+    "7.498942e-09": 0,
+    "1.000000e-08": 0,
+    "1.333521e-08": 0,
+    "1.778279e-08": 0,
+    "2.371374e-08": 0,
+    "3.162278e-08": 0,
+    "4.216965e-08": 0,
+    "5.623413e-08": 0,
+    "7.498942e-08": 0,
+    "1.000000e-07": 0,
+    "1.333521e-07": 0,
+    "1.778279e-07": 0,
+    "2.371374e-07": 0,
+    "3.162278e-07": 0,
+    "4.216965e-07": 0,
+    "5.623413e-07": 0,
+    "7.498942e-07": 0
+   },
+   "sealed_certified_rtol": 1.9684194472866112e-07,
+   "sealed_equal_risk_rtol": 5.719432530342213e-07
+  },
+  "DOP853": {
+   "certified_rtol_delta01": 5.62341325190349e-07,
+   "certified_rtol_delta05": 5.62341325190349e-07,
+   "equal_risk_rtol_delta05": 6.660846290809154e-07,
+   "chain": [
+    {
+     "rtol": 1e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.778279410038923e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 2.371373705661655e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 3.1622776601683795e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 4.2169650342858224e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 5.623413251903491e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324559e-10,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1.7782794100389228e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 2.3713737056616553e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 3.1622776601683795e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 4.216965034285823e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 5.623413251903491e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324558e-09,
+     "n": 4000,
+     "violations": 0,
+     "violation_rate": 0.0,
+     "p_value": 7.841897391173927e-90,
+     "certified": true
+    },
+    {
+     "rtol": 1e-08,
+     "n": 4000,
+     "violations": 1,
+     "violation_rate": 0.00025,
+     "p_value": 1.6587676639538309e-87,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-08,
+     "n": 4000,
+     "violations": 2,
+     "violation_rate": 0.0005,
+     "p_value": 1.7539698188721888e-85,
+     "certified": true
+    },
+    {
+     "rtol": 1.7782794100389228e-08,
+     "n": 4000,
+     "violations": 2,
+     "violation_rate": 0.0005,
+     "p_value": 1.7539698188721888e-85,
+     "certified": true
+    },
+    {
+     "rtol": 2.371373705661655e-08,
+     "n": 4000,
+     "violations": 7,
+     "violation_rate": 0.00175,
+     "p_value": 2.9341975240528e-77,
+     "certified": true
+    },
+    {
+     "rtol": 3.162277660168379e-08,
+     "n": 4000,
+     "violations": 9,
+     "violation_rate": 0.00225,
+     "p_value": 1.817280116780721e-74,
+     "certified": true
+    },
+    {
+     "rtol": 4.2169650342858225e-08,
+     "n": 4000,
+     "violations": 14,
+     "violation_rate": 0.0035,
+     "p_value": 3.1640271996458e-68,
+     "certified": true
+    },
+    {
+     "rtol": 5.6234132519034905e-08,
+     "n": 4000,
+     "violations": 19,
+     "violation_rate": 0.00475,
+     "p_value": 9.431925350287307e-63,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324559e-08,
+     "n": 4000,
+     "violations": 28,
+     "violation_rate": 0.007,
+     "p_value": 3.046418470033921e-54,
+     "certified": true
+    },
+    {
+     "rtol": 1e-07,
+     "n": 4000,
+     "violations": 40,
+     "violation_rate": 0.01,
+     "p_value": 8.355542931701365e-45,
+     "certified": true
+    },
+    {
+     "rtol": 1.333521432163324e-07,
+     "n": 4000,
+     "violations": 48,
+     "violation_rate": 0.012,
+     "p_value": 2.038737770652484e-39,
+     "certified": true
+    },
+    {
+     "rtol": 1.7782794100389227e-07,
+     "n": 4000,
+     "violations": 59,
+     "violation_rate": 0.01475,
+     "p_value": 6.094673606496425e-33,
+     "certified": true
+    },
+    {
+     "rtol": 2.3713737056616554e-07,
+     "n": 4000,
+     "violations": 80,
+     "violation_rate": 0.02,
+     "p_value": 5.883871051744559e-23,
+     "certified": true
+    },
+    {
+     "rtol": 3.162277660168379e-07,
+     "n": 4000,
+     "violations": 103,
+     "violation_rate": 0.02575,
+     "p_value": 8.366611662819156e-15,
+     "certified": true
+    },
+    {
+     "rtol": 4.2169650342858225e-07,
+     "n": 4000,
+     "violations": 134,
+     "violation_rate": 0.0335,
+     "p_value": 2.4810589722299276e-07,
+     "certified": true
+    },
+    {
+     "rtol": 5.62341325190349e-07,
+     "n": 4000,
+     "violations": 165,
+     "violation_rate": 0.04125,
+     "p_value": 0.005154346436422622,
+     "certified": true
+    },
+    {
+     "rtol": 7.498942093324558e-07,
+     "n": 4000,
+     "violations": 193,
+     "violation_rate": 0.04825,
+     "p_value": 0.321661577925725,
+     "certified": false
+    }
+   ],
+   "eqr05_chain": null,
+   "cal_mean_nfev": {
+    "1.000000e-10": 2414.327,
+    "1.333521e-10": 2344.928,
+    "1.778279e-10": 2276.711,
+    "2.371374e-10": 2210.045,
+    "3.162278e-10": 2143.991,
+    "4.216965e-10": 2081.21,
+    "5.623413e-10": 2019.467,
+    "7.498942e-10": 1959.068,
+    "1.000000e-09": 1899.224,
+    "1.333521e-09": 1842.638,
+    "1.778279e-09": 1787.657,
+    "2.371374e-09": 1731.677,
+    "3.162278e-09": 1679.348,
+    "4.216965e-09": 1627.967,
+    "5.623413e-09": 1578.827,
+    "7.498942e-09": 1530.665,
+    "1.000000e-08": 1483.592,
+    "1.333521e-08": 1438.13,
+    "1.778279e-08": 1396.244,
+    "2.371374e-08": 1352.675,
+    "3.162278e-08": 1311.251,
+    "4.216965e-08": 1271.831,
+    "5.623413e-08": 1232.165,
+    "7.498942e-08": 1194.038,
+    "1.000000e-07": 1157.738,
+    "1.333521e-07": 1123.847,
+    "1.778279e-07": 1088.156,
+    "2.371374e-07": 1057.379,
+    "3.162278e-07": 1025.135,
+    "4.216965e-07": 995.144,
+    "5.623413e-07": 965.324,
+    "7.498942e-07": 937.079
+   },
+   "cal_capped": {
+    "1.000000e-10": 0,
+    "1.333521e-10": 0,
+    "1.778279e-10": 0,
+    "2.371374e-10": 0,
+    "3.162278e-10": 0,
+    "4.216965e-10": 0,
+    "5.623413e-10": 0,
+    "7.498942e-10": 0,
+    "1.000000e-09": 0,
+    "1.333521e-09": 0,
+    "1.778279e-09": 0,
+    "2.371374e-09": 0,
+    "3.162278e-09": 0,
+    "4.216965e-09": 0,
+    "5.623413e-09": 0,
+    "7.498942e-09": 0,
+    "1.000000e-08": 0,
+    "1.333521e-08": 0,
+    "1.778279e-08": 0,
+    "2.371374e-08": 0,
+    "3.162278e-08": 0,
+    "4.216965e-08": 0,
+    "5.623413e-08": 0,
+    "7.498942e-08": 0,
+    "1.000000e-07": 0,
+    "1.333521e-07": 0,
+    "1.778279e-07": 0,
+    "2.371374e-07": 0,
+    "3.162278e-07": 0,
+    "4.216965e-07": 0,
+    "5.623413e-07": 0,
+    "7.498942e-07": 0
+   },
+   "sealed_certified_rtol": 1.9684194472866112e-07,
+   "sealed_equal_risk_rtol": 6.660846290809154e-07
+  }
+ },
+ "wall_seconds": 1396.4012911319733
+}

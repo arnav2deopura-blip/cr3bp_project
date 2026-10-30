@@ -49,7 +49,8 @@ The horizon range of E_confirm is restricted **by design** (the claim is about 1
   grid `RTOL_GRID_FINE` (1e-10 … 1e-3, 0.125 dex). `tests/test_posthoc.py::test_comparator_symmetry` must pass at the seal. The equal-risk
   comparator keeps the sealed rule (scan + four bisections).
 - Absolute tolerance of the comparators: the setting chosen by the post hoc P8 analysis on calibration rows (`posthoc/results/atol_*`), fixed
-  before the seal and recorded here: **[to be filled from P8 before the seal]**.
+  before the seal and recorded here: **atol = 0.1 · rtol** (cheapest at equal risk on the Study D replication calibration rows among
+  1e-1, 1e-3, 1e-6 and the position-only variant; `posthoc/results/atol_*`). Confirm it on E_select before the seal.
 - α = 0.05, δ = 0.1 (δ = 0.05 reported).
 
 ## 4. Confirmatory tests (Holm–Bonferroni over E1–E5, familywise 0.05; one-sided in the stated direction)

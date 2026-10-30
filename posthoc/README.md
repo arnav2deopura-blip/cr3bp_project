@@ -105,4 +105,8 @@ violation definition of physical-time arms.
 
 ## Deviations
 
-(none yet)
+- 2026-10-30, after P1 had run: P2-P8 commands were added to `run_posthoc.py` in the order of this file; the definitions above were not changed.
+  Two clarifications that were implicit above: (i) in P7 the delta = 0.05 policy scale is read from the sealed calibration chain (a prefix of
+  the delta = 0.1 chain), and the policy is re-run only if it differs (it did not, on either set); (ii) P7 for D4b also re-ran the sealed
+  coarse grid first, and P7 for D2 re-ran the sealed policy counts first, as reproduction checks (both reproduced exactly).
+- P9 was implemented as code and tests only, as stated; no count of undetected crossings on existing runs was made.

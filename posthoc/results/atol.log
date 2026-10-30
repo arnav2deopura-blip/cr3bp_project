@@ -1,0 +1,12 @@
+/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/run_posthoc.py:447: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  led = led.set_index("row_id").loc[U.iloc[ev]["row_id"].to_numpy()].reset_index()
+r1e-1: equal-risk rtol 2.4739012096081844e-07, calibration mean nfev 1143, share 0.6425, ratio of totals 0.753 (314s)
+r1e-3: equal-risk rtol 3.907614969977506e-07, calibration mean nfev 1222, share 0.7156, ratio of totals 0.802 (641s)
+r1e-6: equal-risk rtol 4.2169650342858225e-07, calibration mean nfev 1223, share 0.7139, ratio of totals 0.805 (950s)
+pos100: equal-risk rtol 4.362203103055877e-09, calibration mean nfev 1346, share 0.8695, ratio of totals 0.864 (1228s)
+  variant  rtol  cal_mean_nfev  comparator_violation_rate   share  aggregate_ratio  mean_log_ratio  best_on_calibration
+0   r1e-1   0.0      1143.0290                     0.0281  0.6425           0.7526          0.0743                 True
+1   r1e-3   0.0      1221.8060                     0.0289  0.7156           0.8022          0.1221                False
+2   r1e-6   0.0      1223.3525                     0.0291  0.7139           0.8048          0.1217                False
+3  pos100   0.0      1345.6040                     0.0282  0.8695           0.8639          0.2455                False
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/atol_20261030T174652Z
