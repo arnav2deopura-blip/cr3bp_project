@@ -42,6 +42,8 @@ case "${1:-}" in
     $PY run_posthoc.py symmetric --set d_replication
     $PY run_posthoc.py symmetric --set c_confirm
     $PY run_posthoc.py atol
+    $PY run_posthoc.py d4b_fine
+    $PY run_posthoc.py compiled
     $PY run_posthoc.py seeds ;;
   check)
     $PY freeze_b.py check || true

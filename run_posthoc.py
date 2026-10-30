@@ -11,6 +11,10 @@ never touches a sealed file. Numbers produced here are POST HOC and are reported
   fig4_check     P5: closest lunar approach of Hill-regime-I orbits of the Study B confirmation set (the empty Fig 4 cell)
   atol           P8: equal-risk RK45 with atol = r * rtol for r in {1e-1, 1e-3 (sealed), 1e-6} and a position-only variant, on the Study D
                  replication set; the setting cheapest on the CALIBRATION rows is the 'best atol' comparator
+  d4b_fine       P7 for D4b: RK45 (compiled DP5(4), SciPy controller) and DOP853 certified per stratum by fixed sequence at delta / G on the coarse
+                 (sealed, as a reproduction check) and on the fine grid; the stratified policy's D_replication ledger against each
+  compiled       P7 for the D2 comparators: compiled DP5(4)-PI, DP5(4)-SciPy and DOP853 certified by fixed sequence on the fine grid on the Study D
+                 confirmation set's calibration rows; RHS counts of policy and comparators on its evaluation rows (no timing)
   seeds          P6: the frozen Study C Sundman configuration refitted with model seeds 1-5 (and 42, which must reproduce the frozen model),
                  each certified and evaluated on the Study D confirmation set with the D1 protocol
 """
@@ -484,6 +488,116 @@ def cmd_atol(a):
     print("wrote", out)
 
 
+def cmd_d4b_fine(a):
+    import json
+    from orbit_ml_cr3bp import compiled_solvers_d as cs, deploy_d as dd, strata_d as sd, policy_c_3d as pc, symmetric_cert as sc
+    from orbit_ml_cr3bp.config import POSITION_TOL_KM
+    from run_part_d_3d import d4_sets
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "d4b_fine", a)
+    t0 = time.time()
+    (Uc, rc_), (Ue, re_) = d4_sets("confirm")
+    led = pd.read_csv(_one("out_d/confirm/d4/d4_*/ledger_strat.csv.gz"))
+    sealed = json.load(open(_one("out_d/explore/d4b_*/d4b_report.json")))
+    cells_c, cells_e = sd.base_cells(Uc), sd.base_cells(Ue)
+    smap, labs = sd.build_strata_map(cells_c)
+    lab_c, lab_e = sd.assign_strata(cells_c, smap, labs), sd.assign_strata(cells_e, smap, labs)
+    G = len(set(lab_c))
+    Sc, Tc = dd.states_T(Uc)
+    Se, Te = dd.states_T(Ue)
+    sv = cs.Solvers(MU, fast=False)
+    report = {"label": "POST HOC (posthoc/README.md P7, D4b)", "n_strata": G, "grids": {}}
+    rows = []
+    for gname, grid in (("coarse_sealed", cs.RTOL_GRID_B), ("fine", sc.RTOL_GRID_FINE)):
+        report["grids"][gname] = {}
+        for name, label in (("DP54_scipy", "RK45"), ("DOP853", "DOP853")):
+            rt_by = {}
+            for g in sorted(set(lab_c)):
+                idx = np.where(lab_c == g)[0]
+                cache = {}
+
+                def viol(rt, idx=idx, cache=cache):
+                    if rt not in cache:
+                        ok, y, nf, _ = sv.run(name, Sc[idx], Tc[idx], rt, parallel=True)
+                        cache[rt] = int((~(ok & (sv.errors_km(y, rc_[idx]) <= POSITION_TOL_KM))).sum())
+                    return cache[rt], len(idx)
+                cert = pc.certify_sequence(viol, grid, 0.05, 0.1 / G, "fixed_sequence") if len(idx) >= sd.MIN_N_CERT else {"chosen_scale": None}
+                rt_by[g] = cert["chosen_scale"] if cert["chosen_scale"] is not None else float(min(grid))
+            nfev = np.full(len(Ue), np.nan)
+            met = np.zeros(len(Ue), dtype=bool)
+            for g in sorted(set(lab_e)):
+                idx = np.where(lab_e == g)[0]
+                ok, y, nf, _ = sv.run(name, Se[idx], Te[idx], rt_by.get(g, float(min(grid))), parallel=True)
+                met[idx] = ok & (sv.errors_km(y, re_[idx]) <= POSITION_TOL_KM)
+                nfev[idx] = np.where(ok, nf, np.nan)
+            e = pd.DataFrame({"row_id": Ue["row_id"].to_numpy(), "comp_met": met, "comp_nfev": nfev})
+            m = led.merge(e, on="row_id")
+            st = pm.cost_stats(m["C_ml_tot"].to_numpy(float), m["comp_nfev"].to_numpy(float), m["meets_tol"].astype(bool).to_numpy(), n_boot=a.n_boot)
+            st.update({"comparator_violation_rate": float((~m["comp_met"]).mean()), "policy_violation_rate": float((~m["meets_tol"].astype(bool)).mean())})
+            if gname == "coarse_sealed":
+                st["sealed_share"] = sealed["methods"][label]["share_policy_cheaper"]
+                st["reproduces_sealed_share"] = bool(abs(st["share"] - st["sealed_share"]) < 1e-12)
+            report["grids"][gname][label] = {"rtol_by_stratum": rt_by, **{k: v for k, v in st.items() if not isinstance(v, list)}}
+            rows.append(_flat(st, grid=gname, comparator=label))
+            save_json(report, os.path.join(out, "d4b_fine_report.json"))
+            print(f"{gname} {label}: share {st['share']:.4f}, ratio of totals {st['aggregate_ratio']:.3f}, comparator violations "
+                  f"{st['comparator_violation_rate']:.4f} ({time.time() - t0:.0f}s)", flush=True)
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "d4b_fine_summary.csv"), index=False)
+    print(tab[["grid", "comparator", "share", "aggregate_ratio", "mean_log_ratio", "comparator_violation_rate"]].round(4).to_string())
+    print("wrote", out)
+
+
+def cmd_compiled(a):
+    import json
+    import joblib
+    from orbit_ml_cr3bp import compiled_solvers_d as cs, deploy_d as dd, symmetric_cert as sc
+    from orbit_ml_cr3bp.config import POSITION_TOL_KM
+    from run_part_d_3d import load_set, standard_split, FROZEN_SUND
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "compiled", a)
+    t0 = time.time()
+    sealed = json.load(open(_one("out_d/confirm/d2/d2_*/d2_report.json")))
+    U, ref = load_set("confirm")
+    S, T = dd.states_T(U)
+    cal, ev = standard_split(U)
+    fz = joblib.load(os.path.join(ROOT, FROZEN_SUND))
+    oh = float(sealed["overhead_rhs"])
+    sp, sv = cs.SundmanPolicy(fz["models"], MU, fast=True), cs.Solvers(MU, fast=True)
+    scale = float(sealed["scale"])
+    okp, yp, evp, _ = sp.run(S[ev], T[ev], scale)
+    metp = okp & (np.where(okp, sp.errors_km(yp, ref[ev]), np.nan) <= POSITION_TOL_KM)
+    report = {"label": "POST HOC (posthoc/README.md P7, D2 comparators; RHS counts only, no timing)", "scale": scale, "overhead_rhs": oh,
+              "policy_mean_evals": float(evp.mean()), "reproduces_sealed_policy_mean_evals": bool(abs(evp.mean() - sealed["outcome"]["policy|F"]["mean_evals"]) < 1e-9),
+              "methods": {}}
+    if not report["reproduces_sealed_policy_mean_evals"]:
+        save_json(report, os.path.join(out, "compiled_report.json"))
+        raise SystemExit("the compiled policy run does not reproduce the sealed D2 evaluation counts; stopping")
+    rows = []
+    for name in cs.Solvers.NAMES:
+        cache = {}
+
+        def viol(rt, cache=cache):
+            if rt not in cache:
+                ok, y, nf, _ = sv.run(name, S[cal], T[cal], rt, parallel=True)
+                cache[rt] = int((~(ok & (sv.errors_km(y, ref[cal]) <= POSITION_TOL_KM))).sum())
+            return cache[rt], len(cal)
+        cert = sc.certify_rtol_fixed_sequence(viol, sc.RTOL_GRID_FINE)
+        res = {}
+        for tag, rt in (("cal_sealed", sealed["outcome"][f"{name}_cal|F"]["rtol"]), ("calsym", cert["chosen_rtol"]), ("eqr_sealed", sealed["outcome"][f"{name}_eqr|F"]["rtol"])):
+            ok, y, nf, _ = sv.run(name, S[ev], T[ev], rt, parallel=True)
+            met = ok & (np.where(ok, sv.errors_km(y, ref[ev]), np.nan) <= POSITION_TOL_KM)
+            st = pm.cost_stats(evp + oh, np.where(ok, nf, np.nan).astype(float), metp, n_boot=a.n_boot)
+            st.update({"rtol": rt, "comparator_violation_rate": float((~met).mean())})
+            rows.append(_flat(st, comparator=name, tolerance=tag))
+            res[tag] = {k: v for k, v in st.items() if not isinstance(v, list)}
+        report["methods"][name] = {"certified_rtol_fixed_sequence_fine": cert["chosen_rtol"], "chain": cert["chain"], **res}
+        save_json(report, os.path.join(out, "compiled_report.json"))
+        print(f"{name}: fine fixed-sequence rtol {cert['chosen_rtol']} (sealed Bonferroni {sealed['outcome'][name + '_cal|F']['rtol']}) ({time.time() - t0:.0f}s)", flush=True)
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "compiled_summary.csv"), index=False)
+    print(tab[["comparator", "tolerance", "rtol", "comparator_violation_rate", "share", "aggregate_ratio", "mean_log_ratio"]].round(4).to_string())
+    print("wrote", out)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -509,6 +623,11 @@ def main():
     sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
     sp.add_argument("--n_jobs", type=int, default=8)
     sp.set_defaults(fn=cmd_atol)
+    for nm, fn in (("d4b_fine", cmd_d4b_fine), ("compiled", cmd_compiled)):
+        sp = sub.add_parser(nm)
+        sp.add_argument("--out_dir", default=OUT)
+        sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+        sp.set_defaults(fn=fn)
     sp = sub.add_parser("seeds")
     sp.add_argument("--seeds", type=int, nargs="+", default=[42, 1, 2, 3, 4, 5])
     sp.add_argument("--out_dir", default=OUT)

@@ -1,0 +1,114 @@
+== tests/test_phase0.py
+PASS test_ceiling_modes
+PASS test_convergence_orders
+PASS test_crossing_counter
+PASS test_diagnostics_circular_orbit_is_uniformly_paced
+PASS test_dt_search_physical_not_censored_on_old_censored_rows
+PASS test_eval_table
+PASS test_fsal_leapfrog_bit_identical
+PASS test_hill_thresholds
+PASS test_legacy_labels_reproduce
+== tests/test_failure_study.py
+PASS test_cell_merge_rule
+PASS test_classify_priorities
+PASS test_decomposition_identity_synthetic
+Generating 260 3D CR3BP training orbits (μ=0.012151, label_mode=accuracy_monotone)...
+  FTLE computation ENABLED (method: variational)
+  Accuracy search: tol_km=100.0, DU_KM=384400.0, sim_time range=[1.0, 20.0] TU, sampling weights={'lagrange': 0.55, 'wide': 0.2, 'near_moon': 0.25}
+Saved 260 rows (209 usable, 0 FTLE-NaN) to cr3bp_3d_training_data_accuracy_monotone_seed777.csv
+Saved metadata to cr3bp_3d_training_data_accuracy_monotone_seed777_metadata.json
+PASS test_lazy_scale_equals_full_chain
+PASS test_spec_search_matches_original
+== tests/test_part_c.py
+ok   test_abstention_flags_and_the_certified_risk_counts_them
+ok   test_choice_does_not_depend_on_a_common_scale_and_matches_part_b
+ok   test_compiled_hgb_equals_sklearn_predict
+ok   test_compiled_linear_policy_equals_its_python_form
+ok   test_compiled_policy_equals_the_python_policy
+ok   test_compiled_policy_structured_target_and_single_model_and_sundman
+ok   test_confirm_c_tests_have_the_right_size_and_power
+ok   test_constant_policy_makes_the_certified_scale_the_global_step
+ok   test_doomed_event_type_time_and_agreement_rules_on_a_synthetic_collision
+Generating 260 3D CR3BP training orbits (μ=0.012151, label_mode=accuracy_monotone)...
+  FTLE computation ENABLED (method: variational)
+  Accuracy search: tol_km=100.0, DU_KM=384400.0, sim_time range=[1.0, 20.0] TU, sampling weights={'lagrange': 0.55, 'wide': 0.2, 'near_moon': 0.25}
+Saved 260 rows (209 usable, 0 FTLE-NaN) to cr3bp_3d_training_data_accuracy_monotone_seed777.csv
+Saved metadata to cr3bp_3d_training_data_accuracy_monotone_seed777_metadata.json
+ok   test_end_to_end_risk_equals_realized_risk_of_the_chosen_runs
+ok   test_endpoint_audit_trajectories_match_the_endpoint_kernels
+ok   test_fast_fixed_sequence_matches_the_exact_rule_on_monotone_risk
+ok   test_fixed_sequence_false_certification_rate_is_at_most_delta
+ok   test_fixed_sequence_stops_at_first_non_rejection
+ok   test_gate_threshold_search_meets_its_budget
+ok   test_guard_fires_on_a_close_approach_and_the_fallback_is_counted
+ok   test_guard_with_infinite_threshold_reproduces_the_unguarded_kernels
+ok   test_lever_isoline_reaches_the_target_share
+ok   test_lever_share_matches_direct_count_and_is_monotone
+ok   test_lever_threshold_is_the_exact_break_even
+ok   test_linear_single_policy_matches_its_python_form_and_is_a_quantile
+ok   test_matched_subsample_matches_the_target_histogram
+ok   test_osculating_features_are_finite_on_random_states
+ok   test_osculating_periapsis_in_the_cr3bp_at_tiny_mu
+ok   test_osculating_periapsis_matches_a_two_body_integration
+ok   test_osculating_receding_hyperbola_has_no_future_periapsis_and_circular_is_flagged
+ok   test_sundman_convergence_order_is_four_in_ds
+ok   test_sundman_lands_on_T_and_counts_evaluations_like_a_pure_python_reference
+ok   test_sundman_step_shrinks_near_a_body
+ok   test_sundman_with_constant_g_is_classical_rk4
+30 passed
+== tests/test_part_d.py
+test_certify_rtol_compiled_orders_the_chain ...
+  ok
+test_certify_strata_abstains_where_no_scale_is_certified ...
+  ok
+test_compiled_policy_pipeline_equals_the_sklearn_route ...
+  ok
+test_d4_and_d5_and_d2_statistics_on_synthetic_inputs ...
+  ok
+test_deploy_runner_matches_the_part_c_integrator_wrapper ...
+  ok
+test_dop853_port_matches_scipy_nfev_on_almost_every_orbit ...
+  ok
+test_dp54_scipy_controller_reproduces_solve_ivp_exactly ...
+  ok
+test_event_checks_stop_a_colliding_run ...
+  ok
+test_lane_efficiency ...
+  ok
+test_member_diagnostics_close_on_a_jpl_orbit_if_the_data_are_present ...
+  ok
+test_periodic_orbit_reference_is_stable_to_a_second_reference ...
+  ok
+test_pi_controller_is_accurate_and_not_worse_on_average ...
+  ok
+test_rule_features_match_the_dataset_columns_and_regimes ...
+  ok
+test_rule_fit_recovers_a_planted_linear_law_and_enters_predict_raw_c ...
+  ok
+test_select_indices_disjoint_and_spread ...
+  ok
+test_strata_cover_every_row_and_merge_small_cells ...
+  ok
+16 tests passed
+== tests/test_posthoc.py
+ok test_bad_costs_raise
+ok test_breakdown_sums
+ok test_comparator_symmetry
+ok test_cost_stats_hand_computed
+ok test_cost_stats_weighted
+ok test_degenerate_bootstrap
+ok test_equal_risk_matches_sealed
+ok test_fixed_sequence_rtol_brute_force
+ok test_mixture_weights
+ok test_recovered_share_matches_c5
+ok test_share_matches_sealed_win_share
+ok test_stratified_bootstrap_keeps_group_sizes
+ok test_vector_atol_equals_scalar
+13 tests passed
+== tests/test_hardening.py
+ok test_comparator_settings_defined_once
+ok test_osculating_near_parabolic
+ok test_pipeline_v6_labels_equal_v5
+ok test_segment_crossing_detected_between_endpoints
+ok test_usable_rows_equivalence_on_every_dataset
+5 tests passed
