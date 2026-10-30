@@ -1,0 +1,26 @@
+{
+ "command": "seeds",
+ "args": {
+  "cmd": "seeds",
+  "seeds": [
+   42,
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "n_jobs": 6,
+  "fn": "<function cmd_seeds at 0x14a42cea0>"
+ },
+ "utc": "20261030T170848Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "seeds",
+  "--n_jobs",
+  "6"
+ ]
+}

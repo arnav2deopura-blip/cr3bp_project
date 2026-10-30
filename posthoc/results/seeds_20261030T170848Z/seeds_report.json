@@ -1,0 +1,97 @@
+{
+ "label": "POST HOC (posthoc/README.md P6)",
+ "config": {
+  "name": "sund_final",
+  "family": "sundman",
+  "cls": "trees",
+  "n_iter": 25,
+  "depth": 3,
+  "lr": 0.2,
+  "q": 0.2,
+  "structured": false,
+  "features": "osc",
+  "rule": "fixed_sequence",
+  "grid": "fine",
+  "overhead_rhs": 15.036794812388587
+ },
+ "seeds": [
+  42,
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "overhead_rhs": 16.088492841244694,
+ "fits": {
+  "42": {
+   "scale": 0.8,
+   "cal_violation_rate": 0.03025,
+   "violation_rate": 0.025900808889615164,
+   "rtols": {
+    "RK45": 4.2169650342858225e-07,
+    "DOP853": 4.2169650342858225e-07
+   },
+   "median_abs_log_ds_change_vs_frozen": 0.0,
+   "seed42_reproduces_D1_ledger": true,
+   "sealed_D1_rtols": {
+    "RK45|cal": 1.9684194472866112e-07,
+    "RK45|eqr": 4.2169650342858225e-07,
+    "DOP853|cal": 1.9684194472866112e-07,
+    "DOP853|eqr": 4.2169650342858225e-07
+   }
+  },
+  "1": {
+   "scale": 0.8,
+   "cal_violation_rate": 0.03,
+   "violation_rate": 0.026309338998284172,
+   "rtols": {
+    "RK45": 4.2169650342858225e-07,
+    "DOP853": 4.2169650342858225e-07
+   },
+   "median_abs_log_ds_change_vs_frozen": 0.01751168519545554
+  },
+  "2": {
+   "scale": 0.8724061861322062,
+   "cal_violation_rate": 0.045,
+   "violation_rate": 0.0458370781926628,
+   "rtols": {
+    "RK45": 6.172216859059897e-07,
+    "DOP853": 7.188158537343368e-07
+   },
+   "median_abs_log_ds_change_vs_frozen": 0.011453929126767598
+  },
+  "3": {
+   "scale": 0.8724061861322062,
+   "cal_violation_rate": 0.04525,
+   "violation_rate": 0.04363101560585015,
+   "rtols": {
+    "RK45": 6.660846290809154e-07,
+    "DOP853": 7.188158537343368e-07
+   },
+   "median_abs_log_ds_change_vs_frozen": 0.012076718670933073
+  },
+  "4": {
+   "scale": 0.8724061861322062,
+   "cal_violation_rate": 0.04525,
+   "violation_rate": 0.044202957757986765,
+   "rtols": {
+    "RK45": 6.660846290809154e-07,
+    "DOP853": 7.188158537343368e-07
+   },
+   "median_abs_log_ds_change_vs_frozen": 0.01294512546965132
+  },
+  "5": {
+   "scale": 0.8724061861322062,
+   "cal_violation_rate": 0.04425,
+   "violation_rate": 0.04452978184492197,
+   "rtols": {
+    "RK45": 6.172216859059897e-07,
+    "DOP853": 7.188158537343368e-07
+   },
+   "median_abs_log_ds_change_vs_frozen": 0.0104534067546041
+  }
+ },
+ "seed42_reproduces_frozen_predictions": true,
+ "wall_seconds": 1425.2462739944458
+}

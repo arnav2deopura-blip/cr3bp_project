@@ -1,0 +1,19 @@
+{
+ "command": "symmetric_d_replication",
+ "args": {
+  "cmd": "symmetric",
+  "set": "d_replication",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "n_jobs": 8,
+  "fn": "<function cmd_symmetric at 0x12fad0a40>"
+ },
+ "utc": "20261030T170411Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "symmetric",
+  "--set",
+  "d_replication"
+ ]
+}
