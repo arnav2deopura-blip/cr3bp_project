@@ -1,0 +1,9 @@
+rule_T refit reproduces frozen: True
+rule_TH refit reproduces frozen: True
+rule_THP refit reproduces frozen: True
+rule_THPD refit reproduces frozen: True
+rule_THR refit reproduces frozen: True
+rule_TP refit reproduces frozen: True
+wrote manuscript/si/S3_Table_rule_coefficients.csv 21 rows
+wrote manuscript/si/S3_Table_fit_quality.csv 8 rows
+wrote manuscript/si/S3_Table_T1_fit.csv 1 rows
