@@ -158,3 +158,5 @@ behaviour-preserving ones are tested to be so.
 - Tests added: `tests/test_posthoc.py` (aggregate metrics against hand-computed ledgers and the sealed win_share; equal-risk rule against the
   sealed one; comparator symmetry), `tests/test_hardening.py` (segment-sphere, usable_rows equivalence, near-parabolic osculating features
   against a two-body integration, v6 = v5 labels, comparator settings defined once).
+- `RESULTS_REPORT.md` (Study A, 9,106 lines) moved with `git mv` to `archive/study_a/RESULTS_REPORT.md`; its executive summary is extracted
+  unchanged into `STUDY_A_SUMMARY.md`. No seal hashes it (FREEZE_D.json lists it only among the untracked files at the time).
