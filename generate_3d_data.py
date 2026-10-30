@@ -5,7 +5,7 @@ This is the "gen" half of the two-file pipeline: it samples candidate
 orbits, brute-force searches for the largest stable timestep per integrator
 (orbit_ml_cr3bp.search_3d), and writes the usable rows to CSV via
 orbit_ml_cr3bp.data_3d.generate_3d_training_dataset. It does no model
-training, evaluation, or figure generation -- run run_3d_analysis_from_data.py
+training, evaluation, or figure generation -- run archive/study_a_tools/run_3d_analysis_from_data.py
 on the resulting CSV for that.
 """
 from __future__ import annotations
@@ -45,11 +45,12 @@ def main():
     parser.add_argument("--base_seed", type=int, default=12345,
                          help="Seed offset; use different values to generate independent datasets "
                               "(output file gets a _seed<N> suffix when not 12345)")
-    parser.add_argument("--pipeline", type=str, default="legacy", choices=["legacy", "v4", "v5"],
+    parser.add_argument("--pipeline", type=str, default="legacy", choices=["legacy", "v4", "v5", "v6"],
                          help="'legacy' = label_pipeline_version 3 exactly (Part A). 'v4' = Part B: physical step ceiling "
                               "(2 TU, clipped at the horizon), reference rtol 1e-13, per-orbit physics diagnostics, "
                               "success defined by the search's reason code. 'v5' = Part C: v4 plus the Sundman-time RK4 label (dt_rk4s, counted "
-                              "cost), the osculating periapsis feature columns and optional --sampling_weights.")
+                              "cost), the osculating periapsis feature columns and optional --sampling_weights. 'v6' = Study E: v5 without the FTLE "
+                              "integration (ftle_3d NaN; labels identical to v5).")
     parser.add_argument("--tau_c", type=float, default=None, help="v5: cap of the Sundman time-scaling function (default 1.0 TU)")
     parser.add_argument("--sampling_weights", type=float, nargs=3, default=None, metavar=("LAGRANGE", "WIDE", "NEAR_MOON"),
                          help="override the lagrange/wide/near_moon mixture (default 0.55 0.20 0.25); v5 only")
@@ -95,7 +96,7 @@ def main():
         print("\nWARNING: fewer than 100 usable orbits generated. Downstream "
               "training/eval will be unreliable -- consider increasing --num_orbits.")
 
-    print("\nDone. Run run_3d_analysis_from_data.py on the saved CSV next.")
+    print("\nDone. Study A analysed the CSV with archive/study_a_tools/run_3d_analysis_from_data.py; Studies B-D use run_*_3d.py.")
 
 
 if __name__ == "__main__":

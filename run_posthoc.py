@@ -9,6 +9,8 @@ never touches a sealed file. Numbers produced here are POST HOC and are reported
   three_quarters P4: the frozen global fictitious step on the Study D confirmation set with the D1 protocol, and the share of the global-step gap
                  that the best rule recovers, both gaps on that set
   fig4_check     P5: closest lunar approach of Hill-regime-I orbits of the Study B confirmation set (the empty Fig 4 cell)
+  atol           P8: equal-risk RK45 with atol = r * rtol for r in {1e-1, 1e-3 (sealed), 1e-6} and a position-only variant, on the Study D
+                 replication set; the setting cheapest on the CALIBRATION rows is the 'best atol' comparator
   seeds          P6: the frozen Study C Sundman configuration refitted with model seeds 1-5 (and 42, which must reproduce the frozen model),
                  each certified and evaluated on the Study D confirmation set with the D1 protocol
 """
@@ -350,6 +352,138 @@ def cmd_fig4_check(a):
     print("wrote", out)
 
 
+def cmd_seeds(a):
+    import json
+    import joblib
+    from multiprocessing import Pool
+    from orbit_ml_cr3bp import deploy_d as dd, policy_c_3d as pc, symmetric_cert as sc
+    from run_part_d_3d import load_set, load_train, standard_split, raw_log_ds
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "seeds", a)
+    t0 = time.time()
+    fz = joblib.load(os.path.join(ROOT, "part_c/frozen/sund/policy_frozen.joblib"))
+    cfg, feats = fz["spec"]["config"], list(fz["spec"]["features"])
+    size = {"reg_kw": {"max_iter": cfg["n_iter"], "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]},
+            "clf_kw": {"max_iter": max(10, cfg["n_iter"] // 2), "max_depth": cfg.get("depth"), "learning_rate": cfg["lr"]}}
+    Utr, wtr = load_train()
+    U, ref = load_set("confirm")
+    S, T = dd.states_T(U)
+    cal, ev = standard_split(U)
+    Sc, Tc, rc_, Se, Te, re_ = S[cal], T[cal], ref[cal], S[ev], T[ev], ref[ev]
+    d1 = os.path.dirname(_one("out_d/confirm/d1/d1_*/ledger_sund.csv.gz"))
+    d1_led = pd.read_csv(os.path.join(d1, "ledger_sund.csv.gz"))
+    d1_rep = json.load(open(os.path.join(d1, "d1_report.json")))
+    runner = dd.default_runner(MU)
+    report = {"label": "POST HOC (posthoc/README.md P6)", "config": cfg, "seeds": a.seeds, "overhead_rhs": OVERHEAD_D, "fits": {}}
+    rows = []
+    cal_cache, ev_cache = {}, {}
+    with Pool(a.n_jobs) as pool:
+        def viol(rt, m):
+            if (m, rt) not in cal_cache:
+                r = sc.scipy_rows(pool, Sc, Tc, rc_, rt, m, n_jobs=a.n_jobs)
+                cal_cache[(m, rt)] = int((~r["met"]).sum())
+            return cal_cache[(m, rt)], len(cal)
+        for seed in a.seeds:
+            models = pc.fit_policy_c(Utr, feats, quantile=cfg["q"], seed=seed, lf_gate="none", sample_weight=wtr, structured=cfg.get("structured", False),
+                                     candidates=("rk4s",), **size)
+            logds = raw_log_ds(models, U)
+            if seed == 42:          # must be the frozen model
+                same = np.array_equal(logds, raw_log_ds(fz["models"], U))
+                report["seed42_reproduces_frozen_predictions"] = bool(same)
+                if not same:
+                    save_json(report, os.path.join(out, "seeds_report.json"))
+                    raise SystemExit("the seed-42 refit does not reproduce the frozen model's predictions; stopping")
+            raw = 10.0 ** logds
+            c = dd.certify_scale(runner, Sc, Tc, raw[cal], rc_)
+            scale = c["chosen_scale"]
+            cal_rate = c["violations_by_scale"][scale] / len(cal)
+            led = dd.score(U.iloc[ev], dd.run_rows(runner, Se, Te, raw[ev] * scale, re_), OVERHEAD_D)
+            fit = {"scale": scale, "cal_violation_rate": cal_rate, "violation_rate": float(led["violation"].mean()), "rtols": {},
+                   "median_abs_log_ds_change_vs_frozen": float(np.median(np.abs(logds - raw_log_ds(fz["models"], U))))}
+            for m in METHODS:
+                eqr, _ch = sc.equal_risk_rtol(lambda rt, m=m: viol(rt, m), cal_rate)
+                fit["rtols"][m] = eqr
+                if (m, eqr) not in ev_cache:
+                    ev_cache[(m, eqr)] = sc.scipy_rows(pool, Se, Te, re_, eqr, m, n_jobs=a.n_jobs)["nfev"]
+                led[f"{m}_eqr_nfev"] = ev_cache[(m, eqr)]
+            led = led.merge(d1_led[["row_id", "RK45_cal_nfev", "DOP853_cal_nfev"]], on="row_id")       # the certified rtol does not depend on the policy
+            if seed == 42:
+                s0 = d1_led.set_index("row_id").loc[led["row_id"]]
+                fit["seed42_reproduces_D1_ledger"] = bool((led["ml_evals"].to_numpy() == s0["ml_evals"].to_numpy()).all()
+                                                          and np.allclose(led["RK45_eqr_nfev"].to_numpy(), s0["RK45_eqr_nfev"].to_numpy(), equal_nan=True)
+                                                          and np.allclose(led["DOP853_eqr_nfev"].to_numpy(), s0["DOP853_eqr_nfev"].to_numpy(), equal_nan=True))
+                fit["sealed_D1_rtols"] = d1_rep["arms"]["sund"].get("rtols")
+            for comp in COMPARATORS:
+                r = pm.stats_frame(led, comp, n_boot=a.n_boot)
+                rows.append(_flat(r, seed=seed, comparator=comp, scale=scale, violation_rate=fit["violation_rate"]))
+            report["fits"][str(seed)] = fit
+            led.to_csv(os.path.join(out, f"ledger_seed{seed}.csv.gz"), index=False)
+            save_json(report, os.path.join(out, "seeds_report.json"))
+            print(f"seed {seed}: scale {scale}, violations {fit['violation_rate']:.4f}, rtols {fit['rtols']} ({time.time() - t0:.0f}s)", flush=True)
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "seeds_summary.csv"), index=False)
+    spread = tab.groupby("comparator").agg(share_min=("share", "min"), share_max=("share", "max"), share_sd=("share", "std"),
+                                           agg_min=("aggregate_ratio", "min"), agg_max=("aggregate_ratio", "max"), agg_sd=("aggregate_ratio", "std"))
+    spread.to_csv(os.path.join(out, "seeds_spread.csv"))
+    report["wall_seconds"] = time.time() - t0
+    save_json(report, os.path.join(out, "seeds_report.json"))
+    pd.set_option("display.width", 250)
+    print(tab[["seed", "comparator", "scale", "violation_rate", "share", "aggregate_ratio", "mean_log_ratio"]].round(4).to_string())
+    print(spread.round(4).to_string())
+    print("wrote", out)
+
+
+def cmd_atol(a):
+    from multiprocessing import Pool
+    from orbit_ml_cr3bp import deploy_d as dd, symmetric_cert as sc
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "atol", a)
+    t0 = time.time()
+    U, cal, ev, ref, led, rep, _fz, run = _sealed_set("d_replication")
+    S, T = dd.states_T(U)
+    Sc, Tc, rc_, Se, Te, re_ = S[cal], T[cal], ref[cal], S[ev], T[ev], ref[ev]
+    led = led.set_index("row_id").loc[U.iloc[ev]["row_id"].to_numpy()].reset_index()
+    target = float(rep["cal_policy_violation_rate"])
+    report = {"label": "POST HOC (posthoc/README.md P8)", "sealed_run": run, "target_cal_violation_rate": target, "variants": {}}
+    cols, rows = {"row_id": led["row_id"].to_numpy()}, []
+    with Pool(a.n_jobs) as pool:
+        for name, ratio in sc.ATOL_VARIANTS.items():
+            cache = {}
+
+            def viol(rt, ratio=ratio, cache=cache):
+                if rt not in cache:
+                    r = sc.scipy_rows(pool, Sc, Tc, rc_, rt, "RK45", ratio, n_jobs=a.n_jobs)
+                    cache[rt] = (int((~r["met"]).sum()), float(np.nanmean(r["nfev"])), int(r["capped"].sum()))
+                return cache[rt][0], len(cal)
+            eqr, chain = sc.equal_risk_rtol(viol, target)
+            v = {"atol_ratio": ratio, "equal_risk_rtol": eqr, "cal_mean_nfev": cache[eqr][1] if eqr is not None else None,
+                 "cal_violation_rate": cache[eqr][0] / len(cal) if eqr is not None else None, "chain": chain}
+            if name == "r1e-3":
+                v["reproduces_sealed_equal_risk_rtol"] = bool(eqr == rep["rtols"]["RK45|eqr"])
+                if not v["reproduces_sealed_equal_risk_rtol"]:
+                    report["variants"][name] = v
+                    save_json(report, os.path.join(out, "atol_report.json"))
+                    raise SystemExit(f"atol 1e-3 gives {eqr}, the sealed equal-risk rtol is {rep['rtols']['RK45|eqr']}; stopping")
+            r = sc.scipy_rows(pool, Se, Te, re_, eqr, "RK45", ratio, n_jobs=a.n_jobs)
+            cols.update({f"RK45_{name}_nfev": r["nfev"], f"RK45_{name}_ok": r["met"], f"RK45_{name}_capped": r["capped"]})
+            st = pm.cost_stats(led["C_ml_tot"].to_numpy(float), r["nfev"], led["meets_tol"].astype(bool).to_numpy(), capped=r["capped"], n_boot=a.n_boot)
+            st.update({"comparator_violation_rate": float((~r["met"]).mean()), "rtol": eqr, "cal_mean_nfev": v["cal_mean_nfev"]})
+            rows.append(_flat(st, variant=name))
+            report["variants"][name] = v
+            save_json(report, os.path.join(out, "atol_report.json"))
+            print(f"{name}: equal-risk rtol {eqr}, calibration mean nfev {v['cal_mean_nfev']:.0f}, share {st['share']:.4f}, ratio of totals "
+                  f"{st['aggregate_ratio']:.3f} ({time.time() - t0:.0f}s)", flush=True)
+    best = min(report["variants"], key=lambda k: report["variants"][k]["cal_mean_nfev"])
+    report["best_on_calibration"] = best
+    tab = pd.DataFrame(rows)
+    tab["best_on_calibration"] = tab["variant"] == best
+    tab.to_csv(os.path.join(out, "atol_summary.csv"), index=False)
+    pd.DataFrame(cols).to_csv(os.path.join(out, "eval_columns.csv.gz"), index=False)
+    report["wall_seconds"] = time.time() - t0
+    save_json(report, os.path.join(out, "atol_report.json"))
+    pd.set_option("display.width", 250)
+    print(tab[["variant", "rtol", "cal_mean_nfev", "comparator_violation_rate", "share", "aggregate_ratio", "mean_log_ratio", "best_on_calibration"]].round(4).to_string())
+    print("wrote", out)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -370,6 +504,17 @@ def main():
     sp = sub.add_parser("fig4_check")
     sp.add_argument("--out_dir", default=OUT)
     sp.set_defaults(fn=cmd_fig4_check)
+    sp = sub.add_parser("atol")
+    sp.add_argument("--out_dir", default=OUT)
+    sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.set_defaults(fn=cmd_atol)
+    sp = sub.add_parser("seeds")
+    sp.add_argument("--seeds", type=int, nargs="+", default=[42, 1, 2, 3, 4, 5])
+    sp.add_argument("--out_dir", default=OUT)
+    sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.set_defaults(fn=cmd_seeds)
     a = ap.parse_args()
     a.fn(a)
 

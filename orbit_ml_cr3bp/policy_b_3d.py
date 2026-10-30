@@ -44,7 +44,11 @@ STATE_COLS = ["x", "y", "z", "vx", "vy", "vz"]
 
 
 def usable_rows(df):
-    """Rows the study can label: finite FTLE and a reference that reaches the horizon."""
+    """Rows the study can label: a reference that reaches the horizon (reference_outcome == "ok"). The sealed rule (finite FTLE and not
+    reference-divergent) selects exactly the same rows on every Part A-D dataset (tests/test_hardening.py); it is kept for frames that lack
+    reference_outcome. Pipeline v6 computes no FTLE, so the outcome is the only definition that works there."""
+    if "reference_outcome" in df.columns:
+        return df[df["reference_outcome"].astype(str) == "ok"]
     m = ~df["ftle_nan"].astype(bool)
     if "reference_divergent" in df.columns:
         m &= ~df["reference_divergent"].fillna(False).astype(bool)

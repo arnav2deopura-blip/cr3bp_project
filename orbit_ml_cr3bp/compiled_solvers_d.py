@@ -24,15 +24,14 @@ import numpy as np
 from numba import njit, prange
 from scipy.stats import binom
 
-from .config import MU, EJECTION_RADIUS, collision_radii, du_km_for_mu
+from .config import MU, EJECTION_RADIUS, collision_radii, du_km_for_mu, ADAPTIVE_ATOL_RATIO, MAX_ADAPTIVE_NFEV, RTOL_GRID_B
 from .physics_3d import REASON_OK, REASON_NONFINITE, REASON_STEP_CAP
 from .sundman_3d import _integrate_endpoint_rk4s_numba, _bad_state, SUNDMAN_TAU_C
 from . import compiled_model_3d as cm
 
 CTRL_SCIPY, CTRL_PI = 0, 1
-MAX_NFEV = 2_000_000          # fair_baseline_3d.MAX_ADAPTIVE_NFEV: the same abandonment cap as the SciPy comparators
-ATOL_RATIO = 1e-3             # atol = 1e-3 * rtol, as in fair_baseline_3d._run_adaptive_ex
-RTOL_GRID_B = tuple(10.0 ** e for e in np.linspace(-12.0, -3.0, 18))      # fair_baseline_3d.RTOL_GRID_B
+MAX_NFEV = MAX_ADAPTIVE_NFEV  # config: the same abandonment cap as the SciPy comparators
+ATOL_RATIO = ADAPTIVE_ATOL_RATIO   # config: atol = 1e-3 * rtol, as in fair_baseline_3d._run_adaptive_ex
 REASON_TOO_SMALL = 7          # step below 10 ulp(t): SciPy's TOO_SMALL_STEP failure
 
 

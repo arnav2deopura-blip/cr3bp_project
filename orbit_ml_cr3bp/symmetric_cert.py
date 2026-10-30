@@ -19,8 +19,8 @@ from multiprocessing import Pool
 import numpy as np
 from scipy.stats import binom
 
-from .config import MU, POSITION_TOL_KM
-from .fair_baseline_3d import RTOL_GRID_B, _run_adaptive_ex
+from .config import MU, POSITION_TOL_KM, ADAPTIVE_ATOL_RATIO, RTOL_GRID_B
+from .fair_baseline_3d import _run_adaptive_ex
 from . import policy_c_3d as pc
 
 __all__ = ["RTOL_GRID_FINE", "ATOL_VARIANTS", "cost_resolution_dex", "certify_rtol_fixed_sequence", "chosen_at", "equal_risk_rtol", "scipy_rows"]
@@ -92,7 +92,7 @@ def _job(a):
     return True, float(res["err_km"]), float(res["nfev"]), False
 
 
-def scipy_rows(pool, states, T, ref_pos, rtol, method, atol_ratio=1e-3, mu=MU, n_jobs=8):
+def scipy_rows(pool, states, T, ref_pos, rtol, method, atol_ratio=ADAPTIVE_ATOL_RATIO, mu=MU, n_jobs=8):
     """SciPy `method` at rtol on every row. Returns dict(ok, err (km), nfev (NaN where the run failed or hit the cap), capped, met)."""
     jobs = [(states[i], float(T[i]), ref_pos[i], float(rtol), mu, method, atol_ratio) for i in range(len(states))]
     res = pool.map(_job, jobs, chunksize=max(1, len(jobs) // (8 * n_jobs))) if pool is not None else [_job(j) for j in jobs]

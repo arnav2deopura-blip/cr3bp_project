@@ -62,11 +62,14 @@ from .diagnostics_3d import (
 LABEL_PIPELINE_VERSION = 3
 LABEL_PIPELINE_VERSION_V4 = 4
 LABEL_PIPELINE_VERSION_V5 = 5          # Part C: v4 + Sundman-time RK4 labels + periapsis feature columns + optional sampling weights
+LABEL_PIPELINE_VERSION_V6 = 6          # Study E: v5 without the FTLE (ftle_3d = NaN, ftle_status = FTLE_STATUS_NOT_COMPUTED); labels identical to v5
+FTLE_STATUS_NOT_COMPUTED = -99
 ACCURACY_LABEL_MODES = ("accuracy", "accuracy_monotone")
-PIPELINES = ("legacy", "v4", "v5")
+PIPELINES = ("legacy", "v4", "v5", "v6")
 
 
-def extract_features_3d(state, mu=MU, sim_time: float | None = None):
+def extract_features_3d(state, mu=MU, sim_time: float | None = None, compute_ftle: bool = True):
+    """compute_ftle=False (pipeline v6): no FTLE integration; ftle_3d is NaN and ftle_status FTLE_STATUS_NOT_COMPUTED."""
     x, y, z, vx, vy, vz = state
     features = {"x": x, "y": y, "z": z, "vx": vx, "vy": vy, "vz": vz}
     if sim_time is not None:
@@ -77,7 +80,7 @@ def extract_features_3d(state, mu=MU, sim_time: float | None = None):
     df = pd.DataFrame([features])
 
     # Use variational FTLE if enabled and method set to "variational"
-    use_variational = FTLE_ENABLED and FTLE_METHOD == "variational"
+    use_variational = FTLE_ENABLED and FTLE_METHOD == "variational" and compute_ftle
     # If sim_time is provided, use it as FTLE integration time for relevance
     ftle_T = sim_time if (sim_time is not None and sim_time > 0) else FTLE_INTEGRATION_TIME
     df = add_orbit_features_3d(df, mu, use_variational_ftle=use_variational, ftle_T=ftle_T)
@@ -86,7 +89,9 @@ def extract_features_3d(state, mu=MU, sim_time: float | None = None):
                 "ftle_status", "ftle_t_frac"]:
         features[col] = df.iloc[0][col]
 
-    if not FTLE_ENABLED:
+    if not compute_ftle:
+        features.update({"ftle_3d": np.nan, "ftle_status": FTLE_STATUS_NOT_COMPUTED, "ftle_t_frac": np.nan})
+    elif not FTLE_ENABLED:
         features["ftle_3d"] = 0.0
     elif FTLE_METHOD == "divergence":
         ftle = compute_ftle_3d_divergence(
@@ -256,8 +261,9 @@ def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jaco
                                    sampling_weights=None):
     """pipeline="legacy": label_pipeline_version 3 behaviour exactly. pipeline="v4" (Part B): physical step ceiling, per-orbit
     physics diagnostics, success = the search's own reason code (Issue 15) instead of dt > dt_min."""
-    v4 = pipeline in ("v4", "v5")
-    v5 = pipeline == "v5"
+    v4 = pipeline in ("v4", "v5", "v6")
+    v5 = pipeline in ("v5", "v6")
+    v6 = pipeline == "v6"
     seed32 = int(np.random.SeedSequence([int(base_seed), int(idx)]).generate_state(1)[0])
     np.random.seed(seed32)
     random.seed(seed32)
@@ -270,8 +276,8 @@ def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jaco
         log_time = random.uniform(SIM_TIME_LOG_MIN, SIM_TIME_LOG_MAX)
     sim_time = 10.0 ** log_time
 
-    features = extract_features_3d(state, mu, sim_time=sim_time)
-    ftle_nan = not np.isfinite(features.get("ftle_3d", 0.0))
+    features = extract_features_3d(state, mu, sim_time=sim_time, compute_ftle=not v6)
+    ftle_nan = (not v6) and not np.isfinite(features.get("ftle_3d", 0.0))
     row = {**features, "sim_time": sim_time, "orbit_label": orbit_label, "ftle_nan": ftle_nan,
            "orbit_idx": idx}
     if label_mode in ACCURACY_LABEL_MODES:
@@ -367,7 +373,7 @@ def generate_3d_training_dataset(
         raise ValueError("label_mode must be 'jacobi', 'accuracy' or 'accuracy_monotone'")
     if pipeline not in PIPELINES:
         raise ValueError(f"pipeline must be one of {PIPELINES}")
-    if pipeline in ("v4", "v5") and label_mode not in ACCURACY_LABEL_MODES:
+    if pipeline in ("v4", "v5", "v6") and label_mode not in ACCURACY_LABEL_MODES:
         raise ValueError(f"pipeline '{pipeline}' needs an accuracy label mode")
     if tol_du is not None and tol_km is None:
         tol_km = float(tol_du) * du_km_for_mu(mu)
@@ -413,7 +419,7 @@ def generate_3d_training_dataset(
                    "dt_ceiling", "C0", "ftle_nan", "reference_divergent",
                    "reference_outcome", "ftle_status", "ftle_t_frac"]
     extra_cols = ["orbit_label", "orbit_idx", "mu", "du_km", "tol_km"] + list(DIAGNOSTIC_COLUMNS)
-    if pipeline == "v5":
+    if pipeline in ("v5", "v6"):
         from .osculating_3d import OSC_FEATURE_COLS, OSC_FLAG_COLS
         extra_cols += ["dt_rk4s", "rk4s_success", "rk4s_censored", "rk4s_reason", "rk4s_drift", "rk4s_ns", "rk4s_nf", "rk4s_evals",
                        "sundman_tau_c", "sampling_branch"] + OSC_FEATURE_COLS + OSC_FLAG_COLS
@@ -455,7 +461,7 @@ def generate_3d_training_dataset(
     metadata = {
         "mu": mu,
         "system": system_params(mu)["name"],
-        "label_pipeline_version": {"v4": LABEL_PIPELINE_VERSION_V4, "v5": LABEL_PIPELINE_VERSION_V5}.get(pipeline, LABEL_PIPELINE_VERSION),
+        "label_pipeline_version": {"v4": LABEL_PIPELINE_VERSION_V4, "v5": LABEL_PIPELINE_VERSION_V5, "v6": LABEL_PIPELINE_VERSION_V6}.get(pipeline, LABEL_PIPELINE_VERSION),
         "pipeline": pipeline,
         "seeding": "seedsequence",
         "collision_radius_primary_du": r1_crash,
@@ -464,7 +470,7 @@ def generate_3d_training_dataset(
         "label_mode": label_mode,
         "num_orbits": num_orbits,
         "base_seed": base_seed,
-        "ftle_enabled": FTLE_ENABLED,
+        "ftle_enabled": FTLE_ENABLED and pipeline != "v6",
         "ftle_method": FTLE_METHOD,
         "python_version": sys.version,
         "numpy_version": np.__version__,
@@ -485,10 +491,10 @@ def generate_3d_training_dataset(
             "integrator_tolerances": INTEGRATOR_TOLERANCES_3D,
             "sim_time_log_range": [SIM_TIME_LOG_MIN, SIM_TIME_LOG_MAX],
         })
-    if pipeline == "v5":
+    if pipeline in ("v5", "v6"):
         from .sundman_3d import SUNDMAN_TAU_C, DS_MIN, DS_MAX
         metadata.update({"sundman_tau_c": SUNDMAN_TAU_C if tau_c is None else tau_c, "sundman_ds_range": [DS_MIN, DS_MAX]})
-    if pipeline in ("v4", "v5"):
+    if pipeline in ("v4", "v5", "v6"):
         metadata.update({
             "ceiling_mode": "physical", "dt_ceiling_abs": DT_CEILING_PHYSICAL_ABS,
             "reference_rtol": REFERENCE_RTOL, "reference_atol": REFERENCE_ATOL, "reference_max_step": REFERENCE_MAX_STEP,

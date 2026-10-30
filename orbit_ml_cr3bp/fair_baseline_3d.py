@@ -55,7 +55,7 @@ import pandas as pd
 from scipy.stats import binom
 
 from .audit_3d import ltt_choose, LTT_METHOD
-from .config import MU, POSITION_TOL_KM, REFERENCE_RTOL, REFERENCE_ATOL, du_km_for_mu
+from .config import MU, POSITION_TOL_KM, REFERENCE_RTOL, REFERENCE_ATOL, du_km_for_mu, ADAPTIVE_ATOL_RATIO, MAX_ADAPTIVE_NFEV, RTOL_GRID_B
 from .physics_3d import (
     INTEGRATORS_3D,
     EVALS_PER_STEP_3D,
@@ -83,7 +83,7 @@ def _final_pos_error_km(prev, curr, t_prev, t_actual, sim_time, ref_pos, du_km):
 # An adaptive solve that needs more than this many right-hand-side evaluations is abandoned (about a minute with the Python
 # RHS). Orbits that pass very close to a body can need tens of millions at tight rtol, which stalled the comparison for hours.
 # _run_adaptive then returns None: a violation during rtol calibration, and the orbit is skipped (n_skipped) in the comparison.
-MAX_ADAPTIVE_NFEV = 2_000_000
+# MAX_ADAPTIVE_NFEV is config.MAX_ADAPTIVE_NFEV (imported above; importers of this module still find it here)
 ADAPTIVE_CAP_HITS = {"n": 0}
 
 
@@ -91,7 +91,7 @@ class _NfevCap(Exception):
     pass
 
 
-def _run_adaptive_ex(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=1e-3):
+def _run_adaptive_ex(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=ADAPTIVE_ATOL_RATIO):
     """(result | None, capped). capped is True when the solve was abandoned at MAX_ADAPTIVE_NFEV (so a parallel worker can
     report it; the module-level ADAPTIVE_CAP_HITS counter is per process)."""
     from scipy.integrate import solve_ivp
@@ -118,7 +118,7 @@ def _run_adaptive_ex(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=1e-3
     return {"rtol": rtol, "nfev": int(sol.nfev), "wall_time": wall, "err_km": err}, False
 
 
-def _run_adaptive(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=1e-3):
+def _run_adaptive(state, sim_time, ref_pos, rtol, mu, method, atol_ratio=ADAPTIVE_ATOL_RATIO):
     res, capped = _run_adaptive_ex(state, sim_time, ref_pos, rtol, mu, method, atol_ratio)
     if capped:
         ADAPTIVE_CAP_HITS["n"] += 1
@@ -135,7 +135,7 @@ def scipy_matched_accuracy(
     rtol_tight: float = 1e-13,
     rtol_loose: float = 1e-1,
     max_iter: int = 30,
-    atol_ratio: float = 1e-3,
+    atol_ratio: float = ADAPTIVE_ATOL_RATIO,
 ):
     """
     Find (approximately) the loosest rtol for which `method` reaches
@@ -174,8 +174,7 @@ def scipy_matched_accuracy(
 
 RTOL_GRID_CAL = tuple(10.0 ** e for e in np.arange(-12.0, -1.9, 0.5))
 # Part B (Issue 7): the same number of grid values (18) as the ML scale grid audit_3d.LTT_SCALE_GRID, so the Bonferroni
-# threshold delta/m is the same for the adaptive rtol and the ML scale. 1e-12 .. 1e-3.
-RTOL_GRID_B = tuple(10.0 ** e for e in np.linspace(-12.0, -3.0, 18))
+# threshold delta/m is the same for the adaptive rtol and the ML scale. 1e-12 .. 1e-3. Defined in config (RTOL_GRID_B, imported above).
 
 
 def _cal_job(args):
@@ -187,7 +186,7 @@ def _cal_job(args):
 
 def calibrate_adaptive_rtol(data_cal, mu: float = MU, method: str = "RK45", tol_km: float | None = None,
                             alpha: float = 0.05, delta: float = 0.1, rtol_grid=RTOL_GRID_CAL,
-                            max_rows: int = 300, random_state: int = 42, atol_ratio: float = 1e-3,
+                            max_rows: int = 300, random_state: int = 42, atol_ratio: float = ADAPTIVE_ATOL_RATIO,
                             method_ltt: str = LTT_METHOD, n_jobs: int = 1):
     """
     Choose ONE rtol for an adaptive solver without per-orbit knowledge of the

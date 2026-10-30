@@ -658,8 +658,8 @@ def load_c_frame(paths, mu=MU, enriched=None):
             if c in d.columns:
                 d[c] = d[c].map({True: True, False: False, "True": True, "False": False}).fillna(False).astype(bool)
         meta = proto.read_metadata(pth) or {}
-        if meta.get("label_pipeline_version") != 5:
-            raise ValueError(f"{pth}: label_pipeline_version={meta.get('label_pipeline_version')}; Part C needs 5")
+        if meta.get("label_pipeline_version") not in (5, 6):
+            raise ValueError(f"{pth}: label_pipeline_version={meta.get('label_pipeline_version')}; Part C needs 5 (or 6, which is 5 without the FTLE)")
         d["src"] = k
         frames.append(d)
         enr.append(np.full(len(d), bool(enriched and pth in enriched)))

@@ -19,3 +19,15 @@ out_d/
 data/*.csv
 archive/data/
 archive/trial/
+
+# reproduce.sh figure output
+reproduce_out/
+posthoc/cache/
+
+# LaTeX build products
+manuscript/*.aux
+manuscript/*.blg
+manuscript/*.fdb_latexmk
+manuscript/*.fls
+manuscript/*.log
+manuscript/*.out

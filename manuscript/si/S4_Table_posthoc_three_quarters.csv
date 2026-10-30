@@ -1,0 +1,2 @@
+label,grid,overhead_rhs,replication_reproduces_sealed_D3_global,gap_rule_THR_dex,gap_rule_ci95,gap_global_dex,gap_global_ci95,n_paired_rule,n_paired_global,gap_rule,gap_global,recovered_share,recovered_share_ci95,n_orbits,sealed_sentence
+POST HOC (posthoc/README.md P4),policy_c_3d.GLOBAL_DS_GRID,0.0,True,0.07151567976459199,0.0695-0.0736,0.26945466753293423,0.2656-0.2731,11565,11582,0.07151567976459199,0.26945466753293423,0.7345910522932362,0.7267-0.7423,12239,rule gap 0.0715 dex (confirmation set) over global gap 0.274 dex (replication set) = 0.74

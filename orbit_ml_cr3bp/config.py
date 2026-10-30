@@ -1,5 +1,7 @@
 from __future__ import annotations
 import os
+
+import numpy as np
 from multiprocessing import cpu_count
 
 # CR3BP PHYSICS PARAMETERS
@@ -190,6 +192,13 @@ REFERENCE_RTOL = 1e-13
 REFERENCE_ATOL = 1e-13
 REFERENCE_MAX_STEP = 0.01
 REFERENCE_RTOL_V3 = 1e-11
+
+# Adaptive comparators (SciPy RK45 / DOP853 and their compiled ports), one definition for fair_baseline_3d and compiled_solvers_d:
+# atol = ADAPTIVE_ATOL_RATIO * rtol; a solve is abandoned after MAX_ADAPTIVE_NFEV evaluations; RTOL_GRID_B is the sealed 18-value certification
+# grid (1e-12 .. 1e-3, the same number of values as the Part B scale grid). symmetric_cert.RTOL_GRID_FINE is the post hoc fine grid.
+ADAPTIVE_ATOL_RATIO = 1e-3
+MAX_ADAPTIVE_NFEV = 2_000_000
+RTOL_GRID_B = tuple(10.0 ** e for e in np.linspace(-12.0, -3.0, 18))
 
 # PART B step ceiling (label_pipeline_version 4). Part A's ceiling, max(0.005, min(0.5, 0.3 * r2^1.5)), was
 # computed from the INITIAL r2 only and did not depend on mu; it pinned 46% of the RK4 labels at the ceiling

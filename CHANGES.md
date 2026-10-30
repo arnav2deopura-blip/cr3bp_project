@@ -137,3 +137,24 @@ New datasets carry `label_pipeline_version: 2` in their `_metadata.json`; `run_r
 - Changed in an existing module: `policy_c_3d.predict_raw_c` gains a 4-line branch for `models["rule"]` (a Part D physics rule). Part C models never take it; `tests/test_part_c.py`, `tests/test_phase0.py`, `tests/test_failure_study.py` still pass.
 - `freeze_c.py check` reports the tree as changed relative to Part C's seal, as expected (new files, the branch above); Part C is reproduced from commit `4586803`.
 - `.gitignore`: `data_d/`, `out_d/`. Nothing was committed or pushed.
+
+# 2026-10-30: rigor plan (post hoc analyses, code hardening, Study E draft); see posthoc/README.md and part_e/PREREGISTRATION_E.md
+Studies A-D stay sealed and their verdicts are unchanged. Every change below was made AFTER every sealed confirmatory step had run, so the seal
+checks (`freeze_b.py` / `freeze_c.py` / `freeze_d.py check`) now list these files as changed; none of them alters a sealed number, and the
+behaviour-preserving ones are tested to be so.
+- New, post hoc only: `orbit_ml_cr3bp/posthoc_metrics.py`, `orbit_ml_cr3bp/symmetric_cert.py`, `run_posthoc.py`, `posthoc/` (definitions committed
+  before any result), `manuscript/scripts/si_tables.py` (S1-S4 Tables as CSV in `manuscript/si/`).
+- New, for Study E: `orbit_ml_cr3bp/collision_segment.py` (segment-sphere collision test between nodes; not wired into any sealed kernel),
+  pipeline `v6` in `data_3d.py` / `generate_3d_data.py` (v5 without the FTLE; labels identical to v5, tested), `run_part_c_3d.load_c_frame`
+  accepts label_pipeline_version 6.
+- Behaviour-preserving refactors: `policy_b_3d.usable_rows` selects `reference_outcome == "ok"` (identical rows to the sealed FTLE-based rule on
+  all 27 existing datasets, tested; the old rule is the fallback for frames without that column); `ADAPTIVE_ATOL_RATIO`, `MAX_ADAPTIVE_NFEV`
+  and `RTOL_GRID_B` are defined once in `config.py` (bit-identical values, tested) instead of in both `fair_baseline_3d.py` and
+  `compiled_solvers_d.py`.
+- Moved with `git mv`: the Study A tools `cost_analysis.py`, `generalization_tests.py`, `phase_space_analysis.py`, `run_3d_analysis_from_data.py`
+  to `archive/study_a_tools/` (no Study B-D code imports them). `validate_on_capstone.py` stays: `run_rigor_suite_3d.py fidelity` imports it.
+- Environment pinned: `environment.yml`, `environment.lock.txt` (exact builds of the `orbit-ml` env). `reproduce.sh` rebuilds figures, tables,
+  post hoc analyses and runs every test suite.
+- Tests added: `tests/test_posthoc.py` (aggregate metrics against hand-computed ledgers and the sealed win_share; equal-risk rule against the
+  sealed one; comparator symmetry), `tests/test_hardening.py` (segment-sphere, usable_rows equivalence, near-parabolic osculating features
+  against a two-body integration, v6 = v5 labels, comparator settings defined once).
