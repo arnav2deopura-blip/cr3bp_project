@@ -1,0 +1,1 @@
+{"utc": "2026-10-15T02:51:26.202703+00:00", "evaluation_number": 1, "data": "data/cr3bp_3d_training_data_accuracy_monotone_seed1.csv", "locked": "data/locked_test_set.json", "seed": 42, "run_dir": "out/final_20261015T024645Z", "overall": "ML_DOES_NOT_BEAT_ADAPTIVE_ON_COST: do not claim a speed advantage"}

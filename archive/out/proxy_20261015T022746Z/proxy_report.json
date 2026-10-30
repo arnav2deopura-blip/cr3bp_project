@@ -1,0 +1,35 @@
+{
+  "n_rows": {
+    "train": 2063,
+    "cal": 1543,
+    "test": 1554
+  },
+  "n_orbits": {
+    "train": 120,
+    "cal": 90,
+    "test": 90
+  },
+  "random_forest_no_reference": {
+    "r2_log_err": 0.8600817960642695,
+    "mae_log10": 0.7636714361243088,
+    "auc_detects_err_over_tol": 0.970231362917253
+  },
+  "jacobi_drift_linear": {
+    "r2_log_err": 0.9549583343491514,
+    "mae_log10": 0.49373784929881226,
+    "auc_detects_err_over_tol": 0.9879712260399095
+  },
+  "dt_horizon_scaling_law": {
+    "r2_log_err": 0.6833244402457018,
+    "mae_log10": 1.3140189732596745,
+    "auc_detects_err_over_tol": 0.93775140067652
+  },
+  "conformal_upper_bound": {
+    "alpha": 0.1,
+    "q_log10": 1.3297822039821057,
+    "coverage_on_test": 0.9111969111969112,
+    "frac_certified_under_tol": 0.2747747747747748,
+    "precision_certified_truly_under_tol": 0.9344262295081968,
+    "recall_of_truly_under_tol": 0.666110183639399
+  }
+}

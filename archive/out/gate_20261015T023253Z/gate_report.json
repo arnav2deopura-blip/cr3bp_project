@@ -1,0 +1,328 @@
+{
+  "args": {
+    "cmd": "gate",
+    "data": "data/cr3bp_3d_training_data_accuracy_monotone_seed1.csv",
+    "tol_km": 100.0,
+    "seed": 42,
+    "n_estimators": 150,
+    "out_dir": "out/gate_20261015T023253Z",
+    "no_run_dir": false,
+    "locked": "data/locked_test_set.json",
+    "prereg": "PREREGISTRATION.md",
+    "n_baseline": 1000,
+    "n_cal": 2000,
+    "n_cal_adaptive": 300,
+    "alpha": 0.05,
+    "delta": 0.1,
+    "include_euler": false,
+    "regressor": "rf",
+    "quantile": 0.1
+  },
+  "n_train": 9368,
+  "n_test": 3657,
+  "held_out_metrics": {
+    "euler_clf_acc": 0.9198796828001093,
+    "euler_r2_all": 0.24294098249154739,
+    "euler_mae_all": 0.000564721948706791,
+    "euler_r2_uncens": 0.24294098249154739,
+    "euler_mae_uncens": 0.000564721948706791,
+    "rk4_clf_acc": 1.0,
+    "rk4_r2_all": 0.8794819648166899,
+    "rk4_mae_all": 0.03137308830367927,
+    "rk4_r2_uncens": 0.81145204021359,
+    "rk4_mae_uncens": 0.0381158185689155,
+    "leapfrog_clf_acc": 0.9756631118403063,
+    "leapfrog_r2_all": 0.9051552053391546,
+    "leapfrog_mae_all": 0.002569491699818155,
+    "leapfrog_r2_uncens": 0.907109124620349,
+    "leapfrog_mae_uncens": 0.0025720396099600104,
+    "selection_acc": 0.9368334700574241,
+    "always_rk4_acc": 0.9179655455291222,
+    "majority_baseline_acc": 0.9179655455291222,
+    "selection_acc_no_euler": 0.9368334700574241,
+    "always_rk4_acc_no_euler": 0.9179655455291222,
+    "majority_baseline_acc_no_euler": 0.9179655455291222
+  },
+  "criteria": {
+    "min_frac_ml_meets_tol": 0.9,
+    "min_frac_ml_cheaper": 0.5,
+    "min_group_n": 20
+  },
+  "prereg_file": "PREREGISTRATION.md",
+  "prereg_sha256": "7d0822388e5e1252af44df4f53bc779a04efc5a6bb624361e9efc617ae38e27e",
+  "certified_scales": {
+    "euler": null,
+    "rk4": null,
+    "leapfrog": null
+  },
+  "ltt": {
+    "euler": {
+      "skipped": "not a candidate integrator (negative control)"
+    },
+    "rk4": {
+      "integrator": "rk4",
+      "chosen_scale": null,
+      "alpha": 0.05,
+      "delta": 0.1,
+      "chain": [
+        {
+          "scale": 0.02,
+          "n": 1828,
+          "violations": 96,
+          "violation_rate": 0.0525164113785558,
+          "p_value": 0.711767423223499
+        }
+      ]
+    },
+    "leapfrog": {
+      "integrator": "leapfrog",
+      "chosen_scale": null,
+      "alpha": 0.05,
+      "delta": 0.1,
+      "chain": [
+        {
+          "scale": 0.02,
+          "n": 1804,
+          "violations": 233,
+          "violation_rate": 0.12915742793791574,
+          "p_value": 1.0
+        }
+      ]
+    }
+  },
+  "adaptive_calibration": {
+    "RK45": {
+      "method": "RK45",
+      "chosen_rtol": 3.162277660168379e-07,
+      "alpha": 0.05,
+      "delta": 0.1,
+      "n_cal": 300,
+      "tol_km": 100.0,
+      "chain": [
+        {
+          "rtol": 1e-12,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683794e-12,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-11,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683794e-11,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-10,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683795e-10,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-09,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683795e-09,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-08,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.162277660168379e-08,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-07,
+          "n": 300,
+          "violations": 1,
+          "violation_rate": 0.0033333333333333335,
+          "p_value": 3.4843250944105785e-06
+        },
+        {
+          "rtol": 3.162277660168379e-07,
+          "n": 300,
+          "violations": 6,
+          "violation_rate": 0.02,
+          "p_value": 0.006579374400801467
+        },
+        {
+          "rtol": 1e-06,
+          "n": 300,
+          "violations": 11,
+          "violation_rate": 0.03666666666666667,
+          "p_value": 0.17797697557306963
+        }
+      ]
+    },
+    "DOP853": {
+      "method": "DOP853",
+      "chosen_rtol": 3.162277660168379e-07,
+      "alpha": 0.05,
+      "delta": 0.1,
+      "n_cal": 300,
+      "tol_km": 100.0,
+      "chain": [
+        {
+          "rtol": 1e-12,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683794e-12,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-11,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683794e-11,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-10,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683795e-10,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-09,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.1622776601683795e-09,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-08,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 3.162277660168379e-08,
+          "n": 300,
+          "violations": 0,
+          "violation_rate": 0.0,
+          "p_value": 2.0753033477680817e-07
+        },
+        {
+          "rtol": 1e-07,
+          "n": 300,
+          "violations": 3,
+          "violation_rate": 0.01,
+          "p_value": 0.0001640639094717545
+        },
+        {
+          "rtol": 3.162277660168379e-07,
+          "n": 300,
+          "violations": 7,
+          "violation_rate": 0.023333333333333334,
+          "p_value": 0.0159680007970871
+        },
+        {
+          "rtol": 1e-06,
+          "n": 300,
+          "violations": 10,
+          "violation_rate": 0.03333333333333333,
+          "p_value": 0.11230139347749565
+        }
+      ]
+    }
+  },
+  "baseline_summary": {
+    "n_used": 0,
+    "n_skipped": 1000
+  },
+  "verdict": {
+    "RK45_spec": {
+      "frac_ml_meets_tol": null,
+      "frac_ml_cheaper": null,
+      "frac_ml_cheaper_evals_only": null,
+      "passes": false
+    },
+    "RK45_cal": {
+      "frac_ml_meets_tol": null,
+      "frac_ml_cheaper": null,
+      "frac_ml_cheaper_evals_only": null,
+      "passes": false
+    },
+    "DOP853_spec": {
+      "frac_ml_meets_tol": null,
+      "frac_ml_cheaper": null,
+      "frac_ml_cheaper_evals_only": null,
+      "passes": false
+    },
+    "DOP853_cal": {
+      "frac_ml_meets_tol": null,
+      "frac_ml_cheaper": null,
+      "frac_ml_cheaper_evals_only": null,
+      "passes": false
+    }
+  },
+  "overall": "ML_DOES_NOT_BEAT_ADAPTIVE_ON_COST: do not claim a speed advantage"
+}

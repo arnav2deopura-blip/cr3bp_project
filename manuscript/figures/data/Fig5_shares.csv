@@ -1,0 +1,40 @@
+dataset,policy,comparator,k,n,share,cp_lo,cp_hi
+Study C confirmation,physical-time policy,RK45_spec,63,12192,0.00516732283464567,0.003972929385677268,0.006606473867757933
+Study C confirmation,physical-time policy,RK45_cal,4633,12192,0.380003280839895,0.3713759030146212,0.38868798388136544
+Study C confirmation,physical-time policy,RK45_eqr,3855,12192,0.31619094488188976,0.30794083436662156,0.3245288892970386
+Study C confirmation,physical-time policy,DOP853_spec,176,12192,0.014435695538057743,0.012393975147708255,0.016713786770543654
+Study C confirmation,physical-time policy,DOP853_cal,2860,12192,0.23458005249343833,0.22708157012599856,0.24220544727343013
+Study C confirmation,physical-time policy,DOP853_eqr,2462,12192,0.20193569553805774,0.19484064147068134,0.20917332764509905
+Study C confirmation,one global Sundman step,RK45_spec,172,12192,0.01410761154855643,0.012089827411984824,0.01636199217183366
+Study C confirmation,one global Sundman step,RK45_cal,2349,12192,0.19266732283464566,0.18569961539602275,0.19978206159859882
+Study C confirmation,one global Sundman step,RK45_eqr,1083,12192,0.08882874015748031,0.08383637110786128,0.09401839960680208
+Study C confirmation,one global Sundman step,DOP853_spec,88,12192,0.007217847769028871,0.005792832550467756,0.008885135049641713
+Study C confirmation,one global Sundman step,DOP853_cal,777,12192,0.06373031496062992,0.05945790852311964,0.0682124185172244
+Study C confirmation,one global Sundman step,DOP853_eqr,487,12192,0.03994422572178478,0.036537400445608124,0.043572850914476
+Study C confirmation,Sundman-time policy,RK45_spec,1058,12192,0.08677821522309712,0.08183934612773985,0.09191538083296087
+Study C confirmation,Sundman-time policy,RK45_cal,10045,12192,0.8239009186351706,0.8170215842617005,0.830625253202802
+Study C confirmation,Sundman-time policy,RK45_eqr,8707,12192,0.7141568241469817,0.7060454022704348,0.722165890882987
+Study C confirmation,Sundman-time policy,DOP853_spec,747,12192,0.06126968503937008,0.057076810546415085,0.06567348732578618
+Study C confirmation,Sundman-time policy,DOP853_cal,7147,12192,0.5862040682414699,0.5774009831544733,0.5949659753659126
+Study C confirmation,Sundman-time policy,DOP853_eqr,6166,12192,0.505741469816273,0.49682531348386916,0.5146548838148433
+Study D replication,Sundman-time policy,RK45_spec,675,12253,0.0550885497429201,0.05111408339970582,0.05927597975254627
+Study D replication,Sundman-time policy,RK45_cal,9696,12253,0.7913164123071901,0.7840115561836911,0.7984826271014854
+Study D replication,Sundman-time policy,RK45_eqr,8768,12253,0.7155798579939606,0.7075005287916543,0.7235566654957548
+Study D replication,Sundman-time policy,DOP853_spec,444,12253,0.03623602383089856,0.03299689776992755,0.03969777775414387
+Study D replication,Sundman-time policy,DOP853_cal,6628,12253,0.5409287521423325,0.5320556778748801,0.5497823745727681
+Study D replication,Sundman-time policy,DOP853_eqr,6284,12253,0.5128539949400147,0.5039608129144496,0.5217410680761314
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime I | 1-3 TU,727,762,0.9540682414698163,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime I | 3-8 TU,481,717,0.6708507670850767,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime I | 8-20 TU,15,527,0.028462998102466792,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime II | 1-3 TU,146,150,0.9733333333333334,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime II | 3-8 TU,92,128,0.71875,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime II | 8-20 TU,6,94,0.06382978723404255,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime III | 1-3 TU,1063,1135,0.9365638766519824,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime III | 3-8 TU,700,1030,0.6796116504854369,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime III | 8-20 TU,77,813,0.09471094710947109,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime IV | 1-3 TU,497,498,0.9979919678714859,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime IV | 3-8 TU,440,468,0.9401709401709402,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime IV | 8-20 TU,231,447,0.5167785234899329,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime V | 1-3 TU,2026,2068,0.9796905222437138,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime V | 3-8 TU,1573,1766,0.890713476783692,,
+Study C confirmation (B),Sundman-time policy,RK45_eqr | regime V | 8-20 TU,633,1589,0.39836375078665825,,

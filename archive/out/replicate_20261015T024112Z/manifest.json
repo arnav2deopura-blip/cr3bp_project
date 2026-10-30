@@ -1,0 +1,154 @@
+{
+  "command": "replicate",
+  "started_utc": "20261015T024112Z",
+  "argv": [
+    "run_rigor_suite_3d.py",
+    "replicate",
+    "--dataset",
+    "s1=data/cr3bp_3d_training_data_accuracy_monotone_seed1.csv",
+    "--dataset",
+    "s2=data/cr3bp_3d_training_data_accuracy_monotone_seed2.csv",
+    "--dataset",
+    "s3=data/cr3bp_3d_training_data_accuracy_monotone_seed3.csv",
+    "--locked",
+    "data/locked_test_set.json",
+    "--out_dir",
+    "out",
+    "--seeds",
+    "5"
+  ],
+  "args": {
+    "cmd": "replicate",
+    "tol_km": 100.0,
+    "seed": 42,
+    "n_estimators": 150,
+    "out_dir": "out",
+    "no_run_dir": false,
+    "locked": "data/locked_test_set.json",
+    "prereg": null,
+    "dataset": [
+      "s1=data/cr3bp_3d_training_data_accuracy_monotone_seed1.csv",
+      "s2=data/cr3bp_3d_training_data_accuracy_monotone_seed2.csv",
+      "s3=data/cr3bp_3d_training_data_accuracy_monotone_seed3.csv"
+    ],
+    "seeds": 5
+  },
+  "versions": {
+    "python": "3.13.13",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+    "numpy": "2.5.1",
+    "pandas": "3.0.5",
+    "scipy": "1.18.0",
+    "sklearn": "1.9.0",
+    "numba": "0.67.0",
+    "joblib": "1.5.3"
+  },
+  "git_commit": null,
+  "inputs": [
+    {
+      "path": "data/cr3bp_3d_training_data_accuracy_monotone_seed1.csv",
+      "sha256": "7079824a50805d8ff63f2fd26dfe797207d352be55e8b7b52e08718175fd6154",
+      "bytes": 9281482,
+      "generation_metadata": {
+        "mu": 0.01215058535,
+        "system": "earth_moon",
+        "label_pipeline_version": 2,
+        "collision_radius_primary_du": 0.0165738813735692,
+        "collision_radius_secondary_du": 0.004519771071800209,
+        "ejection_radius": 10.0,
+        "label_mode": "accuracy_monotone",
+        "num_orbits": 20000,
+        "base_seed": 1,
+        "ftle_enabled": true,
+        "ftle_method": "variational",
+        "python_version": "3.13.13 | packaged by conda-forge | (main, Apr  8 2026, 02:29:07) [Clang 19.1.7 ]",
+        "numpy_version": "2.5.1",
+        "pandas_version": "3.0.5",
+        "sklearn_version": "1.9.0",
+        "integrator_tolerances": null,
+        "position_tol_km": 100.0,
+        "du_km": 384400.0,
+        "position_tol_du": 0.00026014568158168577,
+        "sim_time_log_range": [
+          0.0,
+          1.301029995663981
+        ],
+        "sampling_weights": {
+          "lagrange": 0.55,
+          "wide": 0.2,
+          "near_moon": 0.25
+        }
+      }
+    },
+    {
+      "path": "data/cr3bp_3d_training_data_accuracy_monotone_seed2.csv",
+      "sha256": "0c54648bf3fdb067d21764e63bb73c08e4c66c7ba17959ac33e7c0593440ce2e",
+      "bytes": 9281395,
+      "generation_metadata": {
+        "mu": 0.01215058535,
+        "system": "earth_moon",
+        "label_pipeline_version": 2,
+        "collision_radius_primary_du": 0.0165738813735692,
+        "collision_radius_secondary_du": 0.004519771071800209,
+        "ejection_radius": 10.0,
+        "label_mode": "accuracy_monotone",
+        "num_orbits": 20000,
+        "base_seed": 2,
+        "ftle_enabled": true,
+        "ftle_method": "variational",
+        "python_version": "3.13.13 | packaged by conda-forge | (main, Apr  8 2026, 02:29:07) [Clang 19.1.7 ]",
+        "numpy_version": "2.5.1",
+        "pandas_version": "3.0.5",
+        "sklearn_version": "1.9.0",
+        "integrator_tolerances": null,
+        "position_tol_km": 100.0,
+        "du_km": 384400.0,
+        "position_tol_du": 0.00026014568158168577,
+        "sim_time_log_range": [
+          0.0,
+          1.301029995663981
+        ],
+        "sampling_weights": {
+          "lagrange": 0.55,
+          "wide": 0.2,
+          "near_moon": 0.25
+        }
+      }
+    },
+    {
+      "path": "data/cr3bp_3d_training_data_accuracy_monotone_seed3.csv",
+      "sha256": "fc8a47a2c3e9691affd8ce1afa1a2b9e7b5934f03a37f11557bcc2fe8a46268f",
+      "bytes": 9281390,
+      "generation_metadata": {
+        "mu": 0.01215058535,
+        "system": "earth_moon",
+        "label_pipeline_version": 2,
+        "collision_radius_primary_du": 0.0165738813735692,
+        "collision_radius_secondary_du": 0.004519771071800209,
+        "ejection_radius": 10.0,
+        "label_mode": "accuracy_monotone",
+        "num_orbits": 20000,
+        "base_seed": 3,
+        "ftle_enabled": true,
+        "ftle_method": "variational",
+        "python_version": "3.13.13 | packaged by conda-forge | (main, Apr  8 2026, 02:29:07) [Clang 19.1.7 ]",
+        "numpy_version": "2.5.1",
+        "pandas_version": "3.0.5",
+        "sklearn_version": "1.9.0",
+        "integrator_tolerances": null,
+        "position_tol_km": 100.0,
+        "du_km": 384400.0,
+        "position_tol_du": 0.00026014568158168577,
+        "sim_time_log_range": [
+          0.0,
+          1.301029995663981
+        ],
+        "sampling_weights": {
+          "lagrange": 0.55,
+          "wide": 0.2,
+          "near_moon": 0.25
+        }
+      }
+    }
+  ]
+}

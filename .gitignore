@@ -14,3 +14,8 @@ data_c/
 out_c/
 data_d/
 out_d/
+
+# Study A datasets (deposited with data_b/ data_c/ data_d/ on Zenodo, not tracked); the small locked-test-set index stays tracked
+data/*.csv
+archive/data/
+archive/trial/
