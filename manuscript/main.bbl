@@ -202,6 +202,14 @@ Koenker R, Bassett G.
 \newblock Econometrica. 1978;46(1):33-50.
 \newblock \href {http://dx.doi.org/10.2307/1913643} {doi:10.2307/1913643}.
 
+\bibitem{schork2020}
+Schork L, Gondzio J.
+\newblock Implementation of an interior point method with basis
+  preconditioning.
+\newblock Math Program Comput. 2020;12(4):603-35.
+\newblock \href {http://dx.doi.org/10.1007/s12532-020-00181-8}
+  {doi:10.1007/s12532-020-00181-8}.
+
 \bibitem{huangfu2018}
 Huangfu Q, Hall JAJ.
 \newblock Parallelizing the dual revised simplex method.
