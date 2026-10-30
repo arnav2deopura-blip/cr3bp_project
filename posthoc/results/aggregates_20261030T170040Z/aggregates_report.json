@@ -1,0 +1,15 @@
+{
+ "label": "POST HOC summaries of sealed ledgers (posthoc/README.md P1-P3)",
+ "sources": {
+  "C_confirm_sund": "out_c/confirm/sund/apply_policy_20261027T013754Z/ledger.csv",
+  "D_replication_sund": "out_d/confirm/d3/sund/apply_policy_20261028T230253Z/ledger.csv",
+  "C_lock_sund": "out_c/lock/sund/apply_policy_20261027T024029Z/ledger.csv",
+  "D_lock_sund": "out_d/confirm/lock/lock_20261029T000049Z/ledger_sund.csv.gz",
+  "D_confirm_D1_sund": "out_d/confirm/d1/d1_20261028T214846Z/ledger_sund.csv.gz",
+  "D_confirm_D1_rule_THR": "out_d/confirm/d1/d1_20261028T214846Z/ledger_rule_THR.csv.gz",
+  "D_replication_D4_strat": "out_d/confirm/d4/d4_20261028T220821Z/ledger_strat.csv.gz",
+  "D_replication_D4_onescale": "out_d/confirm/d4/d4_20261028T220821Z/ledger_marginal.csv.gz"
+ },
+ "n_boot": 4000,
+ "wall_seconds": 178.53647017478943
+}

@@ -4,6 +4,13 @@ never touches a sealed file. Numbers produced here are POST HOC and are reported
 
   aggregates     P1-P3: share, aggregate cost ratio and mean log ratio for every sealed policy ledger and comparator, by horizon band, Hill
                  regime and sampling family, under the declared mixtures, and with one overhead charged on every Table 3 column
+  symmetric      P7 + the delta = 0.05 part of P8: RK45 / DOP853 certified by the policy's rule (fixed sequence, full delta) on the fine rtol
+                 grid, on the sealed calibration rows of a Table 3 set, run on its evaluation rows; the policy and comparators at delta = 0.05
+  three_quarters P4: the frozen global fictitious step on the Study D confirmation set with the D1 protocol, and the share of the global-step gap
+                 that the best rule recovers, both gaps on that set
+  fig4_check     P5: closest lunar approach of Hill-regime-I orbits of the Study B confirmation set (the empty Fig 4 cell)
+  seeds          P6: the frozen Study C Sundman configuration refitted with model seeds 1-5 (and 42, which must reproduce the frozen model),
+                 each certified and evaluated on the Study D confirmation set with the D1 protocol
 """
 from __future__ import annotations
 
@@ -121,6 +128,228 @@ def cmd_aggregates(a):
     print("wrote", out)
 
 
+# P7 sets: dataset, sealed apply_policy run folder (ledger, report, calibration ids), reference cache
+SYM_SETS = {
+    "c_confirm": ("data_c/confirm/cr3bp_3d_training_data_accuracy_monotone_seed43.csv", "out_c/confirm/sund/apply_policy_*", "posthoc/cache/refs_c_confirm.npz"),
+    "d_replication": (DATA["replication"], "out_d/confirm/d3/sund/apply_policy_*", "out_d/refs/replication.npz"),
+}
+METHODS = ("RK45", "DOP853")
+
+
+def _sealed_set(name):
+    """Usable rows, the sealed calibration / evaluation split (checked against the sealed run), reference positions, sealed ledger and report."""
+    import json
+    import joblib
+    import run_part_c_3d as rc
+    from orbit_ml_cr3bp import deploy_d as dd
+    from run_part_d_3d import standard_split
+    data, run_glob, cache = SYM_SETS[name]
+    run = _one(run_glob)
+    U, _w = rc.load_c_frame([os.path.join(ROOT, data)], MU)
+    cal, ev = standard_split(U)
+    sealed_cal = set(pd.read_csv(os.path.join(run, "cal_row_ids.csv"))["row_id"])
+    if set(U.iloc[cal]["row_id"]) != sealed_cal:
+        raise ValueError(f"{name}: the standard split does not reproduce the sealed calibration rows")
+    led = pd.read_csv(os.path.join(run, "ledger.csv"), low_memory=False)
+    if set(led["row_id"]) != set(U.iloc[ev]["row_id"]):
+        raise ValueError(f"{name}: the evaluation rows differ from the sealed ledger's")
+    rep = json.load(open(os.path.join(run, "apply_policy_report.json")))
+    ref = dd.reference_positions(U, MU, cache=os.path.join(ROOT, cache), n_jobs=8)
+    fz = joblib.load(os.path.join(ROOT, rep["args"]["frozen"]))
+    return U, cal, ev, ref, led, rep, fz, os.path.relpath(run, ROOT)
+
+
+def cmd_symmetric(a):
+    from multiprocessing import Pool
+    from orbit_ml_cr3bp import deploy_d as dd, symmetric_cert as sc
+    from run_part_d_3d import raw_log_ds
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), f"symmetric_{a.set}", a)
+    t0 = time.time()
+    U, cal, ev, ref, led, rep, fz, run = _sealed_set(a.set)
+    S, T = dd.states_T(U)
+    Sc, Tc, rc_ = S[cal], T[cal], ref[cal]
+    Se, Te, re_ = S[ev], T[ev], ref[ev]
+    ev_ids = U.iloc[ev]["row_id"].to_numpy()
+    led = led.set_index("row_id").loc[ev_ids].reset_index()
+    oh = float(rep["spec"]["config"]["overhead_rhs"])
+    scale = float(rep["scale"])
+    # the policy as sealed, re-run with the Part D kernel: must reproduce the sealed ledger orbit for orbit
+    runner = dd.default_runner(MU)
+    raw = 10.0 ** raw_log_ds(fz["models"], U)
+    r0 = dd.run_rows(runner, Se, Te, raw[ev] * scale, re_)
+    same = (r0["evals"] == led["ml_evals"].to_numpy()) & (r0["met"] == led["meets_tol"].astype(bool).to_numpy())
+    report = {"label": "POST HOC (posthoc/README.md P7, P8 delta = 0.05)", "set": a.set, "sealed_run": run, "n_cal": int(len(cal)), "n_eval": int(len(ev)),
+              "overhead_rhs": oh, "sealed_scale": scale, "policy_rerun_matches_sealed": int(same.sum()), "grid": {"min": min(sc.RTOL_GRID_FINE), "max": max(sc.RTOL_GRID_FINE),
+              "n": len(sc.RTOL_GRID_FINE), "step_dex": 0.125}, "sealed_rtols": rep["rtols"]}
+    if not same.all():
+        save_json(report, os.path.join(out, "symmetric_report.json"))
+        raise SystemExit(f"policy re-run differs from the sealed ledger on {int((~same).sum())} orbits; stopping")
+    print(f"policy re-run reproduces the sealed ledger on all {len(ev)} orbits ({time.time() - t0:.0f}s)", flush=True)
+    # delta = 0.05 for the policy, from the sealed calibration chain (a prefix of it)
+    chain_p = rep["certificate"]["chain"]
+    scale05 = sc.chosen_at(chain_p, 0.05, key="scale")
+    viol05 = {c["scale"]: c["violations"] for c in chain_p}[scale05]
+    report.update({"scale_delta05": scale05, "cal_violation_rate_delta05": viol05 / len(cal), "cal_violation_rate_sealed": rep["cal_policy_violation_rate"]})
+    cols = {"row_id": ev_ids}
+    if scale05 != scale:
+        r5 = dd.run_rows(runner, Se, Te, raw[ev] * scale05, re_)
+        cols.update({"pol05_met": r5["met"], "pol05_tot": r5["evals"] + oh})
+    else:
+        cols.update({"pol05_met": r0["met"], "pol05_tot": r0["evals"] + oh})
+    print(f"policy scale at delta 0.05: {scale05} (sealed {scale} at 0.1)", flush=True)
+    report["methods"] = {}
+    with Pool(a.n_jobs) as pool:
+        for m in METHODS:
+            cache = {}
+
+            def viol(rt, m=m, cache=cache):
+                if rt not in cache:
+                    r = sc.scipy_rows(pool, Sc, Tc, rc_, rt, m, n_jobs=a.n_jobs)
+                    cache[rt] = (int((~r["met"]).sum()), float(np.nanmean(r["nfev"])), int(r["capped"].sum()))
+                    print(f"  {m} rtol {rt:.3e}: {cache[rt][0]} violations, mean nfev {cache[rt][1]:.0f}, capped {cache[rt][2]} ({time.time() - t0:.0f}s)", flush=True)
+                return cache[rt][0], len(cal)
+            cert = sc.certify_rtol_fixed_sequence(viol, sc.RTOL_GRID_FINE)
+            rt01 = cert["chosen_rtol"]
+            rt05 = sc.chosen_at(cert["chain"], 0.05)
+            eqr05, eqr_chain = (rep["rtols"][f"{m}|eqr"], None) if scale05 == scale else sc.equal_risk_rtol(viol, viol05 / len(cal))
+            mrep = {"certified_rtol_delta01": rt01, "certified_rtol_delta05": rt05, "equal_risk_rtol_delta05": eqr05, "chain": cert["chain"],
+                    "eqr05_chain": eqr_chain, "cal_mean_nfev": {f"{k:.6e}": v[1] for k, v in cache.items()}, "cal_capped": {f"{k:.6e}": v[2] for k, v in cache.items()},
+                    "sealed_certified_rtol": rep["rtols"][f"{m}|cal"], "sealed_equal_risk_rtol": rep["rtols"][f"{m}|eqr"]}
+            report["methods"][m] = mrep
+            print(f"{m}: certified rtol (fine, fixed sequence) {rt01} [sealed {rep['rtols'][m + '|cal']}]; delta 0.05: {rt05}; equal-risk at delta 0.05 {eqr05}", flush=True)
+            runs = {}
+            for tag, rt in (("calsym", rt01), ("calsym05", rt05), ("eqr05", eqr05)):
+                if rt is None:
+                    continue
+                key = float(rt)
+                if key not in runs:
+                    runs[key] = sc.scipy_rows(pool, Se, Te, re_, key, m, n_jobs=a.n_jobs)
+                r = runs[key]
+                cols.update({f"{m}_{tag}_rtol": key, f"{m}_{tag}_nfev": r["nfev"], f"{m}_{tag}_ok": r["met"], f"{m}_{tag}_capped": r["capped"]})
+            save_json(report, os.path.join(out, "symmetric_report.json"))
+    E = pd.DataFrame(cols)
+    E.to_csv(os.path.join(out, "eval_columns.csv.gz"), index=False)
+    # summaries: sealed and symmetric side by side
+    L = led.merge(E, on="row_id")
+    rows = []
+    for m in METHODS:
+        for label, pol, met, comp in ((f"{m} certified, sealed (Bonferroni, coarse grid, delta 0.1)", "C_ml_tot", "meets_tol", f"{m}_cal"),
+                                      (f"{m} certified, symmetric (fixed sequence, fine grid, delta 0.1)", "C_ml_tot", "meets_tol", f"{m}_calsym"),
+                                      (f"{m} equal-risk, sealed (delta 0.1)", "C_ml_tot", "meets_tol", f"{m}_eqr"),
+                                      (f"{m} certified, symmetric, delta 0.05 (policy at delta 0.05)", "pol05_tot", "pol05_met", f"{m}_calsym05"),
+                                      (f"{m} equal-risk, delta 0.05 (policy at delta 0.05)", "pol05_tot", "pol05_met", f"{m}_eqr05")):
+            if f"{comp}_nfev" not in L.columns:
+                continue
+            r = pm.cost_stats(L[pol].to_numpy(float), L[f"{comp}_nfev"].to_numpy(float), L[met].astype(bool).to_numpy(), n_boot=a.n_boot,
+                              capped=L[f"{comp}_capped"].fillna(False).astype(bool).to_numpy() if f"{comp}_capped" in L.columns else None)
+            ok_col = f"{comp}_ok"
+            r["comparator_violation_rate"] = float((~L[ok_col].astype(bool)).mean()) if ok_col in L.columns else None
+            r["rtol"] = float(L[f"{comp}_rtol"].iloc[0]) if f"{comp}_rtol" in L.columns else None
+            r["policy_violation_rate"] = float((~L[met].astype(bool)).mean())
+            rows.append(_flat(r, set=a.set, comparison=label))
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "symmetric_summary.csv"), index=False)
+    report["wall_seconds"] = time.time() - t0
+    save_json(report, os.path.join(out, "symmetric_report.json"))
+    pd.set_option("display.width", 250)
+    print(tab[["comparison", "rtol", "comparator_violation_rate", "policy_violation_rate", "share", "aggregate_ratio", "mean_log_ratio"]].round(4).to_string())
+    print("wrote", out)
+
+
+def cmd_three_quarters(a):
+    import joblib
+    from orbit_ml_cr3bp import deploy_d as dd, policy_c_3d as pc, confirm_d_3d as cd
+    from run_part_d_3d import load_set, standard_split
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "three_quarters", a)
+    fz = joblib.load(os.path.join(ROOT, "part_c/frozen/global/policy_frozen.joblib"))
+    if not fz["models"].get("constant"):
+        raise ValueError("part_c/frozen/global is not the constant (global step) policy")
+    runner = dd.default_runner(MU)
+    rep = {"label": "POST HOC (posthoc/README.md P4)", "grid": "policy_c_3d.GLOBAL_DS_GRID", "overhead_rhs": 0.0}
+    leds = {}
+    for name in ("replication", "confirm"):
+        U, ref = load_set(name)
+        S, T = dd.states_T(U)
+        cal, ev = standard_split(U)
+        raw = np.ones(len(U))                           # raw step 1: the certified scale IS the global fictitious step
+        c = dd.certify_scale(runner, S[cal], T[cal], raw[cal], ref[cal], grid=pc.GLOBAL_DS_GRID)
+        ds = c["chosen_scale"]
+        led = dd.score(U.iloc[ev], dd.run_rows(runner, S[ev], T[ev], raw[ev] * ds, ref[ev]), 0.0)
+        leds[name] = led
+        rep[name] = {"global_ds": ds, "cal_violations": c["violations_by_scale"][ds], "violation_rate": float(led["violation"].mean())}
+        print(name, rep[name], flush=True)
+    # check: on the replication set this must reproduce the sealed D3 global arm
+    sealed = pd.read_csv(_one("out_d/confirm/d3/global/apply_policy_*/ledger.csv"), usecols=["row_id", "ml_evals", "meets_tol"]).set_index("row_id")
+    g = leds["replication"].set_index("row_id").loc[sealed.index]
+    rep["replication_reproduces_sealed_D3_global"] = bool((g["ml_evals"].to_numpy() == sealed["ml_evals"].to_numpy()).all()
+                                                          and (g["meets_tol"].to_numpy() == sealed["meets_tol"].astype(bool).to_numpy()).all())
+    if not rep["replication_reproduces_sealed_D3_global"]:
+        save_json(rep, os.path.join(out, "three_quarters_report.json"))
+        raise SystemExit("the global arm does not reproduce the sealed D3 global ledger; stopping")
+    d1 = os.path.dirname(_one("out_d/confirm/d1/d1_*/ledger_sund.csv.gz"))
+    lm = pd.read_csv(os.path.join(d1, "ledger_sund.csv.gz"))
+    lr = pd.read_csv(os.path.join(d1, "ledger_rule_THR.csv.gz"))
+    lg = leds["confirm"]
+    lg.to_csv(os.path.join(out, "ledger_global_confirm.csv.gz"), index=False)
+    gap_rule = cd.d1_ml_vs_rule(lm, lr, n_boot=a.n_boot)
+    gap_glob = cd.d1_ml_vs_rule(lm, lg, n_boot=a.n_boot)
+    rec = pm.recovered_share(lm, lr, lg, n_boot=a.n_boot)
+    rep.update({"gap_rule_THR_dex": gap_rule["mean_log10_saving"], "gap_rule_ci95": gap_rule["ci95"], "gap_global_dex": gap_glob["mean_log10_saving"],
+                "gap_global_ci95": gap_glob["ci95"], "n_paired_rule": gap_rule["n_paired"], "n_paired_global": gap_glob["n_paired"], **rec,
+                "sealed_sentence": "rule gap 0.0715 dex (confirmation set) over global gap 0.274 dex (replication set) = 0.74"})
+    save_json(rep, os.path.join(out, "three_quarters_report.json"))
+    print({k: v for k, v in rep.items() if k.startswith(("gap", "recovered", "n_paired"))})
+    print("wrote", out)
+
+
+def cmd_fig4_check(a):
+    """Regime I is C > C_L1: the zero-velocity surface separates the Earth realm from a lunar bubble of radius about 0.15-0.17 DU (the Moon-L1 and
+    Moon-L2 distances). Counts every regime-I orbit of the Study B confirmation set (reference-divergent ones included) by closest lunar approach,
+    with the realm read from the initial distance to the Moon."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from orbit_ml_cr3bp.diagnostics_3d import hill_regime
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "fig4_check", a)
+    d = pd.read_csv(os.path.join(ROOT, "data_b/cr3bp_3d_training_data_accuracy_monotone_seed22.csv"), low_memory=False)
+    d["row_id"] = np.arange(len(d))
+    d["regime"] = hill_regime(d["jacobi_3d"].to_numpy(dtype=float), MU)
+    I = d[d["regime"] == "I"].copy()
+    I["band"] = pd.cut(I["min_r2"], [0, 0.05, 0.17, 0.8, np.inf], right=False, labels=["<0.05", "0.05-0.17", "0.17-0.8", ">0.8"])
+    I["realm"] = np.where(I["r2_3d"] < 0.17, "lunar (start within 0.17 DU of the Moon)", "earth (start beyond 0.17 DU)")
+    by_out = pd.crosstab(I["reference_outcome"], I["band"])
+    by_realm = pd.crosstab([I["realm"], I["orbit_label"]], I["band"])
+    usable = I[I["reference_outcome"] == "ok"]
+    led = pd.read_csv(os.path.join(ROOT, "part_b/results/confirm/policy/ledger.csv.gz"), usecols=["row_id", "regime", "r2_band"])
+    in_cell = usable[usable["band"] == "0.05-0.17"]
+    rep = {"label": "POST HOC (posthoc/README.md P5)", "n_regime_I": int(len(I)), "n_regime_I_usable": int(len(usable)),
+           "n_usable_in_0.05-0.17": int(len(in_cell)), "rows_in_cell": in_cell[["row_id", "orbit_label", "min_r2", "r2_3d"]].to_dict("records"),
+           "cell_rows_in_fig4_ledger": int(led["row_id"].isin(in_cell["row_id"]).sum()),
+           "fig4_ledger_regime_I_0.05-0.17": int(((led["regime"] == "I") & (led["r2_band"] == "0.05-0.17")).sum()),
+           "usable_min_r2_by_realm": {k: {"n": int(len(x)), "min": float(x["min_r2"].min()), "max": float(x["min_r2"].max()),
+                                          "n_0.05-0.17": int((x["band"] == "0.05-0.17").sum())} for k, x in usable.groupby("realm")}}
+    by_out.to_csv(os.path.join(out, "regime_I_by_outcome.csv"))
+    by_realm.to_csv(os.path.join(out, "regime_I_by_realm.csv"))
+    save_json(rep, os.path.join(out, "fig4_check_report.json"))
+    fig, ax = plt.subplots(figsize=(6, 3.2))
+    bins = np.logspace(np.log10(max(usable["min_r2"].min(), 1e-3)), np.log10(usable["min_r2"].max()), 60)
+    for k, x in usable.groupby("realm"):
+        ax.hist(x["min_r2"], bins=bins, histtype="step", lw=1.5, label=f"{k} (n = {len(x)})")
+    for v in (0.05, 0.17):
+        ax.axvline(v, ls="--", c="k", lw=0.8)
+    ax.set_xscale("log")
+    ax.set_xlabel("closest lunar approach along the reference (DU)")
+    ax.set_ylabel("usable regime-I orbits")
+    ax.legend(fontsize=7)
+    ax.set_title("Study B confirmation set, Hill regime I (post hoc)", fontsize=9)
+    fig.tight_layout()
+    fig.savefig(os.path.join(out, "regime_I_min_r2_hist.png"), dpi=150)
+    print(by_out.to_string())
+    print(by_realm.to_string())
+    print({k: v for k, v in rep.items() if k != "rows_in_cell"}, rep["rows_in_cell"])
+    print("wrote", out)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -128,6 +357,19 @@ def main():
     sp.add_argument("--out_dir", default=OUT)
     sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
     sp.set_defaults(fn=cmd_aggregates)
+    sp = sub.add_parser("symmetric")
+    sp.add_argument("--set", choices=sorted(SYM_SETS), required=True)
+    sp.add_argument("--out_dir", default=OUT)
+    sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.set_defaults(fn=cmd_symmetric)
+    sp = sub.add_parser("three_quarters")
+    sp.add_argument("--out_dir", default=OUT)
+    sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+    sp.set_defaults(fn=cmd_three_quarters)
+    sp = sub.add_parser("fig4_check")
+    sp.add_argument("--out_dir", default=OUT)
+    sp.set_defaults(fn=cmd_fig4_check)
     a = ap.parse_args()
     a.fn(a)
 

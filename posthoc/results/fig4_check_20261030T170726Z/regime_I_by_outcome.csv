@@ -1,0 +1,5 @@
+reference_outcome,<0.05,0.05-0.17,0.17-0.8,>0.8
+ejection,0,0,78,18
+ok,948,1,1537,189
+primary_collision,0,0,91,466
+secondary_collision,2482,0,0,0

@@ -1,0 +1,15 @@
+{
+ "command": "aggregates",
+ "args": {
+  "cmd": "aggregates",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "fn": "<function cmd_aggregates at 0x1377489a0>"
+ },
+ "utc": "20261030T170040Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "aggregates"
+ ]
+}

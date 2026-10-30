@@ -133,3 +133,26 @@ def breakdown(led, comp, by, policy_col="C_ml_tot", **kw):
         r["share_of_policy_cost"] = float(d[policy_col].sum() / tot)
         rows.append(r)
     return rows
+
+
+def recovered_share(led_ml, led_rule, led_glob, n_boot=N_BOOT, seed=0):
+    """Share of the global-step gap that a rule recovers, both gaps on the same orbits' ledgers: 1 - gap(rule) / gap(global), each gap the
+    D1 / C5 statistic (mean log10 cost of the arm minus that of the ML policy, over orbits that met the tolerance under both). The bootstrap
+    resamples orbits once for both gaps (rows are matched by row_id; every ledger must hold the same orbits)."""
+    cols = ["row_id", "meets_tol", "C_ml_tot"]
+    m = led_ml[cols].merge(led_rule[cols], on="row_id", suffixes=("", "_r")).merge(led_glob[cols].rename(columns={"meets_tol": "meets_tol_g", "C_ml_tot": "C_ml_tot_g"}), on="row_id")
+    if not (len(m) == len(led_ml) == len(led_rule) == len(led_glob)):
+        raise ValueError("the three ledgers must hold the same orbits")
+    ok = m["meets_tol"].astype(bool).to_numpy()
+    okr, okg = ok & m["meets_tol_r"].astype(bool).to_numpy(), ok & m["meets_tol_g"].astype(bool).to_numpy()
+    lm = np.log10(m["C_ml_tot"].to_numpy(dtype=float))
+    dr = np.log10(m["C_ml_tot_r"].to_numpy(dtype=float)) - lm
+    dg = np.log10(m["C_ml_tot_g"].to_numpy(dtype=float)) - lm
+
+    def stat(idx):
+        gr = (dr[idx] * okr[idx]).sum(axis=-1) / okr[idx].sum(axis=-1)
+        gg = (dg[idx] * okg[idx]).sum(axis=-1) / okg[idx].sum(axis=-1)
+        return gr, gg, 1.0 - gr / gg
+    gr, gg, rec = stat(np.arange(len(m)))
+    boots = np.concatenate([stat(idx)[2] for idx in _boot_indices(len(m), n_boot, seed)])
+    return {"gap_rule": float(gr), "gap_global": float(gg), "recovered_share": float(rec), "recovered_share_ci95": _ci(boots), "n_orbits": int(len(m))}

@@ -1,0 +1,14 @@
+{
+ "command": "fig4_check",
+ "args": {
+  "cmd": "fig4_check",
+  "out_dir": "posthoc/results",
+  "fn": "<function cmd_fig4_check at 0x14689ccc0>"
+ },
+ "utc": "20261030T170726Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "fig4_check"
+ ]
+}

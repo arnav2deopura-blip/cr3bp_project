@@ -1,0 +1,8 @@
+realm,orbit_label,<0.05,0.05-0.17,0.17-0.8,>0.8
+earth (start beyond 0.17 DU),L1,0,1,423,0
+earth (start beyond 0.17 DU),L2,0,0,132,0
+earth (start beyond 0.17 DU),wide,0,0,1151,673
+lunar (start within 0.17 DU of the Moon),L1,212,0,0,0
+lunar (start within 0.17 DU of the Moon),L2,108,0,0,0
+lunar (start within 0.17 DU of the Moon),near_moon,3106,0,0,0
+lunar (start within 0.17 DU of the Moon),wide,4,0,0,0

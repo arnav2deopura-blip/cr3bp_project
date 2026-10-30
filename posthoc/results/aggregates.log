@@ -1,0 +1,42 @@
+C_confirm_sund: 12192 orbits (32s)
+D_replication_sund: 12253 orbits (61s)
+C_lock_sund: 4020 orbits (69s)
+D_lock_sund: 4074 orbits (78s)
+D_confirm_D1_sund: 12239 orbits (100s)
+D_confirm_D1_rule_THR: 12239 orbits (122s)
+D_replication_D4_strat: 16253 orbits (149s)
+D_replication_D4_onescale: 16253 orbits (179s)
+                       ledger  comparator      n  n_no_comp   share  aggregate_ratio  aggregate_ratio_ci95_lo  aggregate_ratio_ci95_hi  mean_log_ratio  median_policy_all  median_policy_met
+0              C_confirm_sund    RK45_eqr  12192          0  0.7142           0.8373                   0.8127                   0.8618          0.1246           251.0368           235.0368
+1              C_confirm_sund    RK45_cal  12192          0  0.8239           1.0122                   0.9825                   1.0417          0.2083           251.0368           235.0368
+2              C_confirm_sund  DOP853_eqr  12192          0  0.5057           0.6905                   0.6700                   0.7107         -0.0074           251.0368           235.0368
+3              C_confirm_sund  DOP853_cal  12192          0  0.5862           0.7832                   0.7601                   0.8060          0.0463           251.0368           235.0368
+4          D_replication_sund    RK45_eqr  12253          0  0.7156           0.8022                   0.7801                   0.8244          0.1221           267.0368           255.0368
+5          D_replication_sund    RK45_cal  12253          0  0.7913           0.9052                   0.8804                   0.9303          0.1758           267.0368           255.0368
+6          D_replication_sund  DOP853_eqr  12253          0  0.5129           0.6669                   0.6485                   0.6857         -0.0070           267.0368           255.0368
+7          D_replication_sund  DOP853_cal  12253          0  0.5409           0.6995                   0.6802                   0.7192          0.0132           267.0368           255.0368
+8                 C_lock_sund    RK45_eqr   4020          0  0.7005           0.8542                   0.8231                   0.8879          0.1190           267.0368           251.0368
+9                 C_lock_sund    RK45_cal   4020          0  0.8119           1.0313                   0.9936                   1.0720          0.2022           267.0368           251.0368
+10                C_lock_sund  DOP853_eqr   4020          0  0.4938           0.7034                   0.6773                   0.7311         -0.0134           267.0368           251.0368
+11                C_lock_sund  DOP853_cal   4020          0  0.5801           0.7978                   0.7683                   0.8292          0.0403           267.0368           251.0368
+12                D_lock_sund    RK45_eqr   4074          0  0.7027           0.8446                   0.8146                   0.8754          0.1121           272.0885           260.0885
+13                D_lock_sund    RK45_cal   4074          0  0.7830           0.9660                   0.9322                   1.0009          0.1717           272.0885           260.0885
+14                D_lock_sund  DOP853_eqr   4074          0  0.4887           0.6927                   0.6674                   0.7177         -0.0216           272.0885           260.0885
+15                D_lock_sund  DOP853_cal   4074          0  0.5400           0.7493                   0.7221                   0.7763          0.0111           272.0885           260.0885
+16          D_confirm_D1_sund    RK45_eqr  12239          0  0.7018           0.8176                   0.7973                   0.8386          0.1128           268.0885           256.0885
+17          D_confirm_D1_sund    RK45_cal  12239          0  0.7861           0.9348                   0.9115                   0.9589          0.1724           268.0885           256.0885
+18          D_confirm_D1_sund  DOP853_eqr  12239          0  0.4933           0.6689                   0.6522                   0.6861         -0.0220           268.0885           256.0885
+19          D_confirm_D1_sund  DOP853_cal  12239          0  0.5435           0.7244                   0.7062                   0.7429          0.0107           268.0885           256.0885
+20      D_confirm_D1_rule_THR    RK45_eqr  12239          0  0.5299           0.5769                   0.5569                   0.5979          0.0282           315.3193           323.3193
+21      D_confirm_D1_rule_THR    RK45_cal  12239          0  0.6468           0.6873                   0.6634                   0.7125          0.1059           315.3193           323.3193
+22      D_confirm_D1_rule_THR  DOP853_eqr  12239          0  0.3450           0.4766                   0.4601                   0.4940         -0.1021           315.3193           323.3193
+23      D_confirm_D1_rule_THR  DOP853_cal  12239          0  0.4065           0.5326                   0.5142                   0.5521         -0.0558           315.3193           323.3193
+24     D_replication_D4_strat    RK45_eqr  16253          0  0.6640           0.7938                   0.7780                   0.8098          0.1233           275.0368           271.0368
+25     D_replication_D4_strat    RK45_cal  16253          0  0.6007           0.7013                   0.6873                   0.7155          0.0695           275.0368           271.0368
+26     D_replication_D4_strat  DOP853_eqr  16253          0  0.5130           0.6419                   0.6288                   0.6552         -0.0177           275.0368           271.0368
+27     D_replication_D4_strat  DOP853_cal  16253          0  0.4697           0.5932                   0.5811                   0.6054         -0.0511           275.0368           271.0368
+28  D_replication_D4_onescale    RK45_eqr  16253          0  0.7006           0.8109                   0.7928                   0.8290          0.1182           251.0368           235.0368
+29  D_replication_D4_onescale    RK45_cal  16253          0  0.6913           0.7996                   0.7818                   0.8175          0.1123           251.0368           235.0368
+30  D_replication_D4_onescale  DOP853_eqr  16253          0  0.5024           0.6763                   0.6612                   0.6915         -0.0083           251.0368           235.0368
+31  D_replication_D4_onescale  DOP853_cal  16253          0  0.5024           0.6763                   0.6612                   0.6915         -0.0083           251.0368           235.0368
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/aggregates_20261030T170040Z

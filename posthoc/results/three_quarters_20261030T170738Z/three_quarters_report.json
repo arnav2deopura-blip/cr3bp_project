@@ -1,0 +1,37 @@
+{
+ "label": "POST HOC (posthoc/README.md P4)",
+ "grid": "policy_c_3d.GLOBAL_DS_GRID",
+ "overhead_rhs": 0.0,
+ "replication": {
+  "global_ds": 0.08,
+  "cal_violations": 158,
+  "violation_rate": 0.03533828450175467
+ },
+ "confirm": {
+  "global_ds": 0.08,
+  "cal_violations": 128,
+  "violation_rate": 0.03578723751940518
+ },
+ "replication_reproduces_sealed_D3_global": true,
+ "gap_rule_THR_dex": 0.07151567976459199,
+ "gap_rule_ci95": [
+  0.06949391338461663,
+  0.07357181733249744
+ ],
+ "gap_global_dex": 0.26945466753293423,
+ "gap_global_ci95": [
+  0.2656176872724129,
+  0.2731341025489561
+ ],
+ "n_paired_rule": 11565,
+ "n_paired_global": 11582,
+ "gap_rule": 0.07151567976459199,
+ "gap_global": 0.26945466753293423,
+ "recovered_share": 0.7345910522932362,
+ "recovered_share_ci95": [
+  0.72669064562581,
+  0.7423393153998566
+ ],
+ "n_orbits": 12239,
+ "sealed_sentence": "rule gap 0.0715 dex (confirmation set) over global gap 0.274 dex (replication set) = 0.74"
+}

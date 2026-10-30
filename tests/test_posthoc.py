@@ -113,6 +113,22 @@ def test_breakdown_sums():
     assert sum(r["k"] for r in rows) == pm.stats_frame(led, "RK45_eqr", n_boot=10)["k"]
 
 
+def test_recovered_share_matches_c5():
+    from orbit_ml_cr3bp.confirm_c_3d import c5_ml_vs_global
+    rng = np.random.RandomState(2)
+    n = 400
+
+    def led(scale, p_ok):
+        return pd.DataFrame({"row_id": np.arange(n), "C_ml_tot": 100.0 * scale * rng.uniform(0.8, 1.25, n), "meets_tol": rng.rand(n) < p_ok})
+    lm, lr, lg = led(1.0, 0.96), led(1.2, 0.95), led(2.0, 0.96)
+    r = pm.recovered_share(lm, lr, lg, n_boot=200)
+    gr = c5_ml_vs_global(lm, lr, n_boot=10)["mean_log10_saving"]
+    gg = c5_ml_vs_global(lm, lg, n_boot=10)["mean_log10_saving"]
+    assert math.isclose(r["gap_rule"], gr) and math.isclose(r["gap_global"], gg)
+    assert math.isclose(r["recovered_share"], 1 - gr / gg)
+    assert r["recovered_share_ci95"][0] <= r["recovered_share"] <= r["recovered_share_ci95"][1]
+
+
 # ---------------------------------------------------------------------------------------------------------------------
 # symmetric comparator certification (orbit_ml_cr3bp/symmetric_cert.py)
 # ---------------------------------------------------------------------------------------------------------------------

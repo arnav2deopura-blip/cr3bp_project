@@ -1,0 +1,30 @@
+{
+ "label": "POST HOC (posthoc/README.md P5)",
+ "n_regime_I": 5810,
+ "n_regime_I_usable": 2675,
+ "n_usable_in_0.05-0.17": 1,
+ "rows_in_cell": [
+  {
+   "row_id": 6002,
+   "orbit_label": "L1",
+   "min_r2": 0.169148698906826,
+   "r2_3d": 0.1790481538543809
+  }
+ ],
+ "cell_rows_in_fig4_ledger": 0,
+ "fig4_ledger_regime_I_0.05-0.17": 0,
+ "usable_min_r2_by_realm": {
+  "earth (start beyond 0.17 DU)": {
+   "n": 1727,
+   "min": 0.169148698906826,
+   "max": 1.1276326740666711,
+   "n_0.05-0.17": 1
+  },
+  "lunar (start within 0.17 DU of the Moon)": {
+   "n": 948,
+   "min": 0.0045265099881859,
+   "max": 0.0468889926305944,
+   "n_0.05-0.17": 0
+  }
+ }
+}
