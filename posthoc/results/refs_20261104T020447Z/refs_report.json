@@ -1,0 +1,11 @@
+{
+ "label": "POST HOC (posthoc/README.md P18)",
+ "sets": {
+  "B_confirm": "data_b/cr3bp_3d_training_data_accuracy_monotone_seed22.csv",
+  "C_confirm": "data_c/confirm/cr3bp_3d_training_data_accuracy_monotone_seed43.csv",
+  "C_lock": "data_c/lock/cr3bp_3d_training_data_accuracy_monotone_seed44.csv",
+  "D_confirm": "data_d/confirm/cr3bp_3d_training_data_accuracy_monotone_seed53.csv",
+  "D_replication": "data_d/replication/cr3bp_3d_training_data_accuracy_monotone_seed55.csv",
+  "D_lock": "data_d/lock/cr3bp_3d_training_data_accuracy_monotone_seed54.csv"
+ }
+}

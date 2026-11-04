@@ -1,0 +1,29 @@
+{
+ "label": "POST HOC (posthoc/README.md P13)",
+ "C_confirm_sund": {
+  "source": "out_c/confirm/sund/apply_policy_20261027T013754Z/ledger.csv",
+  "policy": {
+   "top1": 0.3590921224752295,
+   "top10": 0.7572991604552871,
+   "n": 12192
+  },
+  "RK45_eqr": {
+   "top1": 0.2670708938277433,
+   "top10": 0.6748398573936185,
+   "n": 12192
+  }
+ },
+ "D_replication_sund": {
+  "source": "out_d/confirm/d3/sund/apply_policy_20261028T230253Z/ledger.csv",
+  "policy": {
+   "top1": 0.38393637408503434,
+   "top10": 0.7693547255360351,
+   "n": 12253
+  },
+  "RK45_eqr": {
+   "top1": 0.28462715316866893,
+   "top10": 0.6833339917994343,
+   "n": 12253
+  }
+ }
+}

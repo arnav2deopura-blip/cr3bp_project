@@ -1,0 +1,12 @@
+quantity,value
+label,"POST HOC, EXPLORATORY (posthoc/README.md P21)"
+n_train,12192
+sealed_run,out_d/confirm/d3/sund/apply_policy_20261028T230253Z
+overhead_rhs,15.036794812388587
+target_cal_violation_rate,0.02825
+diagnostic_eval_log10_oracle_minus_pred.median,0.285748034650652
+diagnostic_eval_log10_oracle_minus_pred.median_abs,0.32400348848073435
+diagnostic_eval_log10_oracle_minus_pred.share_pred_looser_than_oracle,0.19644168774993878
+equal_risk_m,0.3924189758484536
+certified_m,0.4216965034285822
+wall_seconds,243.82647109031677

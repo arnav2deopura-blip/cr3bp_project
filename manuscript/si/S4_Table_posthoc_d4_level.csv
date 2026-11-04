@@ -1,0 +1,8 @@
+quantity,value
+label,POST HOC (posthoc/README.md P16)
+sealed_p_strata,0.00012534781268735311
+d4_levels.0.07.p_iut,0.00012534781268735311
+d4_levels.0.07.n_strata,17
+d4_levels.0.05.p_iut,0.021130487059129684
+d4_levels.0.05.n_strata,17
+d4_levels.reproduces_sealed_at_0.07,True

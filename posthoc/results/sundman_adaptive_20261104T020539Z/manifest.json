@@ -1,0 +1,21 @@
+{
+ "command": "sundman_adaptive",
+ "args": {
+  "cmd": "sundman_adaptive",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "n_jobs": 8,
+  "methods": [
+   "RK45",
+   "DOP853"
+  ],
+  "smoke": 0,
+  "fn": "<function cmd_sundman_adaptive at 0x135891f80>"
+ },
+ "utc": "20261104T020539Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "sundman_adaptive"
+ ]
+}

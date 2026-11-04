@@ -1,0 +1,87 @@
+{
+ "label": "POST HOC (posthoc/README.md P14)",
+ "B_physical": {
+  "n": 14160,
+  "spearman_gap_logdelta": 0.9090192205149823,
+  "spearman_gap_logT": 0.44231354730689176,
+  "spearman_logdelta_logT": 0.336191813712335,
+  "partial_spearman_controlling_logT": 0.9001484174081875,
+  "partial_ci95": [
+   0.8956300034968306,
+   0.9046058206368555
+  ],
+  "ols_slope_logdelta_alone": 0.9038602102622959,
+  "ols_slope_alone_ci95": [
+   0.8974386303849028,
+   0.9098894195108937
+  ],
+  "ols_with_logT": {
+   "slope_logdelta": 0.8726079818904041,
+   "slope_logdelta_ci95": [
+    0.8665125427241657,
+    0.8784112098656649
+   ],
+   "slope_logT": 0.12990175574144863,
+   "slope_logT_ci95": [
+    0.12358879930284286,
+    0.1360986036719842
+   ]
+  }
+ },
+ "C_physical": {
+  "n": 12191,
+  "spearman_gap_logdelta": 0.9107056989457332,
+  "spearman_gap_logT": 0.43921025152921994,
+  "spearman_logdelta_logT": 0.3331208371977815,
+  "partial_spearman_controlling_logT": 0.9023971154486297,
+  "partial_ci95": [
+   0.8975219819140197,
+   0.9069963154499002
+  ],
+  "ols_slope_logdelta_alone": 0.9046011983030607,
+  "ols_slope_alone_ci95": [
+   0.8978083325810713,
+   0.9113798970725977
+  ],
+  "ols_with_logT": {
+   "slope_logdelta": 0.8731114706392101,
+   "slope_logdelta_ci95": [
+    0.8663293491761292,
+    0.8795856262670121
+   ],
+   "slope_logT": 0.13113663453711596,
+   "slope_logT_ci95": [
+    0.1245111172587611,
+    0.13794205910388482
+   ]
+  }
+ },
+ "C_sundman": {
+  "n": 12190,
+  "spearman_gap_logdelta": 0.2246663867203342,
+  "spearman_gap_logT": 0.6285109738880528,
+  "spearman_logdelta_logT": 0.3331583728346733,
+  "partial_spearman_controlling_logT": 0.02082548235010428,
+  "partial_ci95": [
+   0.001580508642964506,
+   0.0397937914818474
+  ],
+  "ols_slope_logdelta_alone": 0.048387280390484254,
+  "ols_slope_alone_ci95": [
+   0.04153210782591189,
+   0.055245383400012726
+  ],
+  "ols_with_logT": {
+   "slope_logdelta": -0.016768647037277006,
+   "slope_logdelta_ci95": [
+    -0.02202638039458297,
+    -0.011543575106412733
+   ],
+   "slope_logT": 0.27129379819400173,
+   "slope_logT_ci95": [
+    0.26515282274533747,
+    0.2775387884144762
+   ]
+  }
+ }
+}

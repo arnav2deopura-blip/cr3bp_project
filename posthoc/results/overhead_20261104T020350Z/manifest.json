@@ -1,0 +1,15 @@
+{
+ "command": "overhead",
+ "args": {
+  "cmd": "overhead",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "fn": "<function cmd_overhead at 0x132f298a0>"
+ },
+ "utc": "20261104T020350Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "overhead"
+ ]
+}

@@ -1,0 +1,18 @@
+                             group      n  median_dist  share_above_in_q95  share_above_in_q99
+0   in_distribution_D_confirm_eval  12239        0.642               0.050               0.010
+1                          D5_runs   1647        2.009               0.497               0.444
+2                      D5:axial_L1    102        1.717               0.059               0.000
+3                      D5:axial_L2    102        1.814               0.039               0.000
+4                     D5:butterfly    218        1.349               0.147               0.069
+5                           D5:dro     97        7.086               0.784               0.711
+6                       D5:halo_L1     74        1.717               0.122               0.000
+7                       D5:halo_L2    266        1.605               0.045               0.034
+8                   D5:lyapunov_L1    102        2.308               0.608               0.471
+9                   D5:lyapunov_L2     70        3.666               0.586               0.557
+10                     D5:resonant    412        7.877               0.966               0.922
+11                  D5:vertical_L1    102        6.957               0.863               0.833
+12                  D5:vertical_L2    102        8.790               0.882               0.853
+13                     Fig10_C2.95   6211        6.851               0.843               0.810
+14                      Fig10_C3.1   5457        7.376               0.893               0.856
+15                     Fig10_C3.19   5018        7.896               0.934               0.894
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/ood_20261104T020718Z

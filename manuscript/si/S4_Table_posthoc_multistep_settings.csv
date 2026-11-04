@@ -1,0 +1,7 @@
+quantity,value
+label,"POST HOC, EXPLORATORY (posthoc/README.md multistep)"
+sealed_run,out_d/confirm/d3/sund/apply_policy_20261028T230253Z
+target_cal_violation_rate,0.02825
+methods.LSODA.equal_risk_rtol,1.4513250987715068e-07
+methods.LSODA.certified_rtol,2.3713737056616554e-07
+wall_seconds,176.8076159954071

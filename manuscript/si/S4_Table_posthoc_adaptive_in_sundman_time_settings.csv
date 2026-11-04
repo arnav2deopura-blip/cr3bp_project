@@ -1,0 +1,9 @@
+quantity,value
+label,"POST HOC, EXPLORATORY (posthoc/README.md sundman_adaptive)"
+sealed_run,out_d/confirm/d3/sund/apply_policy_20261028T230253Z
+target_cal_violation_rate,0.02825
+methods.RK45.equal_risk_rtol,4.911073914777704e-07
+methods.RK45.certified_rtol,7.498942093324558e-07
+methods.DOP853.equal_risk_rtol,2.669749957287928e-07
+methods.DOP853.certified_rtol,4.2169650342858225e-07
+wall_seconds,532.2683041095734

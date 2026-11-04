@@ -1,0 +1,186 @@
+quantity,value
+label,POST HOC (posthoc/README.md P11)
+RK45_spec.comparator,RK45_spec
+RK45_spec.B_sealed_set.P,0.21153994867680495
+RK45_spec.B_sealed_set.S,0.02574857749364935
+RK45_spec.B_sealed_set.Q,0.37628273353626934
+RK45_spec.B_sealed_set.K,0.3010299956639812
+RK45_spec.B_sealed_set.O,0.5024613990023669
+RK45_spec.B_sealed_set.R,-0.010801110142734247
+RK45_spec.B_sealed_set.total,1.4062615442303374
+RK45_spec.B_sealed_set.n,13540
+RK45_spec.C_phys_sealed_set.P,0.11787223962255072
+RK45_spec.C_phys_sealed_set.S,0.0012193668691772924
+RK45_spec.C_phys_sealed_set.Q,0.3356830947133374
+RK45_spec.C_phys_sealed_set.K,0.05928126355005873
+RK45_spec.C_phys_sealed_set.O,0.04826813548775853
+RK45_spec.C_phys_sealed_set.R,-0.009924743400604947
+RK45_spec.C_phys_sealed_set.total,0.5523993568422778
+RK45_spec.C_phys_sealed_set.n,8958
+RK45_spec.C_sund_sealed_set.P_s,-0.005305389954159722
+RK45_spec.C_sund_sealed_set.Q,0.10085585052889685
+RK45_spec.C_sund_sealed_set.K,0.05928126355005873
+RK45_spec.C_sund_sealed_set.O,0.06791745924498561
+RK45_spec.C_sund_sealed_set.R,-0.010580778466501992
+RK45_spec.C_sund_sealed_set.total,0.2121684049032795
+RK45_spec.C_sund_sealed_set.n,11657
+RK45_spec.common_n,8796
+RK45_spec.common_C_phys.P,0.11327421985214255
+RK45_spec.common_C_phys.S,0.0009533692125390712
+RK45_spec.common_C_phys.Q,0.3379016728587451
+RK45_spec.common_C_phys.K,0.05928126355005874
+RK45_spec.common_C_phys.O,0.0489026128189391
+RK45_spec.common_C_phys.R,-0.010092745591453563
+RK45_spec.common_C_phys.total,0.550220392700971
+RK45_spec.common_C_sund.P_s,0.005304927153860086
+RK45_spec.common_C_sund.Q,0.10196300519982475
+RK45_spec.common_C_sund.K,0.05928126355005874
+RK45_spec.common_C_sund.O,0.08542301459122283
+RK45_spec.common_C_sund.R,-0.013410147236263397
+RK45_spec.common_C_sund.total,0.23856206325870302
+RK45_spec.common_total_phys_minus_sund.mean,0.311658329442268
+RK45_spec.common_total_phys_minus_sund.ci95,0.305246 to 0.318221
+RK45_spec.all_usable.B.paradigm_mean,0.25338879822350757
+RK45_spec.all_usable.B.paradigm_n,14160
+RK45_spec.all_usable.B.paradigm_ci95,0.24666 to 0.2603
+RK45_spec.all_usable.B.total_mean_all_usable,1.3918501063362323
+RK45_spec.all_usable.B.total_n,14146
+RK45_spec.all_usable.B.total_ci95,1.38666 to 1.39723
+RK45_spec.all_usable.C_phys.paradigm_mean,0.2506683491351695
+RK45_spec.all_usable.C_phys.paradigm_n,12191
+RK45_spec.all_usable.C_phys.paradigm_ci95,0.243488 to 0.257949
+RK45_spec.all_usable.C_phys.total_mean_all_usable,0.47162846204980724
+RK45_spec.all_usable.C_phys.total_n,12192
+RK45_spec.all_usable.C_phys.total_ci95,0.465166 to 0.477866
+RK45_spec.all_usable.C_sund_physical_oracle.paradigm_mean,0.2506683491351695
+RK45_spec.all_usable.C_sund_physical_oracle.paradigm_n,12191
+RK45_spec.all_usable.C_sund_physical_oracle.paradigm_ci95,0.243488 to 0.257949
+RK45_spec.all_usable.C_sund_physical_oracle.total_mean_all_usable,0.2045149680257359
+RK45_spec.all_usable.C_sund_physical_oracle.total_n,12192
+RK45_spec.all_usable.C_sund_physical_oracle.total_ci95,0.201789 to 0.20734
+RK45_spec.all_usable.C_sund.paradigm_mean,-0.00015848747495436725
+RK45_spec.all_usable.C_sund.paradigm_n,12190
+RK45_spec.all_usable.C_sund.paradigm_ci95,-0.00293408 to 0.00268213
+RK45_spec.all_usable.C_sund.total_mean_all_usable,0.2045149680257359
+RK45_spec.all_usable.C_sund.total_n,12192
+RK45_spec.all_usable.C_sund.total_ci95,0.201789 to 0.20734
+RK45_spec.all_usable_total_phys_minus_sund_paired.mean,0.26711349402407136
+RK45_spec.all_usable_total_phys_minus_sund_paired.n,12192
+RK45_spec.all_usable_total_phys_minus_sund_paired.ci95,0.26118 to 0.272836
+RK45_spec.C_physical_paradigm_by_subset.all_usable,0.2506683491351695
+RK45_spec.C_physical_paradigm_by_subset.met_by_phys,0.21983436846343007
+RK45_spec.C_physical_paradigm_by_subset.met_not_abstained,0.1178722396225507
+RK45_spec.C_physical_paradigm_by_subset.abstained,0.5685069583831043
+RK45_spec.C_physical_paradigm_by_subset.n_abstained,2776
+RK45_spec.C_physical_paradigm_by_subset.met_by_sund,0.22679306658198073
+RK45_spec.C_physical_paradigm_by_subset.common_set,0.11327421985214255
+RK45_cal.comparator,RK45_cal
+RK45_cal.B_sealed_set.P,-0.21097607568533883
+RK45_cal.B_sealed_set.S,0.02574857749364935
+RK45_cal.B_sealed_set.Q,0.37628273353626934
+RK45_cal.B_sealed_set.K,0.3010299956639812
+RK45_cal.B_sealed_set.O,0.5024613990023669
+RK45_cal.B_sealed_set.R,-0.010801110142734239
+RK45_cal.B_sealed_set.total,0.9837455198681938
+RK45_cal.B_sealed_set.n,13540
+RK45_cal.C_phys_sealed_set.P,-0.3524966282010576
+RK45_cal.C_phys_sealed_set.S,0.0012193668691772924
+RK45_cal.C_phys_sealed_set.Q,0.3356830947133374
+RK45_cal.C_phys_sealed_set.K,0.05928126355005873
+RK45_cal.C_phys_sealed_set.O,0.04826813548775853
+RK45_cal.C_phys_sealed_set.R,-0.009924743400604947
+RK45_cal.C_phys_sealed_set.total,0.08203048901866944
+RK45_cal.C_phys_sealed_set.n,8958
+RK45_cal.C_sund_sealed_set.P_s,-0.427955895966519
+RK45_cal.C_sund_sealed_set.Q,0.10085585052889685
+RK45_cal.C_sund_sealed_set.K,0.05928126355005873
+RK45_cal.C_sund_sealed_set.O,0.06791745924498561
+RK45_cal.C_sund_sealed_set.R,-0.010580778466501992
+RK45_cal.C_sund_sealed_set.total,-0.21048210110907983
+RK45_cal.C_sund_sealed_set.n,11657
+RK45_cal.common_n,8796
+RK45_cal.common_C_phys.P,-0.3604715121779756
+RK45_cal.common_C_phys.S,0.0009533692125390712
+RK45_cal.common_C_phys.Q,0.3379016728587451
+RK45_cal.common_C_phys.K,0.05928126355005874
+RK45_cal.common_C_phys.O,0.0489026128189391
+RK45_cal.common_C_phys.R,-0.010092745591453563
+RK45_cal.common_C_phys.total,0.07647466067085286
+RK45_cal.common_C_sund.P_s,-0.46844080487625805
+RK45_cal.common_C_sund.Q,0.10196300519982475
+RK45_cal.common_C_sund.K,0.05928126355005874
+RK45_cal.common_C_sund.O,0.08542301459122283
+RK45_cal.common_C_sund.R,-0.013410147236263395
+RK45_cal.common_C_sund.total,-0.23518366877141506
+RK45_cal.common_total_phys_minus_sund.mean,0.311658329442268
+RK45_cal.common_total_phys_minus_sund.ci95,0.305246 to 0.318221
+RK45_cal.all_usable.B.paradigm_mean,-0.15913819619826958
+RK45_cal.all_usable.B.paradigm_n,14160
+RK45_cal.all_usable.B.paradigm_ci95,-0.168164 to -0.150035
+RK45_cal.all_usable.B.total_mean_all_usable,0.9791359163715588
+RK45_cal.all_usable.B.total_n,14146
+RK45_cal.all_usable.B.total_ci95,0.974617 to 0.983898
+RK45_cal.all_usable.C_phys.paradigm_mean,-0.16220262882171713
+RK45_cal.all_usable.C_phys.paradigm_n,12191
+RK45_cal.all_usable.C_phys.paradigm_ci95,-0.171657 to -0.152551
+RK45_cal.all_usable.C_phys.total_mean_all_usable,0.05878157581044696
+RK45_cal.all_usable.C_phys.total_n,12192
+RK45_cal.all_usable.C_phys.total_ci95,0.051915 to 0.0653736
+RK45_cal.all_usable.C_sund_physical_oracle.paradigm_mean,-0.16220262882171713
+RK45_cal.all_usable.C_sund_physical_oracle.paradigm_n,12191
+RK45_cal.all_usable.C_sund_physical_oracle.paradigm_ci95,-0.171657 to -0.152551
+RK45_cal.all_usable.C_sund_physical_oracle.total_mean_all_usable,-0.20833191821362443
+RK45_cal.all_usable.C_sund_physical_oracle.total_n,12192
+RK45_cal.all_usable.C_sund_physical_oracle.total_ci95,-0.211372 to -0.205209
+RK45_cal.all_usable.C_sund.paradigm_mean,-0.41307694006637047
+RK45_cal.all_usable.C_sund.paradigm_n,12190
+RK45_cal.all_usable.C_sund.paradigm_ci95,-0.417557 to -0.408723
+RK45_cal.all_usable.C_sund.total_mean_all_usable,-0.20833191821362443
+RK45_cal.all_usable.C_sund.total_n,12192
+RK45_cal.all_usable.C_sund.total_ci95,-0.211372 to -0.205209
+RK45_cal.all_usable_total_phys_minus_sund_paired.mean,0.26711349402407136
+RK45_cal.all_usable_total_phys_minus_sund_paired.n,12192
+RK45_cal.all_usable_total_phys_minus_sund_paired.ci95,0.26118 to 0.272836
+RK45_cal.C_physical_paradigm_by_subset.all_usable,-0.16220262882171713
+RK45_cal.C_physical_paradigm_by_subset.met_by_phys,-0.20342042713778974
+RK45_cal.C_physical_paradigm_by_subset.met_not_abstained,-0.3524966282010576
+RK45_cal.C_physical_paradigm_by_subset.abstained,0.3185552542676753
+RK45_cal.C_physical_paradigm_by_subset.n_abstained,2776
+RK45_cal.C_physical_paradigm_by_subset.met_by_sund,-0.19585743943037864
+RK45_cal.C_physical_paradigm_by_subset.common_set,-0.3604715121779756
+share_chain.RK45_eqr.B.k,0
+share_chain.RK45_eqr.B.n,14161
+share_chain.RK45_eqr.B.share,0.0
+share_chain.RK45_eqr.C_phys.k,3855
+share_chain.RK45_eqr.C_phys.n,12192
+share_chain.RK45_eqr.C_phys.share,0.31619094488188976
+share_chain.RK45_eqr.C_sund.k,8707
+share_chain.RK45_eqr.C_sund.n,12192
+share_chain.RK45_eqr.C_sund.share,0.7141568241469817
+share_chain.RK45_cal.B.k,0
+share_chain.RK45_cal.B.n,14161
+share_chain.RK45_cal.B.share,0.0
+share_chain.RK45_cal.C_phys.k,4633
+share_chain.RK45_cal.C_phys.n,12192
+share_chain.RK45_cal.C_phys.share,0.380003280839895
+share_chain.RK45_cal.C_sund.k,10045
+share_chain.RK45_cal.C_sund.n,12192
+share_chain.RK45_cal.C_sund.share,0.8239009186351706
+share_chain.DOP853_eqr.B.k,0
+share_chain.DOP853_eqr.B.n,14161
+share_chain.DOP853_eqr.B.share,0.0
+share_chain.DOP853_eqr.C_phys.k,2462
+share_chain.DOP853_eqr.C_phys.n,12192
+share_chain.DOP853_eqr.C_phys.share,0.20193569553805774
+share_chain.DOP853_eqr.C_sund.k,6166
+share_chain.DOP853_eqr.C_sund.n,12192
+share_chain.DOP853_eqr.C_sund.share,0.505741469816273
+share_chain.DOP853_cal.B.k,0
+share_chain.DOP853_cal.B.n,14161
+share_chain.DOP853_cal.B.share,0.0
+share_chain.DOP853_cal.C_phys.k,2860
+share_chain.DOP853_cal.C_phys.n,12192
+share_chain.DOP853_cal.C_phys.share,0.23458005249343833
+share_chain.DOP853_cal.C_sund.k,7147
+share_chain.DOP853_cal.C_sund.n,12192
+share_chain.DOP853_cal.C_sund.share,0.5862040682414699

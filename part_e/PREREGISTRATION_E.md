@@ -2,7 +2,9 @@
 
 Status: **DRAFT, not sealed.** Nothing in this document has been run. It implements section 3 of the rigor plan of 2026-10-30
 (`CR3BP_Rigor_and_Bug_Plan.md`, kept outside the repository). Before the seal: build the missing pieces listed in section 7, run the dry
-run on the selection set, write the expectations into section 5, and commit the tree. The seal (`freeze_e.py`, to be written on the model of
+run on the selection set, write the expectations into section 5, and commit the tree. **Register this document on OSF (or an equivalent public
+registry with a server timestamp) before the dry run**, and push the sealed commit to a public remote: the seals of Studies A–D are local and
+their timestamps cannot be verified by a third party (`DEFENSE_PLAN.md`, P0-8). The seal (`freeze_e.py`, to be written on the model of
 `freeze_d.py`) must refuse to run on a dirty git tree (Study D's seal recorded the dirty-file list instead). After the seal everything above
 "## Deviations" is frozen and later changes are dated entries there.
 
@@ -44,7 +46,13 @@ The horizon range of E_confirm is restricted **by design** (the claim is about 1
 
 - The frozen Study C Sundman policy (`part_c/frozen/sund/policy_frozen.joblib`), unchanged; its overhead re-measured once on the idle
   machine of E6 and pinned before the seal.
-- Comparators: compiled DP5(4) with the PI controller (primary), compiled DOP853, SciPy RK45 (for continuity with Table 3).
+- Comparators: compiled DP5(4) with the PI controller (primary), compiled DOP853, SciPy RK45 (for continuity with Table 3), and **the same
+  adaptive solvers integrated in Sundman time** (the seven-dimensional system of the policy, same g and tau_c = 2, ending at the event t(s) = T;
+  `orbit_ml_cr3bp/defense_runs.py::run_sundman_adaptive` for SciPy; compiled versions to be built, section 7). Added 2026-11-03, before any seal,
+  because the post hoc P20 run (`posthoc/README.md`) found that a time transformation also helps the adaptive solvers: on the Study D replication
+  set, at equal risk, the policy was cheaper than Sundman-time RK45 on 67.6 % of orbits (ratio of totals 0.72) and than Sundman-time DOP853 on
+  45.7 % (ratio of totals 0.41). Proposed (to be decided before the seal): E1a and E1b tested against compiled DP5(4)-PI in physical time **and** in Sundman
+  time (intersection–union: p = the larger), with the Sundman-time DOP853 reported for every test.
 - **Comparator certification is symmetric** with the policy's (`orbit_ml_cr3bp/symmetric_cert.py`): fixed sequence, safest first, full δ,
   grid `RTOL_GRID_FINE` (1e-10 … 1e-3, 0.125 dex). `tests/test_posthoc.py::test_comparator_symmetry` must pass at the seal. The equal-risk
   comparator keeps the sealed rule (scan + four bisections).
@@ -93,6 +101,7 @@ Not included: hybrid fixed/adaptive switching (excluded by the plan); new featur
 
 ## 7. To build before the dry run (none of this exists yet)
 
+0. OSF registration of this document and a public remote for the repository (see the header).
 1. `freeze_e.py` (clean-tree seal) and `run_confirm_e_3d.py` (once-only runner with a log), modelled on Study D's.
 2. E2 relabelling at 10 km and 1,000 km (label search at the other tolerance; `generate_3d_data.py --tol_km`).
 3. E3 path-error labels and certificate: dense-reference checkpoints and a `run_rows` variant that returns the maximum checkpoint error.
@@ -101,6 +110,7 @@ Not included: hybrid fixed/adaptive switching (excluded by the plan); new featur
    JPL families.
 6. E6: a timing script that refuses to start above load 1.0 (no relaxation), logs two sessions, and runs on an x86-64 Linux machine.
 7. Wire `collision_segment.crossed_bodies` into the physical-time runners used in Part E (not into any sealed kernel).
+8. Compiled DP5(4)-PI and DOP853 in Sundman time (event at t = T by dense interpolation), with unit tests against the SciPy version of P20.
 
 ## Deviations
 

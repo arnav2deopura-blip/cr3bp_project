@@ -1,0 +1,8 @@
+sundman_adaptive start 2026-11-04T02:05:38Z
+sundman_adaptive exit 0 2026-11-04T02:14:31Z
+learned_rtol start 2026-11-04T02:14:31Z
+learned_rtol exit 0 2026-11-04T02:18:36Z
+multistep start 2026-11-04T02:18:36Z
+multistep exit 0 2026-11-04T02:21:34Z
+rk8s start 2026-11-04T02:21:34Z
+rk8s exit 0 2026-11-04T02:21:39Z

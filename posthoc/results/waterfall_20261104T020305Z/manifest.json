@@ -1,0 +1,15 @@
+{
+ "command": "waterfall",
+ "args": {
+  "cmd": "waterfall",
+  "out_dir": "posthoc/results",
+  "n_boot": 4000,
+  "fn": "<function cmd_waterfall at 0x12653d800>"
+ },
+ "utc": "20261104T020305Z",
+ "python": "3.11.16 (main, Sep  2 2026, 23:33:55) [Clang 21.1.8 ]",
+ "argv": [
+  "run_posthoc.py",
+  "waterfall"
+ ]
+}

@@ -1,0 +1,8 @@
+             set  n_usable  n_nan    max_km     median_km   p999_km  n_above_1km  n_above_10km
+0      B_confirm     16161      0  2.008696  1.404603e-08  0.006247            1             0
+1      C_confirm     16192      0  0.049812  1.395874e-08  0.005634            0             0
+2         C_lock      4020      0  0.055936  1.632141e-08  0.004909            0             0
+3      D_confirm     16239      0  0.135335  1.477905e-08  0.004914            0             0
+4  D_replication     16253      0  0.114739  1.387404e-08  0.004888            0             0
+5         D_lock      4074      0  0.252920  1.477136e-08  0.002964            0             0
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/refs_20261104T020447Z

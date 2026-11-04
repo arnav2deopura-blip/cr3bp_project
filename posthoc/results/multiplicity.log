@@ -1,0 +1,18 @@
+    test          p_raw  p_holm_within_study   p_holm_all15  reject_all15  at_resampling_floor
+0   B-T1   9.999000e-05         3.999600e-04   1.199880e-03          True              0.00010
+1   B-T2   9.999000e-05         3.999600e-04   1.199880e-03          True              0.00010
+2   B-T3   1.000000e+00         1.000000e+00   1.000000e+00         False                  NaN
+3   B-T4  1.924292e-221        9.621461e-221  2.501580e-220          True                  NaN
+4   B-T5   2.499375e-04         4.998750e-04   2.249438e-03          True              0.00025
+5   C-C1   2.499375e-04         9.997501e-04   2.249438e-03          True              0.00025
+6   C-C2   1.000000e+00         1.000000e+00   1.000000e+00         False                  NaN
+7   C-C3   6.054370e-03         1.210874e-02   3.027185e-02          True                  NaN
+8   C-C4   0.000000e+00         0.000000e+00   0.000000e+00          True                  NaN
+9   C-C5   2.499375e-04         9.997501e-04   2.249438e-03          True              0.00025
+10  D-D1   2.499375e-04         7.498125e-04   2.249438e-03          True              0.00025
+11  D-D2   1.000000e+00         1.000000e+00   1.000000e+00         False                  NaN
+12  D-D3   0.000000e+00         0.000000e+00   0.000000e+00          True                  NaN
+13  D-D4   1.253478e-04         5.013913e-04   1.253478e-03          True                  NaN
+14  D-D5   1.000000e+00         1.000000e+00   1.000000e+00         False                  NaN
+{0.07: (0.00012534781268735311, 17), 0.05: (0.021130487059129684, 17)} reproduces: True
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/multiplicity_20261104T020446Z

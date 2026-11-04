@@ -1,0 +1,17 @@
+{
+ "label": "POST HOC (posthoc/README.md P12)",
+ "B_sealed_overhead_median": 1129.0,
+ "B_C_ml_int_median": 1510.0,
+ "B_comparator_medians": {
+  "RK45_spec": 146.0,
+  "RK45_cal": 398.0,
+  "RK45_eqr": 326.0,
+  "DOP853_spec": 122.0,
+  "DOP853_cal": 254.0,
+  "DOP853_eqr": 230.0
+ },
+ "C_confirm_sund_overhead": 15.036794812388592,
+ "C_confirm_sund_overhead_share_of_policy_total": 0.010483870741150361,
+ "D_replication_sund_overhead": 15.036794812388585,
+ "D_replication_sund_overhead_share_of_policy_total": 0.009152843776292708
+}

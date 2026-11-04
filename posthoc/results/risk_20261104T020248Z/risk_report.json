@@ -1,0 +1,13 @@
+{
+ "label": "POST HOC (posthoc/README.md P10)",
+ "sources": {
+  "C_confirm_sund": "out_c/confirm/sund/apply_policy_*/ledger.csv",
+  "D_replication_sund": "out_d/confirm/d3/sund/apply_policy_*/ledger.csv",
+  "C_lock_sund": "out_c/lock/sund/apply_policy_*/ledger.csv",
+  "D_lock_sund": "out_d/confirm/lock/lock_*/ledger_sund.csv.gz",
+  "D_replication_D4_strat": "out_d/confirm/d4/d4_*/ledger_strat.csv.gz",
+  "C_confirm_phys": "out_c/confirm/phys/apply_policy_*/ledger.csv",
+  "C_confirm_sund_symmetric": "posthoc/results/symmetric_c_confirm_*/eval_columns.csv.gz",
+  "D_replication_sund_symmetric": "posthoc/results/symmetric_d_replication_*/eval_columns.csv.gz"
+ }
+}

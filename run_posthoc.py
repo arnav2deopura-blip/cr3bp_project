@@ -17,6 +17,9 @@ never touches a sealed file. Numbers produced here are POST HOC and are reported
                  confirmation set's calibration rows; RHS counts of policy and comparators on its evaluation rows (no timing)
   seeds          P6: the frozen Study C Sundman configuration refitted with model seeds 1-5 (and 42, which must reproduce the frozen model),
                  each certified and evaluated on the Study D confirmation set with the D1 protocol
+Defense-plan analyses of 2026-11-03 (posthoc/README.md P10-P23; P20-P23 are exploratory comparator runs):
+  risk P10, waterfall P11, overhead P12, concentration P13, timescale P14, mixture_curve P15, multiplicity P16, bca P17, refs P18, ood P19,
+  sundman_adaptive P20, learned_rtol P21, multistep P22, rk8s P23
 """
 from __future__ import annotations
 
@@ -598,6 +601,588 @@ def cmd_compiled(a):
     print("wrote", out)
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Defense-plan analyses of 2026-11-03 (posthoc/README.md P10-P23)
+# ---------------------------------------------------------------------------------------------------------------------
+
+B_CONFIRM_LEDGER = "out_b/confirm/policy_*/ledger.csv"
+C_PHYS_LEDGER = "out_c/confirm/phys/apply_policy_*/ledger.csv"
+SYM_EVAL = {"C_confirm_sund": "posthoc/results/symmetric_c_confirm_*/eval_columns.csv.gz",
+            "D_replication_sund": "posthoc/results/symmetric_d_replication_*/eval_columns.csv.gz"}
+ALL_COMPS_B = ("RK45_spec", "RK45_cal", "RK45_eqr", "DOP853_spec", "DOP853_cal", "DOP853_eqr")
+
+
+def _read(pattern):
+    return pd.read_csv(_one(pattern), low_memory=False)
+
+
+def _boot_mean(x, n_boot, seed=0):
+    x = np.asarray(x, dtype=float)
+    rng = np.random.RandomState(seed)
+    b = np.array([x[rng.randint(0, len(x), len(x))].mean() for _ in range(n_boot)])
+    return [float(np.quantile(b, .025)), float(np.quantile(b, .975))]
+
+
+def cmd_risk(a):
+    """P10: realized test violation rate of every comparator column with a paired exact McNemar test against the policy, and severities."""
+    from orbit_ml_cr3bp import defense_metrics as dm
+    from orbit_ml_cr3bp.audit_3d import clopper_pearson
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "risk", a)
+    leds = {n: load_ledger(n)[0] for n in ("C_confirm_sund", "D_replication_sund", "C_lock_sund", "D_lock_sund", "D_replication_D4_strat")}
+    leds["C_confirm_phys"] = _read(C_PHYS_LEDGER)
+    rows, sev, src = [], [], {n: LEDGERS[n][0] if n in LEDGERS else C_PHYS_LEDGER for n in leds}
+    for name, led in leds.items():
+        pv = ~led["meets_tol"].astype(bool).to_numpy()
+        if "ml_err_km" in led.columns:
+            sev.append({"ledger": name, "method": "policy", **dm.severity(led["ml_err_km"].to_numpy(float), pv)})
+        cols = {c: (led[f"{c}_ok"].to_numpy(), led[f"{c}_err_km"].to_numpy(float)) for c in COMPARATORS if f"{c}_ok" in led.columns}
+        if name in SYM_EVAL:
+            E = pd.read_csv(_one(SYM_EVAL[name])).set_index("row_id").loc[led["row_id"]]
+            src[f"{name}_symmetric"] = SYM_EVAL[name]
+            for m in METHODS:
+                cols[f"{m}_calsym"] = (E[f"{m}_calsym_ok"].to_numpy(), np.zeros(len(E)))      # *_ok of P7 is already 'met' (error <= tol)
+        for c, (ok, err) in cols.items():
+            cv = dm.comparator_violated(ok, err)
+            k = int(cv.sum())
+            mc = dm.mcnemar_exact(pv, cv)
+            rows.append({"ledger": name, "comparator": c, "n": len(cv), "comp_violations": k, "comp_rate": k / len(cv),
+                         "comp_cp95_lo": clopper_pearson(k, len(cv))[0], "comp_cp95_hi": clopper_pearson(k, len(cv))[1],
+                         "policy_violations": int(pv.sum()), "policy_rate": float(pv.mean()), "only_policy": mc["only_a"], "only_comp": mc["only_b"],
+                         "both": mc["both"], "mcnemar_p_two_sided": mc["p_two_sided"]})
+            if not c.endswith("calsym"):
+                sev.append({"ledger": name, "method": c, **dm.severity(err, cv)})
+    pd.DataFrame(rows).to_csv(os.path.join(out, "risk_summary.csv"), index=False)
+    pd.DataFrame(sev).to_csv(os.path.join(out, "severity.csv"), index=False)
+    save_json({"label": "POST HOC (posthoc/README.md P10)", "sources": src}, os.path.join(out, "risk_report.json"))
+    pd.set_option("display.width", 250)
+    print(pd.DataFrame(rows).round(4).to_string())
+    print(pd.DataFrame(sev).round(3).to_string())
+    print("wrote", out)
+
+
+def cmd_waterfall(a):
+    """P11: the cost decomposition of the Study B policy, the Study C physical-time policy and the Study C Sundman policy on one common set and
+    on all usable orbits, the physical paradigm term on the sealed subsets, and the share chain."""
+    from orbit_ml_cr3bp.failure_study_3d import decompose, decompose_sundman
+    from orbit_ml_cr3bp.confirm_c_3d import win_share
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "waterfall", a)
+    B, P, S = _read(B_CONFIRM_LEDGER), _read(C_PHYS_LEDGER), load_ledger("C_confirm_sund")[0]
+    if not (P["row_id"].to_numpy() == S["row_id"].to_numpy()).all():
+        raise ValueError("the two Study C ledgers do not hold the same orbits in the same order")
+    rep = {"label": "POST HOC (posthoc/README.md P11)", "sources": {"B": B_CONFIRM_LEDGER, "C_phys": C_PHYS_LEDGER, "C_sund": LEDGERS["C_confirm_sund"][0]}}
+    rows = []
+    terms_p, terms_s = ["P", "S", "Q", "K", "O", "R", "total"], ["P_s", "Q", "K", "O", "R", "total"]
+    for comp in ("RK45_spec", "RK45_cal"):
+        for c in (f"{comp}_nfev",):
+            if not np.allclose(P[c].to_numpy(float), S[c].to_numpy(float), equal_nan=True):
+                raise ValueError(f"{c} differs between the Study C ledgers")
+        db, dp, ds = decompose(B, comp), decompose(P, comp), decompose_sundman(S, comp)
+        r = {"comparator": comp}
+        r["B_sealed_set"] = {t: float(db[t].mean()) for t in terms_p} | {"n": int(db["total"].notna().sum())}
+        r["C_phys_sealed_set"] = {t: float(dp[t].mean()) for t in terms_p} | {"n": int(dp["total"].notna().sum())}
+        r["C_sund_sealed_set"] = {t: float(ds[t].mean()) for t in terms_s} | {"n": int(ds["total"].notna().sum())}
+        # (a) one common set within Study C
+        abst = P["ml_abstain"].astype(bool).to_numpy()
+        common = dp["total"].notna().to_numpy() & ~abst & ds["total"].notna().to_numpy() & P["meets_tol"].astype(bool).to_numpy() \
+            & S["meets_tol"].astype(bool).to_numpy()
+        r["common_n"] = int(common.sum())
+        r["common_C_phys"] = {t: float(dp.loc[common, t].mean()) for t in terms_p}
+        r["common_C_sund"] = {t: float(ds.loc[common, t].mean()) for t in terms_s}
+        diff = dp.loc[common, "total"].to_numpy() - ds.loc[common, "total"].to_numpy()
+        r["common_total_phys_minus_sund"] = {"mean": float(diff.mean()), "ci95": _boot_mean(diff, a.n_boot)}
+        # (b) all usable orbits
+        col = f"{comp}_nfev"
+        ub = {}
+        for nm, L, star in (("B", B, "C_fix_star"), ("C_phys", P, "C_fix_star"), ("C_sund_physical_oracle", S, "C_fix_star"), ("C_sund", S, "C_s_star")):
+            pg = np.log10(L[star] / L[col])
+            tot = np.log10(L["C_ml_tot"] / L[col])
+            ub[nm] = {"paradigm_mean": float(pg.mean()), "paradigm_n": int(pg.notna().sum()), "paradigm_ci95": _boot_mean(pg.dropna(), a.n_boot),
+                      "total_mean_all_usable": float(tot.mean()), "total_n": int(tot.notna().sum()), "total_ci95": _boot_mean(tot.dropna(), a.n_boot)}
+        r["all_usable"] = ub
+        both = np.log10(P["C_ml_tot"] / P[col]) - np.log10(S["C_ml_tot"] / S[col])
+        r["all_usable_total_phys_minus_sund_paired"] = {"mean": float(both.mean()), "n": int(both.notna().sum()), "ci95": _boot_mean(both.dropna(), a.n_boot)}
+        # the physical paradigm term of Study C on the sealed subsets
+        pg = np.log10(P["C_fix_star"] / P[col])
+        met = P["meets_tol"].astype(bool)
+        r["C_physical_paradigm_by_subset"] = {"all_usable": float(pg.mean()), "met_by_phys": float(pg[met].mean()), "met_not_abstained": float(pg[met & ~abst].mean()),
+                                               "abstained": float(pg[abst].mean()), "n_abstained": int(abst.sum()),
+                                               "met_by_sund": float(pg[S["meets_tol"].astype(bool)].mean()), "common_set": float(pg[common].mean())}
+        rep[comp] = r
+        for t in terms_p:
+            rows.append({"comparator": comp, "set": "common", "policy": "C_phys", "term": t, "mean": r["common_C_phys"][t], "n": r["common_n"]})
+        for t in terms_s:
+            rows.append({"comparator": comp, "set": "common", "policy": "C_sund", "term": t, "mean": r["common_C_sund"][t], "n": r["common_n"]})
+    rep["share_chain"] = {comp: {nm: dict(zip(("k", "n"), win_share(L, comp))) for nm, L in (("B", B), ("C_phys", P), ("C_sund", S))}
+                          for comp in ("RK45_eqr", "RK45_cal", "DOP853_eqr", "DOP853_cal")}
+    for comp, d in rep["share_chain"].items():
+        for nm, v in d.items():
+            v["share"] = v["k"] / v["n"]
+    pd.DataFrame(rows).to_csv(os.path.join(out, "waterfall_common_terms.csv"), index=False)
+    save_json(rep, os.path.join(out, "waterfall_report.json"))
+    import json
+    print(json.dumps({k: v for k, v in rep.items() if k != "sources"}, indent=1, default=float)[:6000])
+    print("wrote", out)
+
+
+def cmd_overhead(a):
+    """P12: Study B shares at overhead 0, 15.04 and the sealed value against all six comparators; Sundman ledgers at k x the sealed overhead."""
+    from orbit_ml_cr3bp.audit_3d import clopper_pearson
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "overhead", a)
+    B = _read(B_CONFIRM_LEDGER)
+    rows = []
+    # 15 Study B runs (collisions / escapes, all violations) have no recorded cost: they stay in the share's denominator as non-wins (the
+    # sealed definition) and are left out of the ratio of totals and the mean log ratio
+    fin = np.isfinite(B["C_ml_int"].to_numpy(float))
+    for tag, h in (("0", 0.0), ("15.04", OVERHEAD_C), ("sealed", None)):
+        tmp = B.assign(C_alt=B["C_ml_int"] + (B["C_feat"] + B["C_pred"] if h is None else h))
+        for comp in ALL_COMPS_B:
+            r = pm.stats_frame(tmp[fin], comp, policy_col="C_alt", n_boot=a.n_boot)
+            has = tmp[f"{comp}_nfev"].notna().to_numpy()
+            k = int((tmp["meets_tol"].astype(bool).to_numpy() & has & (tmp["C_alt"].to_numpy(float) < tmp[f"{comp}_nfev"].to_numpy(float))).sum())
+            r.update({"k": k, "share": k / int(has.sum()), "n": int(len(tmp)), "n_with_comp": int(has.sum()), "n_policy_cost_missing": int((~fin).sum())})
+            r.pop("share_ci95", None)
+            r["share_cp95"] = list(clopper_pearson(k, int(has.sum())))
+            rows.append(_flat(r, ledger="B_confirm", overhead=tag, comparator=comp))
+    rep = {"label": "POST HOC (posthoc/README.md P12)", "B_sealed_overhead_median": float((B["C_feat"] + B["C_pred"]).median()),
+           "B_C_ml_int_median": float(B["C_ml_int"].median()), "B_comparator_medians": {c: float(B[f"{c}_nfev"].median()) for c in ALL_COMPS_B}}
+    by = []
+    for name in ("C_confirm_sund", "D_replication_sund"):
+        led, _src = load_ledger(name)
+        oh = (led["C_ml_tot"] - led["C_ml_int"]).to_numpy()
+        if np.ptp(oh) > 1e-9:
+            raise ValueError(f"{name}: overhead is not one constant")
+        rep[f"{name}_overhead"] = float(oh[0])
+        rep[f"{name}_overhead_share_of_policy_total"] = float(oh.sum() / led["C_ml_tot"].sum())
+        for k in (0, 1, 2, 5, 10):
+            tmp = led.assign(C_alt=led["C_ml_int"] + k * oh[0])
+            for comp in COMPARATORS:
+                rows.append(_flat(pm.stats_frame(tmp, comp, policy_col="C_alt", n_boot=a.n_boot), ledger=name, overhead=f"{k}x", comparator=comp))
+                for r in pm.breakdown(tmp, comp, "h_band", policy_col="C_alt", n_boot=a.n_boot):
+                    g = r.pop("h_band")
+                    by.append(_flat(r, ledger=name, overhead=f"{k}x", comparator=comp, h_band=g))
+    pd.DataFrame(rows).to_csv(os.path.join(out, "overhead_overall.csv"), index=False)
+    pd.DataFrame(by).to_csv(os.path.join(out, "overhead_by_h_band.csv"), index=False)
+    save_json(rep, os.path.join(out, "overhead_report.json"))
+    pd.set_option("display.width", 250)
+    print(pd.DataFrame(rows)[["ledger", "overhead", "comparator", "k", "n", "share", "aggregate_ratio"]].round(4).to_string())
+    print(pd.DataFrame(by).query("comparator == 'RK45_eqr'")[["ledger", "overhead", "h_band", "share", "aggregate_ratio"]].round(4).to_string())
+    print(rep)
+    print("wrote", out)
+
+
+def cmd_concentration(a):
+    """P13: share of total cost in the costliest 1 % / 10 % of orbits and by horizon band, policy and equal-risk RK45."""
+    from orbit_ml_cr3bp import defense_metrics as dm
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "concentration", a)
+    rows, rep = [], {"label": "POST HOC (posthoc/README.md P13)"}
+    for name in ("C_confirm_sund", "D_replication_sund"):
+        led, src = load_ledger(name)
+        rep[name] = {"source": src}
+        for meth, col in (("policy", "C_ml_tot"), ("RK45_eqr", "RK45_eqr_nfev")):
+            x = led[col].dropna()
+            rep[name][meth] = {"top1": dm.top_share(x, 0.01), "top10": dm.top_share(x, 0.10), "n": int(len(x))}
+        for g, d in led.groupby("h_band"):
+            rows.append({"ledger": name, "h_band": g, "share_of_orbits": len(d) / len(led),
+                         "share_of_policy_total": d["C_ml_tot"].sum() / led["C_ml_tot"].sum(),
+                         "share_of_RK45_eqr_total": d["RK45_eqr_nfev"].sum() / led["RK45_eqr_nfev"].sum()})
+    pd.DataFrame(rows).to_csv(os.path.join(out, "concentration_by_h_band.csv"), index=False)
+    save_json(rep, os.path.join(out, "concentration_report.json"))
+    print(pd.DataFrame(rows).round(4).to_string())
+    print(rep)
+    print("wrote", out)
+
+
+def cmd_timescale(a):
+    """P14: rank and partial rank correlation of the oracle fixed-step gap with the timescale range controlling the horizon, and OLS slopes."""
+    from scipy.stats import spearmanr
+    from orbit_ml_cr3bp import defense_metrics as dm
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "timescale", a)
+    B, S = _read(B_CONFIRM_LEDGER), load_ledger("C_confirm_sund")[0]
+    rep, rows = {"label": "POST HOC (posthoc/README.md P14)"}, []
+    for nm, L, star in (("B_physical", B, "C_fix_star"), ("C_physical", S, "C_fix_star"), ("C_sundman", S, "C_s_star")):
+        d = L[L["RK45_spec_nfev"].notna() & L[star].notna() & L["log_delta_phys"].notna()]
+        gap = np.log10(d[star] / d["RK45_spec_nfev"]).to_numpy()
+        x = d["log_delta_phys"].to_numpy(float)
+        z = np.log10(d["sim_time"].to_numpy(float))
+        rng = np.random.RandomState(0)
+        bs = {"partial": [], "slope1": [], "slope2_x": [], "slope2_z": []}
+        for _ in range(a.n_boot):
+            i = rng.randint(0, len(gap), len(gap))
+            bs["partial"].append(dm.partial_spearman(gap[i], x[i], z[i]))
+            bs["slope1"].append(dm.ols(gap[i], x[i])[1])
+            b2 = dm.ols(gap[i], x[i], z[i])
+            bs["slope2_x"].append(b2[1])
+            bs["slope2_z"].append(b2[2])
+        ci = {k: [float(np.quantile(v, .025)), float(np.quantile(v, .975))] for k, v in bs.items()}
+        b2 = dm.ols(gap, x, z)
+        r = {"n": int(len(gap)), "spearman_gap_logdelta": float(spearmanr(x, gap)[0]), "spearman_gap_logT": float(spearmanr(z, gap)[0]),
+             "spearman_logdelta_logT": float(spearmanr(x, z)[0]), "partial_spearman_controlling_logT": dm.partial_spearman(gap, x, z),
+             "partial_ci95": ci["partial"], "ols_slope_logdelta_alone": float(dm.ols(gap, x)[1]), "ols_slope_alone_ci95": ci["slope1"],
+             "ols_with_logT": {"slope_logdelta": float(b2[1]), "slope_logdelta_ci95": ci["slope2_x"], "slope_logT": float(b2[2]), "slope_logT_ci95": ci["slope2_z"]}}
+        for g, dd_ in d.assign(gap=gap).groupby("h_band"):
+            rows.append({"set": nm, "h_band": g, "n": len(dd_), "ols_slope": float(dm.ols(dd_["gap"].to_numpy(), dd_["log_delta_phys"].to_numpy(float))[1]),
+                         "spearman": float(spearmanr(dd_["log_delta_phys"], dd_["gap"])[0])})
+        rep[nm] = r
+    pd.DataFrame(rows).to_csv(os.path.join(out, "timescale_by_h_band.csv"), index=False)
+    save_json(rep, os.path.join(out, "timescale_report.json"))
+    import json
+    print(json.dumps(rep, indent=1))
+    print(pd.DataFrame(rows).round(3).to_string())
+    print("wrote", out)
+
+
+def cmd_mixture_curve(a):
+    """P15: share and ratio of totals as a function of the near-Moon family weight."""
+    from orbit_ml_cr3bp import defense_metrics as dm
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "mixture_curve", a)
+    rows = []
+    for name in ("C_confirm_sund", "D_replication_sund"):
+        led, _src = load_ledger(name)
+        fam = led["orbit_label"].to_numpy()
+        obs = float(np.mean(fam == "near_moon"))
+        for w in sorted(set([round(0.05 * k, 2) for k in range(21)] + [obs])):
+            wt = dm.dial_weights(fam, "near_moon", w)
+            for comp in ("RK45_eqr", "RK45_cal"):
+                r = pm.stats_frame(led, comp, weights=wt, strata=fam, n_boot=a.n_boot)
+                rows.append(_flat(r, ledger=name, comparator=comp, near_moon_weight=w, observed=bool(w == obs)))
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "mixture_curve.csv"), index=False)
+    save_json({"label": "POST HOC (posthoc/README.md P15)"}, os.path.join(out, "mixture_curve_report.json"))
+    print(tab[["ledger", "comparator", "near_moon_weight", "observed", "share", "aggregate_ratio", "aggregate_ratio_ci95_lo", "aggregate_ratio_ci95_hi"]].round(4).to_string())
+    print("wrote", out)
+
+
+def cmd_multiplicity(a):
+    """P16: Holm over all 15 B-D tests, D4 strata at level 0.05, resampling floors."""
+    import json
+    from scipy.stats import binom
+    from orbit_ml_cr3bp.confirm_b_3d import holm
+    from orbit_ml_cr3bp import defense_metrics as dm
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "multiplicity", a)
+    files = {"B": "part_b/results/confirm/confirm_tests_confirm.json", "C": "part_c/results/confirm/confirm_tests_confirm.json",
+             "D": "part_d/results/confirm/confirm_tests_confirm.json"}
+    raw, within = {}, {}
+    for s, f in files.items():
+        h = json.load(open(os.path.join(ROOT, f)))["holm"]
+        for k, v in h.items():
+            key = f"{s}-{k.split('_')[0]}"
+            raw[key], within[key] = float(v["p"]), float(v["p_holm"])
+    if len(raw) != 15:
+        raise ValueError(f"expected 15 tests, found {len(raw)}")
+    h15 = holm(raw)
+    floors = dm.floor_flags(raw)
+    rows = [{"test": k, "p_raw": raw[k], "p_holm_within_study": within[k], "p_holm_all15": h15[k]["p_holm"], "reject_all15": h15[k]["reject"],
+             "at_resampling_floor": floors[k]} for k in sorted(raw)]
+    # D4 at 0.05
+    led = load_ledger("D_replication_D4_strat")[0]
+    sealed = json.load(open(os.path.join(ROOT, files["D"])))
+    p_sealed = float(sealed["D4_conditional_safety"]["p_strata"])
+    lv = {}
+    for level in (0.07, 0.05):
+        st = []
+        for g, d in led.groupby("stratum"):
+            n, k = len(d), int((~d["meets_tol"].astype(bool)).sum())
+            if n >= 300:
+                st.append({"stratum": g, "n": n, "k": k, "rate": k / n, "p": float(binom.cdf(k, n, level))})
+        lv[level] = {"p_iut": max(x["p"] for x in st), "n_strata": len(st), "strata": st}
+    lv["reproduces_sealed_at_0.07"] = bool(abs(lv[0.07]["p_iut"] - p_sealed) <= 1e-9 * max(p_sealed, 1e-300))
+    rep = {"label": "POST HOC (posthoc/README.md P16)", "sealed_p_strata": p_sealed, "d4_levels": {str(k): v for k, v in lv.items()}}
+    if not lv["reproduces_sealed_at_0.07"]:
+        save_json(rep, os.path.join(out, "multiplicity_report.json"))
+        raise SystemExit(f"D4 at 0.07 gives {lv[0.07]['p_iut']}, sealed {p_sealed}; stopping")
+    pd.DataFrame(rows).to_csv(os.path.join(out, "holm_all15.csv"), index=False)
+    save_json(rep, os.path.join(out, "multiplicity_report.json"))
+    print(pd.DataFrame(rows).to_string())
+    print({k: (v["p_iut"], v["n_strata"]) for k, v in lv.items() if isinstance(v, dict)}, "reproduces:", lv["reproduces_sealed_at_0.07"])
+    print("wrote", out)
+
+
+def cmd_bca(a):
+    """P17: percentile and BCa intervals for the ratio of totals."""
+    from orbit_ml_cr3bp import defense_metrics as dm
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "bca", a)
+    rows = []
+    for name in ("C_confirm_sund", "D_replication_sund"):
+        led, _src = load_ledger(name)
+        for comp in COMPARATORS:
+            r = dm.ratio_of_totals_ci(led["C_ml_tot"].to_numpy(float), led[f"{comp}_nfev"].to_numpy(float), n_boot=a.n_boot)
+            rows.append(_flat(r, ledger=name, comparator=comp))
+    pd.DataFrame(rows).to_csv(os.path.join(out, "bca.csv"), index=False)
+    save_json({"label": "POST HOC (posthoc/README.md P17)"}, os.path.join(out, "bca_report.json"))
+    print(pd.DataFrame(rows).round(4).to_string())
+    print("wrote", out)
+
+
+def cmd_refs(a):
+    """P18: agreement of the second DOP853 reference with the first on every usable row."""
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "refs", a)
+    sets = {"B_confirm": "data_b/cr3bp_3d_training_data_accuracy_monotone_seed22.csv",
+            "C_confirm": "data_c/confirm/cr3bp_3d_training_data_accuracy_monotone_seed43.csv",
+            "C_lock": "data_c/lock/cr3bp_3d_training_data_accuracy_monotone_seed44.csv",
+            "D_confirm": DATA["confirm"], "D_replication": DATA["replication"], "D_lock": DATA["lock"]}
+    rows = []
+    for nm, f in sets.items():
+        d = pd.read_csv(os.path.join(ROOT, f), usecols=["reference_outcome", "ref_check_km"], low_memory=False)
+        x = d.loc[d["reference_outcome"] == "ok", "ref_check_km"].to_numpy(float)
+        rows.append({"set": nm, "n_usable": len(x), "n_nan": int(np.isnan(x).sum()), "max_km": float(np.nanmax(x)), "median_km": float(np.nanmedian(x)),
+                     "p999_km": float(np.nanquantile(x, 0.999)), "n_above_1km": int((x > 1).sum()), "n_above_10km": int((x > 10).sum())})
+    pd.DataFrame(rows).to_csv(os.path.join(out, "refs.csv"), index=False)
+    save_json({"label": "POST HOC (posthoc/README.md P18)", "sets": sets}, os.path.join(out, "refs_report.json"))
+    print(pd.DataFrame(rows).to_string())
+    print("wrote", out)
+
+
+def _policy_features(df):
+    """The 25 inputs of the frozen Sundman policy computed from x..vz and sim_time."""
+    from orbit_ml_cr3bp.physics_3d import add_orbit_features_3d
+    from orbit_ml_cr3bp.osculating_3d import add_osc_features
+    return add_osc_features(add_orbit_features_3d(df, MU), MU)
+
+
+def cmd_ood(a):
+    """P19: mean distance to the 10 nearest training rows in the standardized 25-feature space."""
+    import joblib
+    from sklearn.neighbors import NearestNeighbors
+    from run_part_d_3d import load_train, load_set, standard_split
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "ood", a)
+    feats = list(joblib.load(os.path.join(ROOT, "part_c/frozen/sund/policy_frozen.joblib"))["spec"]["features"])
+    Utr, _w = load_train()
+    Xtr = Utr[feats].to_numpy(float)
+    mu_, sd_ = Xtr.mean(axis=0), Xtr.std(axis=0)
+    sd_[sd_ == 0] = 1.0
+    nn = NearestNeighbors(n_neighbors=10).fit((Xtr - mu_) / sd_)
+
+    def dist(X):
+        d, _ = nn.kneighbors((X - mu_) / sd_)
+        return d.mean(axis=1)
+    U, _ref = load_set("confirm")
+    _cal, ev = standard_split(U)
+    Uev = U.iloc[ev]
+    rebuilt = _policy_features(Uev[["x", "y", "z", "vx", "vy", "vz", "sim_time"]].reset_index(drop=True))
+    feat_check = float(np.max(np.abs(rebuilt[feats].to_numpy(float) - Uev[feats].to_numpy(float))))
+    if feat_check > 1e-8:
+        raise SystemExit(f"rebuilt features differ from the dataset's by {feat_check}; stopping")
+    d_in = dist(Uev[feats].to_numpy(float))
+    q95, q99 = np.quantile(d_in, [0.95, 0.99])
+    groups = {"in_distribution_D_confirm_eval": (d_in, None, None)}
+    d5 = pd.read_csv(_one("out_d/confirm/d5/d5_*/d5_runs.csv.gz"))
+    d5 = d5[d5["in_range"].astype(bool) & d5["ref_ok"].astype(bool)].reset_index(drop=True)
+    X5 = _policy_features(d5[["x", "y", "z", "vx", "vy", "vz", "sim_time"]])[feats].to_numpy(float)
+    groups["D5_runs"] = (dist(X5), d5["group"].to_numpy(), d5["violation"].astype(bool).to_numpy())
+    for f in sorted(glob.glob(os.path.join(ROOT, _one("out_d/explore/d7_*/d7_report.json").rsplit("/", 1)[0], "slice_C*.csv"))):
+        s = pd.read_csv(f)
+        s = s[s["ref_ok"].astype(bool)].reset_index(drop=True)
+        df = pd.DataFrame({"x": s["x"], "y": 0.0, "z": 0.0, "vx": s["vx"], "vy": s["vy"], "vz": 0.0, "sim_time": 8.0})
+        groups[f"Fig10_{os.path.basename(f)[6:-4]}"] = (dist(_policy_features(df)[feats].to_numpy(float)), None, s["violation"].astype(bool).to_numpy())
+    rows = []
+    for g, (d, fam, viol) in groups.items():
+        rows.append({"group": g, "n": len(d), "median_dist": float(np.median(d)), "share_above_in_q95": float((d > q95).mean()),
+                     "share_above_in_q99": float((d > q99).mean())})
+        if fam is not None:
+            for fm in sorted(set(fam)):
+                m = fam == fm
+                rows.append({"group": f"D5:{fm}", "n": int(m.sum()), "median_dist": float(np.median(d[m])), "share_above_in_q95": float((d[m] > q95).mean()),
+                             "share_above_in_q99": float((d[m] > q99).mean())})
+    pd.DataFrame(rows).to_csv(os.path.join(out, "ood_distance.csv"), index=False)
+    save_json({"label": "POST HOC (posthoc/README.md P19)", "features": feats, "n_train": int(len(Xtr)), "in_q95": float(q95), "in_q99": float(q99),
+               "feature_rebuild_max_abs_diff": feat_check}, os.path.join(out, "ood_report.json"))
+    print(pd.DataFrame(rows).round(3).to_string())
+    print("wrote", out)
+
+
+def _comparator_summary(L, pol_tot, pol_met, comp_nfev, comp_met, capped, label, n_boot, extra=None):
+    from orbit_ml_cr3bp import defense_metrics as dm
+    st = pm.cost_stats(pol_tot, comp_nfev, pol_met, n_boot=n_boot, capped=capped)
+    mc = dm.mcnemar_exact(~np.asarray(pol_met, bool), ~np.asarray(comp_met, bool))
+    st.update({"comparison": label, "comparator_violation_rate": float((~np.asarray(comp_met, bool)).mean()), "policy_violation_rate": float((~np.asarray(pol_met, bool)).mean()),
+               "mcnemar_only_policy": mc["only_a"], "mcnemar_only_comp": mc["only_b"], "mcnemar_p": mc["p_two_sided"], **(extra or {})})
+    return _flat(st)
+
+
+def _new_comparator(a, name, rows_fn):
+    """Shared driver of P20 / P22: certify a comparator symmetrically and at equal risk on the Study D replication calibration rows, run it on the
+    evaluation rows, and compare it with the sealed policy ledger. rows_fn(pool, states, T, ref, rtol) -> dict(ok, err, nfev, capped, met)."""
+    from multiprocessing import Pool
+    from orbit_ml_cr3bp import symmetric_cert as sc
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), name, a)
+    t0 = time.time()
+    U, cal, ev, ref, led, rep, _fz, run = _sealed_set("d_replication")
+    if a.smoke:                                         # code-path test on a few rows (written to a scratch out_dir; never reported)
+        cal, ev = cal[:a.smoke], ev[:a.smoke]
+    from orbit_ml_cr3bp import deploy_d as dd
+    S, T = dd.states_T(U)
+    Sc, Tc, rc_, Se, Te, re_ = S[cal], T[cal], ref[cal], S[ev], T[ev], ref[ev]
+    led = led.set_index("row_id").loc[U.iloc[ev]["row_id"].to_numpy()].reset_index()
+    target = float(rep["cal_policy_violation_rate"])
+    report = {"label": f"POST HOC, EXPLORATORY (posthoc/README.md {name})", "sealed_run": run, "target_cal_violation_rate": target, "methods": {}}
+    cols, rows = {"row_id": led["row_id"].to_numpy()}, []
+    with Pool(a.n_jobs) as pool:
+        for m in a.methods:
+            cache = {}
+
+            def viol(rt, m=m, cache=cache):
+                if rt not in cache:
+                    r = rows_fn(pool, Sc, Tc, rc_, rt, m)
+                    cache[rt] = (int((~r["met"]).sum()), float(np.nanmean(r["nfev"])), int(r["capped"].sum()))
+                    print(f"  {m} rtol {rt:.3e}: {cache[rt][0]} violations, mean nfev {cache[rt][1]:.0f}, capped {cache[rt][2]} ({time.time() - t0:.0f}s)", flush=True)
+                return cache[rt][0], len(cal)
+            eqr, eqr_chain = sc.equal_risk_rtol(viol, target)
+            cert = sc.certify_rtol_fixed_sequence(viol, sc.RTOL_GRID_FINE)
+            report["methods"][m] = {"equal_risk_rtol": eqr, "eqr_chain": eqr_chain, "certified_rtol": cert["chosen_rtol"], "cert_chain": cert["chain"]}
+            save_json(report, os.path.join(out, f"{name}_report.json"))
+            for tag, rt in (("eqr", eqr), ("calsym", cert["chosen_rtol"])):
+                if rt is None:
+                    continue
+                r = rows_fn(pool, Se, Te, re_, rt, m)
+                cols.update({f"{m}_{tag}_rtol": rt, f"{m}_{tag}_nfev": r["nfev"], f"{m}_{tag}_met": r["met"], f"{m}_{tag}_capped": r["capped"], f"{m}_{tag}_err_km": r["err"]})
+                rows.append(_comparator_summary(led, led["C_ml_tot"].to_numpy(float), led["meets_tol"].astype(bool).to_numpy(), r["nfev"], r["met"], r["capped"],
+                                                f"{name}:{m}_{tag}", a.n_boot, {"rtol": rt}))
+                print(f"{m} {tag} rtol {rt:.3e}: comparator violations {(~r['met']).mean():.4f}, policy share {rows[-1]['share']:.4f}, ratio of totals {rows[-1]['aggregate_ratio']:.3f} ({time.time() - t0:.0f}s)", flush=True)
+    # the physical-time references at the same rules (sealed equal-risk columns; P7 symmetric columns)
+    E7 = pd.read_csv(_one(SYM_EVAL["D_replication_sund"])).set_index("row_id").loc[led["row_id"]]
+    for m in ("RK45", "DOP853"):
+        cv = (~(led[f"{m}_eqr_ok"].astype(bool) & (led[f"{m}_eqr_err_km"] <= 100))).to_numpy()
+        rows.append(_comparator_summary(led, led["C_ml_tot"].to_numpy(float), led["meets_tol"].astype(bool).to_numpy(), led[f"{m}_eqr_nfev"].to_numpy(float), ~cv,
+                                        None, f"physical:{m}_eqr (sealed)", a.n_boot))
+        rows.append(_comparator_summary(led, led["C_ml_tot"].to_numpy(float), led["meets_tol"].astype(bool).to_numpy(), E7[f"{m}_calsym_nfev"].to_numpy(float),
+                                        E7[f"{m}_calsym_ok"].astype(bool).to_numpy(), None, f"physical:{m}_calsym (P7)", a.n_boot))
+    pd.DataFrame(cols).to_csv(os.path.join(out, "eval_columns.csv.gz"), index=False)
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, f"{name}_summary.csv"), index=False)
+    report["wall_seconds"] = time.time() - t0
+    save_json(report, os.path.join(out, f"{name}_report.json"))
+    pd.set_option("display.width", 250)
+    print(tab[["comparison", "rtol", "comparator_violation_rate", "policy_violation_rate", "share", "aggregate_ratio", "aggregate_ratio_ci95_lo",
+               "aggregate_ratio_ci95_hi", "mean_log_ratio", "mcnemar_p"]].round(4).to_string())
+    print("wrote", out)
+
+
+def cmd_sundman_adaptive(a):
+    """P20: RK45 / DOP853 in Sundman time (exploratory)."""
+    from orbit_ml_cr3bp import defense_runs as dr
+
+    def rows_fn(pool, S, T, ref, rt, m):
+        return dr.sundman_adaptive_rows(pool, S, T, ref, rt, m, n_jobs=a.n_jobs)
+    _new_comparator(a, "sundman_adaptive", rows_fn)
+
+
+def cmd_multistep(a):
+    """P22: LSODA in physical time (exploratory)."""
+    from orbit_ml_cr3bp import symmetric_cert as sc
+
+    def rows_fn(pool, S, T, ref, rt, m):
+        return sc.scipy_rows(pool, S, T, ref, rt, m, n_jobs=a.n_jobs)
+    _new_comparator(a, "multistep", rows_fn)
+
+
+M_GRID_LEARNED = tuple(float(10.0 ** (-3.0 + j / 8.0)) for j in range(25))
+
+
+def cmd_learned_rtol(a):
+    """P21: RK45 with a per-orbit rtol predicted by the policy's model class, certified like the policy (exploratory)."""
+    from multiprocessing import Pool
+    import joblib
+    from orbit_ml_cr3bp import policy_c_3d as pc, symmetric_cert as sc, defense_runs as dr, deploy_d as dd
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "learned_rtol", a)
+    t0 = time.time()
+    feats = list(joblib.load(os.path.join(ROOT, "part_c/frozen/sund/policy_frozen.joblib"))["spec"]["features"])
+    tr = load_ledger("C_confirm_sund")[0]
+    tr = tr[np.isfinite(tr["RK45_spec_rtol"].to_numpy(float))]
+    model = pc._hgb_regressor(0.2, 42, max_iter=25, learning_rate=0.2, max_depth=3)
+    model.fit(tr[feats].to_numpy(float), np.log10(tr["RK45_spec_rtol"].to_numpy(float)))
+    U, cal, ev, ref, led, rep, _fz, run = _sealed_set("d_replication")
+    if a.smoke:
+        cal, ev = cal[:a.smoke], ev[:a.smoke]
+    S, T = dd.states_T(U)
+    logp = model.predict(U[feats].to_numpy(float))
+    led = led.set_index("row_id").loc[U.iloc[ev]["row_id"].to_numpy()].reset_index()
+    diag = np.log10(led["RK45_spec_rtol"].to_numpy(float)) - logp[ev]
+    oh = float(rep["spec"]["config"]["overhead_rhs"])
+    target = float(rep["cal_policy_violation_rate"])
+    report = {"label": "POST HOC, EXPLORATORY (posthoc/README.md P21)", "n_train": int(len(tr)), "sealed_run": run, "overhead_rhs": oh, "target_cal_violation_rate": target,
+              "diagnostic_eval_log10_oracle_minus_pred": {"median": float(np.nanmedian(diag)), "median_abs": float(np.nanmedian(np.abs(diag))),
+                                                          "share_pred_looser_than_oracle": float(np.nanmean(diag < 0))}}
+
+    def rtols(m, idx):
+        return np.clip(10.0 ** logp[idx] * m, 1e-13, 1e-1)
+    cols, rows = {"row_id": led["row_id"].to_numpy()}, []
+    with Pool(a.n_jobs) as pool:
+        cache = {}
+
+        def viol(m):
+            if m not in cache:
+                r = dr.scipy_rows_per_row_rtol(pool, S[cal], T[cal], ref[cal], rtols(m, cal), "RK45", n_jobs=a.n_jobs)
+                cache[m] = (int((~r["met"]).sum()), float(np.nanmean(r["nfev"])))
+                print(f"  m {m:.4e}: {cache[m][0]} violations, mean nfev {cache[m][1]:.0f} ({time.time() - t0:.0f}s)", flush=True)
+            return cache[m][0], len(cal)
+        eqr, eqr_chain = sc.equal_risk_rtol(viol, target, grid=M_GRID_LEARNED)
+        cert = pc.certify_sequence(viol, M_GRID_LEARNED, pc.ALPHA, pc.DELTA, "fixed_sequence")
+        report.update({"equal_risk_m": eqr, "eqr_chain": eqr_chain, "certified_m": cert["chosen_scale"], "cert_chain": cert["chain"]})
+        save_json(report, os.path.join(out, "learned_rtol_report.json"))
+        for tag, m in (("eqr", eqr), ("cert", cert["chosen_scale"])):
+            if m is None:
+                continue
+            r = dr.scipy_rows_per_row_rtol(pool, S[ev], T[ev], ref[ev], rtols(m, ev), "RK45", n_jobs=a.n_jobs)
+            cost = r["nfev"] + oh
+            cols.update({f"learned_{tag}_nfev": r["nfev"], f"learned_{tag}_met": r["met"], f"learned_{tag}_err_km": r["err"]})
+            rows.append(_comparator_summary(led, led["C_ml_tot"].to_numpy(float), led["meets_tol"].astype(bool).to_numpy(), cost, r["met"], r["capped"],
+                                            f"learned-rtol RK45 ({tag}, overhead {oh:.2f} charged)", a.n_boot, {"m": m}))
+            print(rows[-1]["comparison"], round(rows[-1]["share"], 4), round(rows[-1]["aggregate_ratio"], 4), round(rows[-1]["comparator_violation_rate"], 4), flush=True)
+    pd.DataFrame(cols).to_csv(os.path.join(out, "eval_columns.csv.gz"), index=False)
+    tab = pd.DataFrame(rows)
+    tab.to_csv(os.path.join(out, "learned_rtol_summary.csv"), index=False)
+    report["wall_seconds"] = time.time() - t0
+    save_json(report, os.path.join(out, "learned_rtol_report.json"))
+    pd.set_option("display.width", 250)
+    print(tab[["comparison", "m", "comparator_violation_rate", "policy_violation_rate", "share", "aggregate_ratio", "aggregate_ratio_ci95_lo", "aggregate_ratio_ci95_hi", "mcnemar_p"]].round(4).to_string())
+    print(report["diagnostic_eval_log10_oracle_minus_pred"])
+    print("wrote", out)
+
+
+def _rk8_job(args):
+    from orbit_ml_cr3bp import defense_runs as dr
+    s, T, ref = args
+    return dr.oracle_ds("rk4", s, T, ref, MU), dr.oracle_ds("rk8", s, T, ref, MU)
+
+
+def cmd_rk8s(a):
+    """P23: oracle fixed steps of RK4 and RK8 in Sundman time on 300 orbits (exploratory)."""
+    from multiprocessing import Pool
+    from orbit_ml_cr3bp import deploy_d as dd
+    out = _make_run_dir(os.path.join(ROOT, a.out_dir), "rk8s", a)
+    t0 = time.time()
+    U, cal, ev, ref, led, rep, _fz, run = _sealed_set("d_replication")
+    S, T = dd.states_T(U)
+    pick = np.sort(np.random.RandomState(0).choice(len(ev), a.n_orbits, replace=False))
+    rows_ = ev[pick]
+    with Pool(a.n_jobs) as pool:
+        res = pool.map(_rk8_job, [(S[i], float(T[i]), ref[i]) for i in rows_], chunksize=1)
+    L = led.set_index("row_id").loc[U.iloc[rows_]["row_id"].to_numpy()].reset_index()
+    D = pd.DataFrame({"row_id": L["row_id"], "sim_time": L["sim_time"], "h_band": L["h_band"], "rk4_ds": [r[0]["ds"] for r in res], "rk4_evals": [r[0]["evals"] for r in res],
+                      "rk8_ds": [r[1]["ds"] for r in res], "rk8_evals": [r[1]["evals"] for r in res], "rk4_censored": [r[0]["censored"] for r in res],
+                      "rk8_censored": [r[1]["censored"] for r in res], "C_s_star_sealed": L["C_s_star"], "RK45_spec_nfev": L["RK45_spec_nfev"],
+                      "DOP853_spec_nfev": L["DOP853_spec_nfev"]})
+    D.to_csv(os.path.join(out, "rk8s_orbits.csv"), index=False)
+    ok = D["rk4_evals"].notna() & D["rk8_evals"].notna()
+    d = D[ok]
+    rep_ = {"label": "POST HOC, EXPLORATORY (posthoc/README.md P23)", "n_orbits": int(len(D)), "n_both_labels": int(ok.sum()),
+            "share_rk4_cheaper_than_RK45_spec": float((d["rk4_evals"] < d["RK45_spec_nfev"]).mean()),
+            "share_rk8_cheaper_than_RK45_spec": float((d["rk8_evals"] < d["RK45_spec_nfev"]).mean()),
+            "share_rk4_cheaper_than_DOP853_spec": float((d["rk4_evals"] < d["DOP853_spec_nfev"]).mean()),
+            "share_rk8_cheaper_than_DOP853_spec": float((d["rk8_evals"] < d["DOP853_spec_nfev"]).mean()),
+            "median_log10_rk8_over_rk4": float(np.median(np.log10(d["rk8_evals"] / d["rk4_evals"]))),
+            "median_log10_rk4_over_sealed_C_s_star": float(np.median(np.log10(d["rk4_evals"] / d["C_s_star_sealed"]))),
+            "share_rk4_cheaper_than_RK45_spec_sealed_label": float((d["C_s_star_sealed"] < d["RK45_spec_nfev"]).mean()),
+            "by_h_band": {g: {"n": int(len(x)), "rk4_vs_RK45": float((x["rk4_evals"] < x["RK45_spec_nfev"]).mean()), "rk8_vs_RK45": float((x["rk8_evals"] < x["RK45_spec_nfev"]).mean()),
+                              "rk8_vs_DOP853": float((x["rk8_evals"] < x["DOP853_spec_nfev"]).mean()), "median_log10_rk8_over_rk4": float(np.median(np.log10(x["rk8_evals"] / x["rk4_evals"])))}
+                          for g, x in d.groupby("h_band")},
+            "censored": {"rk4": int(D["rk4_censored"].sum()), "rk8": int(D["rk8_censored"].sum())}, "wall_seconds": time.time() - t0}
+    save_json(rep_, os.path.join(out, "rk8s_report.json"))
+    import json
+    print(json.dumps(rep_, indent=1))
+    print("wrote", out)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -628,6 +1213,32 @@ def main():
         sp.add_argument("--out_dir", default=OUT)
         sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
         sp.set_defaults(fn=fn)
+    for nm, fn in (("risk", cmd_risk), ("waterfall", cmd_waterfall), ("overhead", cmd_overhead), ("concentration", cmd_concentration),
+                   ("timescale", cmd_timescale), ("mixture_curve", cmd_mixture_curve), ("multiplicity", cmd_multiplicity), ("bca", cmd_bca),
+                   ("refs", cmd_refs), ("ood", cmd_ood)):
+        sp = sub.add_parser(nm)
+        sp.add_argument("--out_dir", default=OUT)
+        sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+        sp.set_defaults(fn=fn)
+    for nm, fn, methods in (("sundman_adaptive", cmd_sundman_adaptive, ["RK45", "DOP853"]), ("multistep", cmd_multistep, ["LSODA"])):
+        sp = sub.add_parser(nm)
+        sp.add_argument("--out_dir", default=OUT)
+        sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+        sp.add_argument("--n_jobs", type=int, default=8)
+        sp.add_argument("--methods", nargs="+", default=methods)
+        sp.add_argument("--smoke", type=int, default=0)
+        sp.set_defaults(fn=fn)
+    sp = sub.add_parser("learned_rtol")
+    sp.add_argument("--out_dir", default=OUT)
+    sp.add_argument("--n_boot", type=int, default=pm.N_BOOT)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.add_argument("--smoke", type=int, default=0)
+    sp.set_defaults(fn=cmd_learned_rtol)
+    sp = sub.add_parser("rk8s")
+    sp.add_argument("--out_dir", default=OUT)
+    sp.add_argument("--n_orbits", type=int, default=300)
+    sp.add_argument("--n_jobs", type=int, default=8)
+    sp.set_defaults(fn=cmd_rk8s)
     sp = sub.add_parser("seeds")
     sp.add_argument("--seeds", type=int, nargs="+", default=[42, 1, 2, 3, 4, 5])
     sp.add_argument("--out_dir", default=OUT)

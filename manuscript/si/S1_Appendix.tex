@@ -1,0 +1,340 @@
+% S1 Appendix of the manuscript (manuscript/main.tex). Build: pdflatex S1_Appendix.tex (twice). Every number is read from the sealed reports
+% (archive/study_a/RESULTS_REPORT.md via STUDY_A_SUMMARY.md, part_b/RESULTS_PART_B.md, part_b/RESULTS_E3C_MU_DIAL.md, part_c/RESULTS_PART_C.md,
+% part_c/PART_C_LOG.md, part_d/RESULTS_PART_D.md, part_d/PART_D_LOG.md), the preregistrations and their Deviations sections, the seal manifests
+% (FREEZE*.json) and, for the numbers labelled post hoc, posthoc/results (definitions in posthoc/README.md).
+\documentclass[10pt,letterpaper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\setlist{nosep,leftmargin=1.4em}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\tol}{\varepsilon_{\mathrm{tol}}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\raggedright
+
+\begin{document}
+
+{\Large\textbf{S1 Appendix. Secondary methods and results}}
+
+\smallskip
+Supporting information for ``A single pre-run time step loses to adaptive integration in the Earth--Moon three-body problem; in Sundman time it
+wins on most trajectories but not in total cost''. Section numbers below are those of this appendix; ``post hoc'' marks analyses of the sealed
+ledgers defined after all studies had run (\texttt{posthoc/README.md} in the repository), and ``exploratory'' marks analyses outside every
+preregistered test family. File paths refer to the deposited repository.
+
+\tableofcontents
+
+\section{Provenance of the preregistrations}
+Each study was preregistered in a document whose text above a ``Deviations'' heading was hashed (SHA-256) together with every source file, the
+frozen models and the datasets by a seal script. The confirmatory runner of each study refused to start a step if any hash differed and logged
+each step once.
+
+{\small
+\begin{tabular}{|l|L{1.75in}|L{0.95in}|L{2.6in}|}
+\hline
+\textbf{Study} & \textbf{Document} & \textbf{Sealed (UTC)} & \textbf{Recorded state of the code} \\ \hline
+A & \texttt{PREREGISTRATION.md} & 2026-10-23 23:00:16 & code hash only (\texttt{freeze\_snapshot.py}); seal committed as \texttt{912af65} \\ \hline
+B & \texttt{part\_b/PREREGISTRATION\_B.md} & 2026-10-25 23:01:57 & git \texttt{a3ee296}; a first seal (\texttt{FREEZE\_B.v1.json}) was replaced before any confirmatory step (Section~\ref{sec:dev}) \\ \hline
+C & \texttt{part\_c/PREREGISTRATION\_C.md} & 2026-10-27 01:37:44 & git \texttt{ea3b6df}, clean tree \\ \hline
+D & \texttt{part\_d/PREREGISTRATION\_D.md} & 2026-10-28 21:37:15 & git \texttt{4586803} plus 23 uncommitted paths, among them the Study D code, recorded by hash only; 83 source files and 60 frozen files hashed \\ \hline
+\end{tabular}}
+
+\textbf{What can and cannot be verified.} The seals are local hash manifests in a git repository that was not mirrored to a public host during
+the work. Commit dates are set by the author's machine, so the order of events (design, seal, confirmatory run) cannot be confirmed by a third
+party from the repository alone; the hashes only show that the sealed files have not changed since the manifest was written. The Study D seal is
+weaker than the others because the Study D code was not committed at the seal; its hashes sit in a file that was committed later. Nothing in
+the repository indicates that a sealed file was changed, but these preregistrations should be read as internal, not as registered reports.
+The deposit of the repository with a DOI (manuscript, Data availability) timestamps its state at deposit; it cannot backdate the seals.
+
+\section{Dated deviations of every study}
+\label{sec:dev}
+Each item is quoted in substance from the Deviations section of the study's preregistration or from its log; dates are those recorded there.
+
+\subsection{Study A}
+\begin{itemize}
+\item 2026-10-23, before the seal: the certification of the safety scales, the global fixed step and the adaptive tolerance was changed from a
+fixed sequence starting at the smallest value to a Bonferroni rule over the grid (largest certified value). Runs that hit the step cap counted as
+violations and made the smallest scale the worst one (leapfrog 2.7\% step-cap failures at scale 0.02 in a 300-row test), so the fixed sequence
+could certify nothing. Also before the seal: a random rather than grouped train/held-out split; adaptive solves capped at 2,000,000 RHS
+evaluations.
+\item 2026-10-23, before the seal: the wording of H1 was corrected to the implemented cost basis (H1 charged only the FTLE feature; the model's
+prediction cost is charged only in H1$'$).
+\item 2026-10-23: \textbf{H1$'$a and H1$'$b were added after development data had been seen.} On 80 development trajectories the FTLE feature
+alone cost more than a whole DOP853 solve on every one (median factor about 70), so H1 could not be supported as written; batched model inference
+was measured at about 730 RHS-equivalents against a median DOP853 solve of about 254 evaluations, so H1$'$a was expected to fail. H1 itself was not
+changed.
+\item 2026-10-23: the regressor (gradient-boosted, quantile 0.1) was pinned for every command, because the earlier run had evaluated a different
+model on the locked set than the one developed.
+\end{itemize}
+
+\subsection{Study B}
+\begin{itemize}
+\item 2026-10-25, before any confirmatory step and before any confirmation or lock outcome had been analysed: the first seal was replaced. The
+runner wrote the lock-set outputs into the confirmation-set folder (so a later step could have read the wrong policy), and three presentation
+functions were added to the figure script. The preregistration text was unchanged (same hash).
+\item 2026-10-26, after every confirmatory step had run: the figure script was edited for legibility only.
+\item 2026-10-26, after the confirmatory run and before any result existed: two exploratory studies (the lookahead study E3c and the mass-ratio
+dial E7) were preregistered in the Deviations section, with expectations and an alternative stated in advance (Section~\ref{sec:studyb}).
+\item 2026-10-26, after they ran: executed as written, except that intervals were not computed for the pinball loss and the 90th percentile of the
+error, and two runs that failed on a missing import and a column name were rerun with no change to any computed quantity.
+\end{itemize}
+
+\subsection{Study C}
+Decisions made during development, before the seal, that departed from the study plan (all recorded in \texttt{part\_c/PART\_C\_LOG.md}):
+\begin{itemize}
+\item 2026-10-26: \textbf{the overhead gate for model selection was raised from 10 to 20 RHS-equivalents}, after the timing measurements and after
+reading the integration-only costs of the selection stage but before any total-cost ranking. No candidate met 10 (the floor was 10.7 for
+state-only features, because the periapsis features alone cost 3.7--3.9). The eligible set was fixed by the timing table alone.
+\item 2026-10-26: \textbf{the Sundman-time label missed its acceptance criterion}: 9 of 200 pilot trajectories (4.5\%; 95\% interval 2.1--8.4\%)
+were non-monotone in the fictitious step on a dense sweep, against the plan's $<2\%$, and 2.0\% had a failing step inside the window the label
+claims to certify. The study proceeded because the plan's go rule did not include this criterion (Section~\ref{sec:labels}).
+\item 2026-10-26: the leapfrog arm was dropped from the physical-time policy after a development comparison (Section~\ref{sec:leapfrog}).
+\item 2026-10-26: the quantile level of the Sundman-time model was chosen on the selection set (0.2; the plan's 0.1 had not been tuned).
+\item 2026-10-26: the best abstention threshold of the physical-time policy ($\log_{10}\hat\tau < -1.0$) was \textbf{at the edge of its preregistered
+grid}; a better threshold may exist and was not searched, and the combination of the step-over guard with abstention was not run.
+\item The bisection shortcut of the fixed-sequence certificate was used for selection only; every confirmatory certificate used the exact rule.
+\end{itemize}
+After the seal:
+\begin{itemize}
+\item 2026-10-27, after every confirmatory step had run: one exploratory addition (an arm of E3c with the periapsis features at no lookahead cost),
+written before its code existed, with its expectation.
+\item 2026-10-27: a figure title was edited for legibility.
+\end{itemize}
+
+\subsection{Study D}
+Before the seal (\texttt{part\_d/PART\_D\_LOG.md}, sections 4 and 5):
+\begin{itemize}
+\item The kernels of the compiled wall-clock comparison (D2) were \textbf{corrected twice in dry runs on the Study D selection set} before the seal
+(Section~\ref{sec:d2}). Neither discarded kernel produced a confirmatory number.
+\item The D5 analysis gained its cluster bootstrap and the D10 and IAS15 commands were written; the expectations of the preregistration were filled
+in from the dry runs.
+\item The seal recorded the commit plus the hashes of \textbf{23 uncommitted paths}, among them the Study D code (Section~1).
+\end{itemize}
+After the seal:
+\begin{itemize}
+\item 2026-10-28, before the D2 step: the 1-minute load average did not fall below the guard of 1.5 (it sat at 1.49--1.50 with the processor 94.5\%
+idle), so the step was launched with the guard \textbf{relaxed to 1.6}. The load recorded at the start of the step was 1.499, below the original
+guard, so the relaxation turned out not to be needed; it is recorded because the step was launched with it.
+\item 2026-10-29, after every confirmatory step had run: the per-stratum certified adaptive comparator (D4b) was written \emph{after} the D4 result was
+known and because of it; it is post hoc. A figure legend was moved.
+\item The independent reference method of the exploratory check D12 was changed from Radau (which did not finish within 10 minutes at $10^{-13}$) to
+LSODA before any use.
+\end{itemize}
+
+\subsection{Post hoc analyses}
+The post hoc analyses of 2026-10-30 (P1--P9) and 2026-11-03 (P10--P23) have their definitions and their own dated deviations in
+\texttt{posthoc/README.md}. Their numbers are reported in the manuscript next to the sealed numbers they qualify and in S4 Table; none replaces a
+sealed number or changes a preregistered verdict.
+
+\section{Reference solutions}
+\label{sec:refs}
+The reference is SciPy's DOP853 at relative and absolute tolerances of $10^{-13}$, maximum step 0.01 TU, with dense output.
+\begin{itemize}
+\item Study B: a Radau IIA solution at $10^{-12}$ agreed with the reference to at most 0.003 km on 600 usable trajectories, and the event type and
+time agreed on all of 300 terminating trajectories.
+\item Every trajectory of Studies B--D carries a second DOP853 solution ($10^{-12}$, maximum step 0.005 TU). Post hoc (P18), the largest distance
+between the two final positions over all usable trajectories was 2.01 km on the Study B confirmation set (one trajectory above 1 km, none above
+10 km; median $1.4\times10^{-8}$ km), 0.050 km on the Study C confirmation set, 0.056 km on the Study C lock set, 0.135, 0.115 and 0.253 km on the
+Study D confirmation, replication and lock sets: every one at least 50 times below the 100 km tolerance, and outside Study B at least 390 times.
+\item Study D (D12, exploratory): the 163 trajectories with the largest $\lambda T$ ($\ge 10.8$, the top 1\%) were re-integrated with DOP853 at the
+tightest tolerance SciPy accepts (a requested $10^{-14}$ is raised to machine precision) with steps of at most 0.002 TU, and with LSODA at $10^{-13}$;
+the largest disagreements with the reference were 0.007 km and 0.23 km. No label flipped. The policy violated on 41/163 (25.2\%) of these
+trajectories, so its risk in the chaotic tail is its own error, not the reference's.
+\item Periodic orbits (D5): a run was excluded when a second reference (DOP853, $10^{-12}$, step at most 0.004 TU) disagreed with the first by more than
+5 km (102 of 1,749 runs).
+\end{itemize}
+
+\section{Step-size labels and non-monotone labels}
+\label{sec:labels}
+The label is the largest step on a geometric grid (ratio $2^{1/4}$) that passes together with its eight finer neighbours, refined by up to six
+points towards the next coarser grid value while every finer refinement point still passes; the physical-time grid starts at $\min(T, 2\,\mathrm{TU})$,
+the fictitious-time grid spans $[10^{-4}, 4]$. A label is censored when the largest grid value passes.
+\begin{itemize}
+\item Study A (H4): 3 of 200 trajectories (1.5\%; 95\% interval 0.3--4.3\%) had a non-monotone pass/fail sequence on a dense sweep of the physical RK4
+step; the median relative disagreement of the halving search with the dense sweep was 0.82\%, and of the monotone label 0.80\%.
+\item Study C pilot (Sundman time): 9 of 200 (4.5\%; 2.1--8.4\%; 6\% at $\tau_c = 1$), above the plan's acceptance criterion of $<2\%$ (a recorded
+deviation, Section~\ref{sec:dev}); 2.0\% had a failing step inside the label window.
+\item Study D (D10, exploratory): 20 of 500 (4.0\%; 2.5--6.1\%). The non-monotone labels were concentrated at short horizons (8\% at 1--3 TU, none at
+8--20 TU), far from the Moon (7\% beyond 0.8 DU against 1\% below 0.05 DU) and at low $\lambda T$ (median 2.5 against 3.9), not near collisions.
+The suspicion that the landing steps cause them is only weakly supported: the number of physical-time landing steps changed by 0.55 at a
+pass/fail flip against 0.49 between any two neighbouring steps.
+\end{itemize}
+\textbf{Why non-monotone labels do not threaten the certificate.} The label is only the training target. The safety scale is certified on
+end-to-end runs of the whole policy (the predicted step times the scale), and each calibration run is judged by its own final error, so a
+mislabelled trajectory can make the policy more conservative or more expensive but cannot make the certified violation rate wrong.
+
+\section{The Sundman-time integrator}
+\label{sec:sundman}
+\textbf{Landing.} Before each fictitious step the predicted physical step $g(\boldsymbol{X}_n)\Delta s$ is compared with the remaining time. If
+$t_n + 1.5\,g\Delta s \ge T$, the run finishes with $n_f = \lceil (T-t_n)/(g\Delta s)\rceil$ classical RK4 steps of size $(T-t_n)/n_f$ in physical
+time, so the last steps are no longer than the local transformed step and no root finding is needed. A fictitious step whose realized $t$ would
+pass $T$ is discarded (its four evaluations stay counted) and the run lands the same way. Every step, fictitious or landing, costs four RHS
+evaluations.
+
+\textbf{Order.} On a vertical $L_2$ periodic orbit (stability index 1.0, one period, $T = 6.3$) the Sundman-time RK4 converged at fourth order to
+the reference as the step shrank (673 km at $\Delta s = 0.1$, 3.9 km at 0.03, 0.04 km at 0.01); a unit test checks the order on random states.
+
+\textbf{The cap $\tau_c$.} In the Study C pilot the oracle fixed Sundman step was cheaper than the oracle-tuned RK45 on 39.6\%, 45.9\% and 49.5\% of
+trajectories for $\tau_c = 0.5$, 1 and 2, and $\tau_c = 2$ was chosen. In the exploratory D10 sweep on 1,500 trajectories of the Study D replication set
+($n = 1{,}136$ with an oracle-tuned RK45 cost) the shares were 47.5\%, 51.6\%, 53.2\% and 54.0\% for $\tau_c = 1$, 2, 4 and 8 (95\% intervals about
+$\pm3$ points). The narrow threshold result of C3(a) (51.1\%, and 50.6\% on replication) therefore depends on $\tau_c$.
+
+\section{Periapsis features}
+\label{sec:peri}
+For body $i$ ($\mathrm{GM}_1 = 1-\mu$ at $(-\mu,0,0)$, $\mathrm{GM}_2 = \mu$ at $(1-\mu,0,0)$) let $\boldsymbol{r}$ be the position relative to the body and
+$\boldsymbol{v} = (\dot x - r_y,\ \dot y + r_x,\ \dot z)$ the inertial velocity relative to it. With $\boldsymbol{h} = \boldsymbol{r}\times\boldsymbol{v}$,
+$\boldsymbol{e} = \boldsymbol{v}\times\boldsymbol{h}/\mathrm{GM} - \boldsymbol{r}/|\boldsymbol{r}|$ and $e = |\boldsymbol{e}|$, the periapsis radius is
+$r_p = |\boldsymbol{h}|^2/(\mathrm{GM}(1+e))$, floored at $10^{-8}$ DU. The time to the next periapsis $t_p$ follows from the mean anomaly (elliptic) or the
+hyperbolic anomaly (hyperbolic) as in the manuscript, Eq~(peri). Edge cases:
+\begin{itemize}
+\item near-circular orbits, $e < 10^{-8}$: $t_p = 0$ and $r_p = |\boldsymbol{r}|$ (flag 1);
+\item near-parabolic orbits, $|1-e| < 10^{-6}$: the time follows from Barker's equation, and a receding parabola has no future periapsis (flag 2);
+\item an outgoing hyperbola has no future periapsis ($t_p = \infty$).
+\end{itemize}
+Per body the features are $\log_{10} r_p$, $\log_{10}\tau_p$ with $\tau_p = \sqrt{r_p^3/\mathrm{GM}}$, $\min(t_p/T, 2)$ (2 meaning beyond the horizon or
+no future periapsis), the indicator of $t_p \le T$, the logarithm of the current distance (relative to the Hill radius $(\mu/3)^{1/3}$ for the Moon) and
+$e$; the thirteenth feature is $\log_{10}$ of the smallest over the two bodies of $\tau_p$ if the periapsis is reached before $T$, else
+$\sqrt{|\boldsymbol{r}|^3/\mathrm{GM}}$. The flags are not model inputs. The features are exact for two-body motion only. The free crash flag
+used by the D4 strata (osculating periapsis inside a collision radius, reached before $T$) had a recall of 81.1\% and a precision of 96.3\% for the
+terminating trajectories of the Study C confirmation set and fired on 0.73\% of usable ones.
+
+\section{Certification}
+\label{sec:cert}
+\textbf{Fixed sequence (Studies C and D).} For the grid $s_1 < \dots < s_{28}$ ($s_k = 0.1\cdot2^{(k-1)/8}$, $k \le 27$, and $s_{28} = 1$), each value is
+run end to end on the $n$ calibration trajectories in ascending order; with $V(s_k)$ violations, $p(s_k) = \Pr[\mathrm{Bin}(n, 0.05) \le V(s_k)]$; the
+sequence stops at the first $p(s_k) > \delta = 0.1$ and the certified scale is the last value before it. Calibration violations include runs that
+collided, escaped, were non-finite, hit the step cap, or abstained to a fallback solver that then violated.
+
+\textbf{Bonferroni (Studies A and B).} Each of 18 values between 0.02 and 1 tested alone at level $\delta/18$; the largest certified value kept. The
+adaptive solvers' certified tolerance used the same rule on 18 log-spaced relative tolerances from $10^{-12}$ to $10^{-3}$ in every study.
+
+\textbf{Equal risk.} The loosest relative tolerance on the 18-value grid whose calibration violation rate does not exceed the policy's calibration
+violation rate, scanning from the loosest value, refined by four bisections in $\log_{10}$ towards the next looser grid value.
+
+\textbf{Symmetric certification (post hoc, P7).} The solvers certified by the policy's rule (fixed sequence, tightest first, full $\delta$) on
+$10^{-10+k/8}$, $k = 0,\dots,56$; see the manuscript, Post hoc checks.
+
+\textbf{Strata of D4.} Base cells: regime group (I; II--III; IV--V) $\times$ lunar class (predicted collision by the free crash flag; osculating lunar
+periapsis below 0.05 DU reached before $T$; 0.05--0.17 DU reached before $T$; far) $\times$ horizon band (1--3, 3--8, 8--20 TU), 36 cells. A base
+cell with fewer than 400 calibration trajectories first joins the other small cells of the same regime group and lunar class along the horizon
+axis; if that union is still below 400 it joins the small remainder of the same regime group along the lunar-class axis; anything still below 400
+is pooled. The rule is fixed in advance and applied to the calibration counts. A stratum with fewer than 150 calibration trajectories, or without
+a certified scale, would have abstained to RK45 at the certified tolerance (none did). Each stratum certifies its scale by the fixed sequence at
+level $\delta/G$ ($G = 17$). Strata with at least 300 evaluation trajectories enter the hypothesis; each is tested by the exact one-sided binomial
+test of a rate of at least 7\%, and the intersection--union p-value is the largest. At a 5\% level the same strata give $p = 0.021$ (post hoc, P16).
+
+\section{The leapfrog integrator}
+\label{sec:leapfrog}
+A finite-difference test of $\Phi^{\mathsf T} J\Phi - J$ in the canonical variables of the rotating frame on 100 states gave a median defect of
+$1.1\times10^{-10}$ for the leapfrog step at every step size, the finite-difference floor; RK4's defect was $5\times10^{-5}$ at $\Delta t = 0.2$ and
+$4\times10^{-8}$ at 0.05. Leapfrog was dropped in Study C after a comparison on development data: RK4 alone (scale 0.80,
+violations 4.5\%, median integration cost 472) against RK4 with a gated leapfrog and one common scale (scale 0.734, violations 3.8\%, median
+integration cost 520). Once the certificate covered the whole policy, the leapfrog's cheaper step did not pay for the lower common scale it forced.
+
+\section{Terminating trajectories}
+\label{sec:term}
+The 3,808 terminating trajectories of the Study C confirmation set (19.0\% of 20,000; the reference collides or escapes before $T$) were run exactly
+like usable ones in a separate ledger. The Sundman-time policy ended in the same event type as the reference on 3,805/3,808 (99.9\%: all of 237
+escapes, 99.8\% of 600 collisions with the Earth, all of 2,971 collisions with the Moon) and never ran through a body. The event time agreed with the
+reference's within $\tol/|\boldsymbol v|$ (the strict rule of the plan) on only 46.7\% (Moon collisions 56.7\%, Earth 15.2\%, escapes 0.4\%), and the
+reference event lay inside the detecting step on 96.8\%. The physical-time policy's abstention rule sent 85.4\% of these trajectories to RK45; of the
+555 it ran, the event type matched on 93.3\%, but only on 25.5\% of the 47 Moon collisions (51\% were never detected). The certificate of the
+manuscript is therefore conditional on survival to $T$; the full-population question is Study E's E4.
+
+\section{Endpoint-only audit}
+\label{sec:audit}
+1,000 Sundman-time runs of the Study C confirmation set were re-run with the error checked at 50 checkpoints on the dense reference. On 2.6\%
+(1.7--3.8\%) the largest checkpoint error exceeded the tolerance while the final error did not; the largest error exceeded the tolerance on 7.7\% of
+the audited runs against 5.1\% for the final error alone, and nine merged cells exceeded the preregistered 2\% rule. For the physical-time policy the
+first share was 0.5\% (0.2--1.2\%). A run judged by its final position can be wrong in mid-run 2--3 points more often than the certificate states.
+
+\section{Exploratory studies of Study B}
+\label{sec:studyb}
+\textbf{Lookahead (E3c).} An RK45 solve over the first fraction $f$ of the horizon supplied closest approaches and timescales as features (Study B
+exploration set, RK4 only, scale certified by the sealed rule). The median error of the predicted step fell steadily with $f$, from 0.32 dex
+($f = 0$) to 0.07 dex ($f = 1$), with no early plateau. Lookahead plus integration was cheaper than the certified RK45 on 27.0\% of trajectories at
+$f = 0$, 29.5\% at $f = 0.05$ and 6.9\% at $f = 1$, and below 1\% against the oracle-tuned RK45 at every $f$ (model cost excluded); the lookahead itself
+cancels the saving.
+
+\textbf{Mass-ratio dial (E7).} The same study at $\mu = 10^{-6}$, $10^{-4}$, $10^{-3}$, 0.01215 and 0.05 (8,000 trajectories each, sampling scaled by the
+Hill radius, tolerance 100 km in Earth--Moon units). The median paradigm gap rose with $\mu$ (+0.06, +0.10, +0.11, +0.17 and +0.21 dex) together
+with the median timescale range (1.53 to 2.62), and the slope of the gap on $\log_{10}\Delta_\tau$ was 0.71--0.93; the violation rate (2.7--3.7\%) did
+not trend. The cross-mass-ratio transfer question was not tested.
+
+\section{Secondary results of Study A}
+\label{sec:studya}
+\begin{itemize}
+\item H2: certified scales gave 17/500 (3.4\%; 1.99--5.39\%) violations for RK4 and 19/498 (3.8\%; 2.31--5.89\%) for leapfrog on the locked audit rows,
+against 11.2\% and 14.5\% without the scale (Euler 27.1\%). Upper bounds above 5\% are consistent with a certificate that allows the true rate to
+exceed 5\% with probability up to 0.1.
+\item H3: removing FTLE changed the RK4 $R^2$ by $-0.25$ ($-0.54$ to 0.04) with the pinned model and by $-0.07$ ($-0.14$ to 0.002) with a random forest,
+and selection accuracy by 0.008 ($-0.009$ to 0.024) and $-0.001$ ($-0.011$ to 0.009). Every interval included zero; the point estimates are losses.
+\item H4: labels, Section~\ref{sec:labels}.
+\item H5: the conformal error-model recommender violated on 15 of 86 covered test trajectories (17.4\%; 10.1--27.1\%), above its 10\% target, and was
+never cheaper than RK45 or DOP853.
+\item H6: crash or escape prediction with FTLE reached an AUC of 0.993 (recall 86.1\%) and without it 0.780 (recall 19.9\%); the FTLE is integrated over
+the same horizon as the event it predicts.
+\item H7: median fitted convergence slopes were 1.000 (Euler), 2.000 (leapfrog) and 4.017 (RK4).
+\item H1$'$b (post hoc comparator): the model was cheaper than the best single certified fixed RK4 step on 89.2\% and than the best fixed leapfrog step on
+98.1\% of trajectories.
+\item Sun--Earth ($\mu = 3.00348\times10^{-6}$, 5,000 trajectories, tolerance 38,917 km in the same normalized units): integrator selection reached
+91.8\% (89.2--94.4\%) against 61.1\% (52.1--70.0\%) for always choosing RK4, within that system. Transfer between the systems did not beat always-RK4
+in either direction (Earth--Moon to Sun--Earth 61.8\% against 61.1\%; Sun--Earth to Earth--Moon 81.9\% against 86.1\%).
+\end{itemize}
+
+\section{IAS15 (exploratory)}
+\label{sec:ias15}
+REBOUND 5.2.2 (inertial frame, the Pham--Rein--Spiegel adaptive step criterion) on 300 evaluation trajectories of the Study D confirmation set, at
+the loosest accuracy parameter $\epsilon$ that met 100 km per trajectory, searched up to $\epsilon = 0.1$. The median chosen $\epsilon$ was the edge of the
+search ($10^{-1}$), so the comparison is not at a converged setting. A run took a median of 217 $\mu$s (11 steps) against 6.4 $\mu$s for the compiled
+policy and 9.2 $\mu$s for compiled DP5(4) on the same trajectories, never faster on a trajectory. The IAS15 times include REBOUND's per-call overhead
+from Python, and REBOUND exposes no force-evaluation counter, so the comparison is wall time only and bounds the algorithmic gap from above. IAS15 is
+designed for machine-precision integration; we report this as an answer to the question of whether it was tried, not as a competitor, and draw no
+conclusion from it in the manuscript.
+
+\section{Compiled timing: the kernel chronology}
+\label{sec:d2}
+On the Study D selection set, before the seal: (1) the first dry run used the Study C integrator kernel for the policy, which took 26.5 ns per
+RHS-equivalent against 18.6 ns for compiled DP5(4), because the Sundman right-hand side evaluated extra square roots and the landing steps allocated
+arrays (throughput ratio 0.58); (2) a micro-optimized policy kernel together with a run-time switch in the comparators' right-hand side made the
+\emph{comparators} 50\% slower through a dispatch layer, and its ratio of 1.04 was discarded; (3) the reported version compiles both arms with the
+right-hand side as a compile-time constant (policy 22.6 ns, DP5(4)-PI 23.1 ns per RHS-equivalent in the dry run). The confirmatory D2 step ran once,
+after the seal, with version (3).
+
+\section{Literature search}
+\label{sec:lit}
+The literature overview (\texttt{LITERATURE\_REVIEW.md}) was compiled on 2026-10-29 from a web search, with each item marked as verified or
+unverified against the publisher's page. The databases and queries were not recorded, so the search cannot be reproduced exactly; the statement in
+the manuscript that we are not aware of an earlier study of this question rests on that search and on the sources cited there.
+
+\section{Index of the post hoc analyses}
+\label{sec:posthoc}
+\begin{tabular}{|l|L{5.4in}|}
+\hline
+P1--P3 & ratio of totals, mean log ratio and share by horizon, regime and family; declared mixtures; one overhead on every column \\ \hline
+P4 & three quarters on one dataset \\ \hline
+P5 & the empty cell of Fig~4 \\ \hline
+P6 & fit-seed variability \\ \hline
+P7, P8 & symmetric comparator certification; absolute tolerance and $\delta = 0.05$ \\ \hline
+P10 & realized comparator risk on the evaluation trajectories, McNemar tests, violation severity \\ \hline
+P11 & same-subset decomposition of the cost gap \\ \hline
+P12 & Study B at other overheads; the Sundman policy at multiples of its overhead \\ \hline
+P13 & concentration of cost \\ \hline
+P14 & timescale range and horizon (partial correlation) \\ \hline
+P15 & share and ratio of totals as a function of the near-Moon weight \\ \hline
+P16 & Holm over all 15 tests; D4 at 5\%; resampling floors \\ \hline
+P17 & BCa intervals for the ratio of totals \\ \hline
+P18 & agreement of the two references \\ \hline
+P19 & distance of periodic orbits and section grids to the training set \\ \hline
+P20--P23 & exploratory comparators: adaptive solvers in Sundman time, an adaptive solver with a learned tolerance, LSODA, and a fixed-step
+eighth-order method in Sundman time \\ \hline
+\end{tabular}
+
+\end{document}

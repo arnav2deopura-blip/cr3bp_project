@@ -1,0 +1,36 @@
+  m 1.0000e+00: 754 violations, mean nfev 1098 (6s)
+  m 7.4989e-01: 408 violations, mean nfev 1155 (10s)
+  m 5.6234e-01: 209 violations, mean nfev 1213 (13s)
+  m 4.2170e-01: 126 violations, mean nfev 1275 (17s)
+  m 3.1623e-01: 85 violations, mean nfev 1338 (22s)
+  m 3.6517e-01: 102 violations, mean nfev 1306 (27s)
+  m 3.9242e-01: 111 violations, mean nfev 1290 (33s)
+  m 4.0679e-01: 121 violations, mean nfev 1282 (38s)
+  m 3.9954e-01: 120 violations, mean nfev 1287 (44s)
+  m 1.0000e-03: 0 violations, mean nfev 3770 (57s)
+  m 1.3335e-03: 0 violations, mean nfev 3566 (69s)
+  m 1.7783e-03: 0 violations, mean nfev 3374 (81s)
+  m 2.3714e-03: 0 violations, mean nfev 3193 (92s)
+  m 3.1623e-03: 0 violations, mean nfev 3022 (103s)
+  m 4.2170e-03: 0 violations, mean nfev 2862 (112s)
+  m 5.6234e-03: 0 violations, mean nfev 2711 (122s)
+  m 7.4989e-03: 0 violations, mean nfev 2569 (131s)
+  m 1.0000e-02: 0 violations, mean nfev 2435 (139s)
+  m 1.3335e-02: 0 violations, mean nfev 2310 (147s)
+  m 1.7783e-02: 0 violations, mean nfev 2192 (155s)
+  m 2.3714e-02: 1 violations, mean nfev 2083 (162s)
+  m 3.1623e-02: 3 violations, mean nfev 1979 (169s)
+  m 4.2170e-02: 5 violations, mean nfev 1882 (176s)
+  m 5.6234e-02: 8 violations, mean nfev 1791 (183s)
+  m 7.4989e-02: 12 violations, mean nfev 1705 (189s)
+  m 1.0000e-01: 18 violations, mean nfev 1624 (195s)
+  m 1.3335e-01: 27 violations, mean nfev 1547 (200s)
+  m 1.7783e-01: 42 violations, mean nfev 1474 (206s)
+  m 2.3714e-01: 63 violations, mean nfev 1405 (211s)
+learned-rtol RK45 (eqr, overhead 15.04 charged) 0.3402 0.8858 0.0271
+learned-rtol RK45 (cert, overhead 15.04 charged) 0.3261 0.875 0.0306
+                                         comparison       m  comparator_violation_rate  policy_violation_rate   share  aggregate_ratio  aggregate_ratio_ci95_lo  aggregate_ratio_ci95_hi  mcnemar_p
+0   learned-rtol RK45 (eqr, overhead 15.04 charged)  0.3924                     0.0271                 0.0269  0.3402           0.8858                   0.8731                   0.8983     0.9550
+1  learned-rtol RK45 (cert, overhead 15.04 charged)  0.4217                     0.0306                 0.0269  0.3261           0.8750                   0.8623                   0.8875     0.0161
+{'median': 0.285748034650652, 'median_abs': 0.32400348848073435, 'share_pred_looser_than_oracle': 0.19644168774993878}
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/learned_rtol_20261104T021432Z

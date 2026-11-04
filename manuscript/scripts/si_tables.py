@@ -6,7 +6,8 @@ read from a result file or computed here; nothing is typed by hand. Output: manu
   S3 Table  physics rules of D1: coefficients with bootstrap 95 % intervals (--n_boot refits on resampled training rows), Koenker-Machado R1 on the
             training rows and mean pinball loss on the Study D confirmation set; the linear 33-feature arm (fit quality); the T1 least-squares fit
   S4 Table  post hoc cost summaries (posthoc/README.md): ratio of totals, mean log ratio and share for every sealed ledger and comparator, by horizon
-            band, Hill regime and sampling family, the declared mixtures, and (when their runs exist) the symmetric comparator and fit-seed runs
+            band, Hill regime and sampling family, the declared mixtures, and (when their runs exist) the symmetric comparator and fit-seed runs,
+            and the defense-plan analyses of 2026-11-03 (posthoc/README.md P10-P23)
 
   python si_tables.py [--n_boot 100] [--skip_s3_boot]
 """
@@ -157,6 +158,52 @@ def s4():
         r = json.load(open(os.path.join(tq, "three_quarters_report.json")))
         write(pd.DataFrame([{k: (v if not isinstance(v, list) else f"{v[0]:.4f}-{v[1]:.4f}") for k, v in r.items() if not isinstance(v, dict)}]),
               "S4_Table_posthoc_three_quarters.csv")
+    s4_defense()
+
+
+def _kv(report, drop=("sources", "chain", "eqr_chain", "cert_chain", "strata", "features")):
+    """A nested JSON report as a two-column key / value table (lists of numbers joined, chains and source lists left out)."""
+    rows = []
+
+    def walk(x, pre):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                if k not in drop:
+                    walk(v, f"{pre}.{k}" if pre else str(k))
+        elif isinstance(x, list):
+            if all(isinstance(v, (int, float)) or v is None for v in x):
+                rows.append({"quantity": pre, "value": " to ".join("" if v is None else f"{v:.6g}" for v in x)})
+        else:
+            rows.append({"quantity": pre, "value": x})
+    walk(report, "")
+    return pd.DataFrame(rows)
+
+
+def s4_defense():
+    """The defense-plan analyses of 2026-11-03 (posthoc/README.md P10-P23), when their run folders exist."""
+    csvs = (("risk_*", "risk_summary.csv", "S4_Table_posthoc_comparator_risk.csv"), ("risk_*", "severity.csv", "S4_Table_posthoc_violation_severity.csv"),
+            ("waterfall_*", "waterfall_common_terms.csv", "S4_Table_posthoc_waterfall_common_set.csv"),
+            ("overhead_*", "overhead_overall.csv", "S4_Table_posthoc_overhead_multiples.csv"), ("overhead_*", "overhead_by_h_band.csv", "S4_Table_posthoc_overhead_by_h_band.csv"),
+            ("concentration_*", "concentration_by_h_band.csv", "S4_Table_posthoc_cost_concentration_by_h_band.csv"),
+            ("timescale_*", "timescale_by_h_band.csv", "S4_Table_posthoc_timescale_by_h_band.csv"),
+            ("mixture_curve_*", "mixture_curve.csv", "S4_Table_posthoc_mixture_dial.csv"), ("multiplicity_*", "holm_all15.csv", "S4_Table_posthoc_holm_all15.csv"),
+            ("bca_*", "bca.csv", "S4_Table_posthoc_bca_intervals.csv"), ("refs_*", "refs.csv", "S4_Table_posthoc_reference_agreement.csv"),
+            ("ood_*", "ood_distance.csv", "S4_Table_posthoc_distance_to_training.csv"),
+            ("sundman_adaptive_*", "sundman_adaptive_summary.csv", "S4_Table_posthoc_adaptive_in_sundman_time.csv"),
+            ("learned_rtol_*", "learned_rtol_summary.csv", "S4_Table_posthoc_learned_rtol.csv"), ("multistep_*", "multistep_summary.csv", "S4_Table_posthoc_multistep.csv"))
+    for pat, f, name in csvs:
+        d = latest(f"posthoc/results/{pat}")
+        if d and os.path.exists(os.path.join(d, f)):
+            write(pd.read_csv(os.path.join(d, f)), name)
+    reps = (("waterfall_*", "waterfall_report.json", "S4_Table_posthoc_waterfall.csv"), ("concentration_*", "concentration_report.json", "S4_Table_posthoc_cost_concentration.csv"),
+            ("timescale_*", "timescale_report.json", "S4_Table_posthoc_timescale.csv"), ("multiplicity_*", "multiplicity_report.json", "S4_Table_posthoc_d4_level.csv"),
+            ("rk8s_*", "rk8s_report.json", "S4_Table_posthoc_rk8_sundman_oracle.csv"), ("learned_rtol_*", "learned_rtol_report.json", "S4_Table_posthoc_learned_rtol_settings.csv"),
+            ("sundman_adaptive_*", "sundman_adaptive_report.json", "S4_Table_posthoc_adaptive_in_sundman_time_settings.csv"),
+            ("multistep_*", "multistep_report.json", "S4_Table_posthoc_multistep_settings.csv"))
+    for pat, f, name in reps:
+        d = latest(f"posthoc/results/{pat}")
+        if d and os.path.exists(os.path.join(d, f)):
+            write(_kv(json.load(open(os.path.join(d, f)))), name)
 
 
 def main():

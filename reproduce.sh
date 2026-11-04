@@ -7,7 +7,7 @@
 #   ./reproduce.sh tests        every test suite
 #   ./reproduce.sh b|c|d        the figures of Study B, C or D
 #   ./reproduce.sh manuscript   Fig 1-10 (TIFF + draft PNG + data CSVs) and main.pdf
-#   ./reproduce.sh posthoc      the post hoc analyses of posthoc/README.md (P1-P8; P7 and P6 take about an hour each on 10 cores)
+#   ./reproduce.sh posthoc      the post hoc analyses of posthoc/README.md (P1-P8 and P10-P23; P7 and P6 take about an hour each on 10 cores)
 #   ./reproduce.sh check        the seal checks of Studies B, C and D (they list every file changed since each seal)
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -19,7 +19,7 @@ case "${1:-}" in
   env)
     conda create -y -p "${2:-./.env-orbit-ml}" --file environment.lock.txt ;;
   tests)
-    for t in tests/test_phase0.py tests/test_failure_study.py tests/test_part_c.py tests/test_part_d.py tests/test_posthoc.py tests/test_hardening.py; do
+    for t in tests/test_phase0.py tests/test_failure_study.py tests/test_part_c.py tests/test_part_d.py tests/test_posthoc.py tests/test_hardening.py tests/test_defense.py; do
       echo "== $t"; $PY $t
     done ;;
   b)
@@ -44,7 +44,11 @@ case "${1:-}" in
     $PY run_posthoc.py atol
     $PY run_posthoc.py d4b_fine
     $PY run_posthoc.py compiled
-    $PY run_posthoc.py seeds ;;
+    $PY run_posthoc.py seeds
+    # defense-plan analyses (posthoc/README.md P10-P23; P20-P22 need the symmetric runs above and take 3-10 minutes each on 10 cores)
+    for c in risk waterfall overhead concentration timescale mixture_curve multiplicity bca refs ood sundman_adaptive learned_rtol multistep rk8s; do
+      $PY run_posthoc.py $c
+    done ;;
   check)
     $PY freeze_b.py check || true
     $PY freeze_c.py check || true
