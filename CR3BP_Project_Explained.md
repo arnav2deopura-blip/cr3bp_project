@@ -2,7 +2,7 @@
 
 **What this document is.** A complete, plain-language walk-through of the project in `extended-orbit-ML-2`: the physics, the numerical methods, the machine learning, the statistics, the four preregistered studies, every figure and table of the manuscript, every main equation, the literature it builds on, and every code file. It is written the way a computational-physics professor would explain it to a smart non-specialist, so jargon gets explained the first time it appears and then collected in a glossary at the end (Section 20).
 
-**Where the facts come from.** Every number is taken from the project's own files: `manuscript/main.tex` (the PLOS ONE draft), `archive/study_a/RESULTS_REPORT.md` (Study A; short version in `STUDY_A_SUMMARY.md`), `part_b/RESULTS_PART_B.md`, `part_c/RESULTS_PART_C.md`, `part_d/RESULTS_PART_D.md`, the preregistrations, `part_d/NARRATIVE.md`, the post hoc checks in `posthoc/README.md` and `posthoc/results/`, the code under `orbit_ml_cr3bp/`, and the figure PNGs in `manuscript/figures/draft/`. Where I could not verify something, I say so. Section 19 lists problems I found while reading; read it before submitting anything.
+**Where the facts come from.** Every number is taken from the project's own files: `manuscript/main.tex` (the PLOS ONE draft), `archive/study_a/RESULTS_REPORT.md` (Study A; short version in `STUDY_A_SUMMARY.md`), `part_b/RESULTS_PART_B.md`, `part_c/RESULTS_PART_C.md`, `part_d/RESULTS_PART_D.md`, the preregistrations, `part_d/NARRATIVE.md`, the post hoc checks in `posthoc/README.md` and `posthoc/results/` (with the second round summarized in `DEFENSE_STATUS.md`), the code under `orbit_ml_cr3bp/`, and the figure PNGs in `manuscript/figures/draft/`. Where I could not verify something, I say so. Section 19 lists problems I found while reading; read it before submitting anything.
 
 **Naming.** The manuscript calls the four studies **A, B, C, D**. The code and result folders call them **Part A** (the top-level `out/`, `data/`, `PREREGISTRATION.md`), **Part B** (`part_b/`, `out_b/`, `data_b/`), **Part C** and **Part D**. They are the same thing.
 
@@ -26,6 +26,7 @@
 14. [Study C: the fix](#14-study-c)
 15. [Study D: replication, need for ML, wall-clock, conditional safety, transfer](#15-study-d)
 15A. [After the seals: post hoc checks and the Study E plan](#15a-after-the-seals-post-hoc-checks-and-the-study-e-plan)
+15B. [The second round of checks (Nov 3–4): new comparators and corrected claims](#15b-the-second-round-of-checks-2026-11-0304)
 16. [Every figure and table, explained](#16-every-figure-and-table-explained)
 17. [Discussion: mechanism, literature, limits, novelty, impact](#17-discussion-mechanism-literature-limits-novelty-impact)
 18. [The code, file by file](#18-the-code-file-by-file)
@@ -46,13 +47,15 @@
 
 **Study B (diagnosis).** Why does it lose? The project split the cost gap into named pieces and found the deep reason: **a single physical step must be small enough for the fastest moment of the trip** (a close lunar flyby), so it wastes effort everywhere else. That waste grows almost one-for-one with how much the trajectory's natural pace varies (a quantity called the *timescale range*, Δτ; correlation 0.91). Still **0 of 14,161** trajectories were cheaper.
 
-**Study C (the fix).** Change the clock. In **Sundman time**, a fictitious time variable runs slower near the bodies, so one constant step in that clock automatically becomes small physical steps near the Moon and large ones far away. The model now predicts one number, the fictitious step, using cheap analytic "when and how close is my next close approach" features (periapsis features). Result: **cheaper than an equal-risk adaptive RK45 solver on 71.4% of trajectories**, with a certified failure rate.
+**Study C (the fix).** Change the clock. In **Sundman time**, a fictitious time variable runs slower near the bodies, so one constant step in that clock automatically becomes small physical steps near the Moon and large ones far away. The model now predicts one number, the fictitious step, using cheap analytic "when and how close is my next close approach" features (periapsis features). Result: **cheaper than an equal-risk adaptive RK45 solver on 71.4% of trajectories**, with a certified failure rate. (The same features and compiled model *without* the new clock won only 31.6%, so the clock is what turned a minority of wins into a majority. Most of the drop in *cost*, though, came from the cheaper compiled model and the periapsis features; Section 15B.)
 
 **Study D (stress test).** The headline **replicated** on brand-new data (71.6%). A **four-number physics rule** recovers about **three quarters** of the saving, and a linear model ties the tree model, so most of the gain is physics, not fancy ML. But: it does **not** beat the stronger DOP853 solver at equal risk, it is **not** faster in real compiled wall-clock time over the full 1–20 time-unit range (ratio 0.885; it *is* 1.6× faster at short horizons), and it **fails badly on catalogued periodic orbits** it never saw in training (70% failure rate).
 
 **After the studies (post hoc checks, Section 15A).** Extra checks run after all four seals did not change any verdict, but they made the result smaller in two ways. First, **"cheaper on 71% of trajectories" is not "cheaper in total"**: the policy wins the many short, cheap trajectories and loses the few long, expensive ones, so in total it used **19–25% more** force evaluations than equal-risk RK45. It is cheaper in total only at 1–3 TU (RK45 needs 1.48× as many evaluations there). Second, when the adaptive solvers are tuned as carefully as the policy was, the shares drop: to about **two thirds** against RK45, and **below half (44.9%)** against DOP853 on the replication set. A Study E is drafted (not yet sealed or run) to test the short-horizon claim properly on new data.
 
-**The take-home.** What decides whether a pre-run step choice can pay off is **the choice of time variable plus knowledge of the next close approach**, not a better learning algorithm. Pre-run step selection might be useful for short-horizon batch studies inside a known population, with an adaptive solver as the fallback.
+**A second round of checks (Nov 3–4, Section 15B)** asked the obvious reviewer question: *could an ordinary adaptive solver use the same tricks?* Yes, and it does better. DOP853 run in the same Sundman time needs only **41%** of the policy's evaluations. RK45 whose tolerance is *predicted* by the same small model leaves the policy cheaper on only **34%** of trajectories. The manuscript was retitled and several overstated sentences were corrected.
+
+**The take-home.** What matters is **the choice of time variable plus cheap knowledge of the next close approach**, not a better learning algorithm. Those ideas help an adaptive solver even more than they help a fixed step, so a pre-run fixed step is at best a niche tool (short horizons, a known population, an adaptive fallback). One lead remains open: a higher-order fixed step in Sundman time looked very promising when its step was chosen with perfect knowledge (Section 15B.3).
 
 ---
 
@@ -112,7 +115,7 @@ Other fixes: the analytic Richardson halo construction was found to be wrong and
 |---|---|---|---|
 | A | 2026-10-23 | Can ML with FTLE, proximity and Jacobi features beat adaptive solvers on cost? | No: 0/996 |
 | B | 2026-10-25 | Why not? Where does the cost go? | A single physical step pays a penalty that tracks the timescale range |
-| C | 2026-10-27 | Does integrating in Sundman time with periapsis features fix it? | Yes against RK45 at equal risk: 71.4% |
+| C | 2026-10-27 | Does integrating in Sundman time with periapsis features fix it? | Per trajectory, yes against RK45 at equal risk: 71.4% (not in total) |
 | D | 2026-10-28 | Does it replicate, is ML needed, is it faster in seconds, is it safe where it matters, does it transfer? | Replicates; physics does most of it; not faster overall; conditionally safe; does not transfer |
 
 Each study used **new random seeds**, so no trajectory used to test one study was used to fit or tune another.
@@ -204,7 +207,7 @@ Regimes II–III are where trajectories thread the narrow necks near L1/L2, whic
 
 ### 4.7 Collisions and escapes
 
-A run "ends as a collision" if the spacecraft comes within the physical radius of the Earth (6,371 km) or the Moon (1,737.4 km), and as an "escape" if it goes beyond 10 DU from the barycentre. About **19%** of sampled starting states have a reference trajectory that collides or escapes before the horizon ("reference-divergent" or "doomed" orbits). They were excluded from the cost tests (there is no fair "final position" to compare) but analysed separately in Study C.
+A run "ends as a collision" if the spacecraft comes within the physical radius of the Earth (6,371 km) or the Moon (1,737.4 km), and as an "escape" if it goes beyond 10 DU from the barycentre. About **19%** of sampled starting states have a reference trajectory that collides or escapes before the horizon ("terminating" or "doomed" orbits; the code says "reference-divergent"). They were excluded from the cost tests (there is no fair "final position" to compare) but analysed separately in Study C.
 
 ### 4.8 The local timescale and the timescale range (manuscript Eq 4): the single most important concept
 
@@ -313,7 +316,7 @@ The key point: **tolerance is local per-step error, not final position error.** 
 Every trajectory's "true" path is **DOP853 at rtol = atol = 10⁻¹³, maximum step 0.01 TU**, with dense output (a continuous interpolant so you can read the position at any time). Checks:
 
 - **Radau IIA** (a different, implicit method) at 10⁻¹² agreed to at most **0.003 km** on 600 trajectories; collision/escape event types agreed on all 300 tested.
-- Every trajectory had a second DOP853 reference (10⁻¹², max step 0.005) as a per-trajectory flag.
+- Every trajectory had a second DOP853 reference (10⁻¹², max step 0.005) as a per-trajectory flag. Checked afterwards (Section 15B), the two references agreed to at most **0.05 km** on the Study C confirmation set and **0.25 km** on every Study C and D set: thousands of times below the 100 km tolerance.
 - The 1% most chaotic trajectories (163 with $\lambda T \ge 10.8$) were redone at the tightest tolerance SciPy accepts (step ≤ 0.002) and with LSODA: largest disagreements **0.007 km and 0.23 km**. So the 100 km decisions are not reference artefacts.
 
 ### 5.6 Model error versus integrator error (CAPSTONE check)
@@ -322,7 +325,7 @@ The CR3BP is not the real Earth–Moon system. The project downloaded the real C
 
 ### 5.7 IAS15 (a famous adaptive integrator)
 
-**IAS15** (Rein & Spiegel 2015) is a 15th-order adaptive Gauss–Radau integrator in the REBOUND code, designed to be accurate to machine precision. In an exploratory test on 300 trajectories at the loosest setting meeting 100 km, it took a median **217 µs** per trajectory against **6.4 µs** for the compiled policy (about 29× longer in total). This is not a fair "beat IAS15" claim: IAS15 is designed for far tighter accuracy, the time includes Python overhead, and REBOUND does not report evaluation counts. It answers the reviewer objection "did you compare with IAS15?" honestly.
+**IAS15** (Rein & Spiegel 2015) is a 15th-order adaptive Gauss–Radau integrator in the REBOUND code, designed to be accurate to machine precision. In an exploratory test on 300 trajectories at the loosest setting meeting 100 km, it took a median **217 µs** per trajectory against **6.4 µs** for the compiled policy (about 29× longer in total). This is not a fair "beat IAS15" claim: IAS15 is designed for far tighter accuracy, the time includes Python overhead, and REBOUND does not report evaluation counts. It answers the reviewer objection "did you compare with IAS15?" honestly, but because IAS15 was run at the very edge of its settings it is not a fair head-to-head, so the manuscript now reports it only in S1 Appendix and draws no conclusion from it.
 
 ---
 
@@ -452,7 +455,7 @@ $$
 \hat{s} = \max\{s_k : p(s_j)\le\delta \text{ for all } j \le k\}.
 $$
 
-Because you stop at the first failure, you don't pay a multiple-testing penalty. This is the **Learn-then-Test (LTT)** framework of Angelopoulos, Bates, Candès, Jordan and Lei. **Guarantee:** if calibration and test trajectories come from the same distribution ("exchangeable"), the failure rate at $\hat s$ exceeds 5% with probability at most 10%. In plain terms: *"we are 90% confident the failure rate is at most 5%."*
+Because you stop at the first failure, you don't pay a multiple-testing penalty. This is the **Learn-then-Test (LTT)** framework of Angelopoulos, Bates, Candès, Jordan and Lei. **Guarantee:** if calibration and test trajectories come from the same distribution ("exchangeable"), the failure rate at $\hat s$ exceeds 5% with probability at most 10%. In plain terms: *"we are 90% confident the failure rate is at most 5%."* One catch: calibration and testing used only trajectories whose reference survives to the end time $T$ (no crash, no escape). A user can't know that before the run, so the guarantee is really *"at most 5% failures among trajectories that don't crash or escape."*
 
 **Bonferroni version** (Studies A, B): test each of 18 grid values on its own at level δ/18 and keep the largest that passes. Valid without ordering, but less powerful (needs more evidence per value).
 
@@ -529,7 +532,7 @@ The decomposition is what makes this project diagnostic rather than just "it los
 
 **Seals**: before each confirmatory run, a script (`freeze_snapshot.py`, `freeze_b.py`, `freeze_c.py`, `freeze_d.py`) recorded **SHA-256 hashes** of the preregistration text, every source file, the frozen models and the datasets. A SHA-256 hash is a 64-character fingerprint: change one byte of a file and the fingerprint changes completely. The confirmatory runner refuses to start if any hash changed, and logs each step (it runs **once**; a rerun needs a written reason that is also recorded as a dated deviation). Seals: Oct 23, 25, 27 and 28, 2026.
 
-Honest limits stated in the manuscript: these are **internal** preregistrations deposited with the code, not externally registered reports; and the Study D seal did not require a clean git tree (the sealed state is identified by file hashes instead).
+Honest limits stated in the manuscript: these are **internal** preregistrations, not externally registered reports. The git repository was never copied to a public server, and commit dates are set by the author's own computer, so **an outsider cannot verify when each seal was made**; the hashes only prove the files haven't changed since. The Study D seal is the weakest: the Study D code itself (23 files) was not committed at the seal, only hashed. The fix for the future is to register Study E publicly (e.g. on OSF, which timestamps it on its own server) before running anything.
 
 **Locked set**: a portion of data set aside and evaluated exactly once at the very end, after everything else is frozen. Each study has one.
 
@@ -539,20 +542,20 @@ Honest limits stated in the manuscript: these are **internal** preregistrations 
 - **Holm procedure** (Holm 1979): when you run five tests, the chance that at least one is a false positive is higher than 5%. Holm adjusts p-values step-wise so the **familywise** chance stays at 5%. Each of Studies B, C, D had a family of five tests.
 - **Exact binomial test**: for "is this share above 50%?" (counts of wins).
 - **Clopper–Pearson interval** (1934): an exact 95% confidence interval for a proportion. Example: 8,707/12,192 = 71.4%, CI 70.6–72.2%.
-- **Bootstrap** (Efron 1979): resample trajectories with replacement 4,000 times and recompute the statistic, to get its uncertainty without formulas. p-values have a floor of $2.5\times10^{-4}$ (= 1/4,000), so a reported floor is a bound, not an exact value.
+- **Bootstrap** (Efron 1979): resample trajectories with replacement 4,000 times and recompute the statistic, to get its uncertainty without formulas. p-values have a floor of about $2.5\times10^{-4}$ (1/4,001): if not a single resample goes the "wrong" way, the test can't say how small the true p-value is, only that it is at most this. Table 2 now marks such values.
 - **Permutation test**: shuffle labels many times (10,000) to see how often a statistic as extreme arises by chance.
 - **Spearman rank correlation** $\rho$ (1904): correlation of ranks; 1 = perfectly increasing relationship, 0 = none. Robust to outliers and non-linear shapes.
 - **Mann–Whitney test** (1947): are values in group A typically bigger than in group B?
 - **Two-proportion z-test** and **chi-square homogeneity test**: are rates different between groups?
 - **Intersection–union test**: when a hypothesis has several parts that must *all* hold, its p-value is the largest of the parts' p-values.
-- **McNemar test**: compares two methods on the same items (used in the Study B errata).
+- **McNemar test**: compares two methods on the same items by looking only at the items where they disagree (used in the Study B errata, and in Section 15B to check that "equal-risk" RK45 really fails as often as the policy).
 - **AUC** (area under the ROC curve): how well a score separates two groups. 0.5 = coin flip, 1.0 = perfect. "FTLE separates violations with AUC 0.93" means a random violating point has a higher FTLE than a random non-violating point 93% of the time.
 - **$R^2$**: fraction of variation explained by a model (1 = perfect).
 - **MSE**: mean squared error.
 
 ### 10.3 Unit of analysis
 
-The trajectory (in D5, the periodic-orbit member, resampled within family). Reference-divergent trajectories are excluded from cost tests and analysed separately; untrusted periodic-orbit references are excluded and listed.
+The trajectory (in D5, the periodic-orbit member, resampled within family). Terminating trajectories (the reference crashes or escapes) are excluded from cost tests and analysed separately; untrusted periodic-orbit references are excluded and listed.
 
 ### 10.4 Software
 
@@ -663,6 +666,8 @@ Same kind of physical-time policy but **no FTLE** (only free features), every co
 
 The policy was cheaper than an adaptive solver on **0 of 14,161** trajectories against **all six** comparator settings (RK45 and DOP853 × oracle, certified, equal-risk).
 
+Much of that zero is the price of the slow model: its 1,128 RHS-equivalents are more than three typical adaptive solves. Charged nothing for the model (post hoc), the same policy would have won 27% against certified and 23% against equal-risk RK45, though almost none against the oracle-tuned solvers (0.3% and 3.6%), and it would still have used about 11–14× as many evaluations in total.
+
 ### 13.3 The decomposition (Fig 3A)
 
 Mean over the 13,540 trajectories that met the tolerance, against oracle-tuned RK45:
@@ -711,7 +716,7 @@ Which term dominates per trajectory: overhead 39.7%, prediction 32.1%, paradigm 
 
 ### 13.7 What B taught
 
-Two things to attack: the **paradigm** term (needs a different time variable) and the **prediction** term (needs information about the future close approach). Plus: make the model **cheap** (overhead).
+Two things to attack: the **paradigm** term (needs a different time variable) and the **prediction** term (needs a cheap summary of the next close approach). Plus: make the model **cheap** (overhead).
 
 ---
 
@@ -754,6 +759,8 @@ Mean decomposition terms (dex) against oracle-tuned RK45:
 | Rounding | −0.01 | −0.01 | −0.01 |
 | **Total** | **+1.41** | **+0.55** | **+0.21** |
 
+**Careful: this table mixes subsets.** Each column averages over the trajectories *that policy* got right, and the physical-time policy handed its hardest near-Moon cases to RK45, so its +0.12 comes from an easier set. Measured over all trajectories, the paradigm term is +0.25 in physical time (in both B and C) and 0.00 in Sundman time, and the totals are +1.39 (B) → +0.47 (C physical) → +0.20 (C Sundman). So the cheaper compiled model, periapsis features and better certificate removed about 0.9 dex, and the new clock about 0.3 dex (Section 15B.2).
+
 Reading: the paradigm term **vanished** in Sundman time; prediction became much easier because the Sundman label varies far less (standard deviation **0.33 dex** for $\Delta s$ vs **0.91 dex** for the physical step). The gap against the hardest opponent shrank from a factor of 26 to a factor of 1.6. Against realistic opponents it became negative (cheaper): −0.21 dex vs certified RK45, −0.13 dex vs equal-risk RK45.
 
 ### 14.4 Shares cheaper (Fig 5A, Table 3)
@@ -763,7 +770,7 @@ At a realized violation rate of **535/12,192 = 4.39%** (certified scale 0.872):
 | Comparator | Share cheaper |
 |---|---|
 | RK45 equal-risk | 71.4% |
-| RK45 certified | 82.4% |
+| RK45 certified | 82.4% (optimistic: these solvers failed only 1.3% of the time, far safer than the policy; Section 15B.4) |
 | DOP853 equal-risk | 50.6% |
 | DOP853 certified | 58.6% |
 | RK45 oracle | 8.7% |
@@ -781,9 +788,9 @@ At **1–3 TU** it wins > 93% in every regime. At **8–20 TU** it wins only 2.8
 
 Marginal 4.4%, but **13.5%** (299/2,222) for trajectories that passed within 0.05 DU of the Moon vs **0.4%** beyond 0.8 DU. Violations were usually mild (median error 1.7× tolerance; 6.6% exceeded 10×). Endpoint-only audit: 2.6% of runs were wrong mid-run but right at the end.
 
-### 14.7 Doomed orbits (the 19% excluded)
+### 14.7 Terminating ("doomed") orbits (the 19% excluded)
 
-On the 3,808 reference-divergent trajectories, the Sundman policy ended in the **same event type** (collision with Earth, collision with Moon, or escape) on **3,805 (99.9%)** and **never passed through a body**, because the transformation shrinks the step near the primaries. A fixed physical step was much worse there. A free "crash flag" from the osculating orbit (periapsis inside a body before $T$) had recall 81% and precision 96%.
+On the 3,808 terminating trajectories (the reference crashes or escapes before $T$; the code calls them "reference-divergent"), the Sundman policy ended in the **same event type** (collision with Earth, collision with Moon, or escape) on **3,805 (99.9%)** and **never passed through a body**, because the transformation shrinks the step near the primaries. But it got the *time* of the event right (by the plan's strict rule) on only **46.7%**, because a fixed step can't place an event more precisely than its own length. A fixed physical step was much worse there. A free "crash flag" from the osculating orbit (periapsis inside a body before $T$) had recall 81% and precision 96%.
 
 ### 14.8 Lock set
 
@@ -791,7 +798,7 @@ On 4,020 locked trajectories: 4.28% violations, cheaper than equal-risk RK45 on 
 
 ### 14.9 Honest caveats Study C itself lists
 
-C3(a) is a narrow pass that depends on $\tau_c$; the physical-time policy's certificate upper bound reached 5.17%; the Sundman label is non-monotone on ~4.5% of orbits; costs are RHS counts, not wall-clock (tested in D2).
+C3(a) is a narrow pass that depends on $\tau_c$ and did not replicate in Study D (50.6%); the physical-time policy's certificate upper bound reached 5.17%; the Sundman label is non-monotone on ~4.5% of orbits; costs are RHS counts, not wall-clock (tested in D2).
 
 ---
 
@@ -941,7 +948,7 @@ The headline equal-risk comparison (71.4%, 71.6%) is not affected by this. Equal
 
 ### 15A.4 Other comparator settings (P8)
 
-- **Absolute tolerance.** The solvers used `atol = 10⁻³ × rtol` (Section 5.4). Four settings were tried: 10⁻¹, 10⁻³ and 10⁻⁶ × rtol, plus a "position-only" variant. Whichever was cheapest at equal risk on the *calibration* trajectories would be used, a choice made before looking at the evaluation trajectories. The winner was **10⁻¹ × rtol**. Against that better-tuned RK45 the policy is cheaper on **64.2%** of replication trajectories (instead of 71.6%), with ratio of totals 0.75 (0.73–0.77). This is the "64%" now in the abstract.
+- **Absolute tolerance.** The solvers used `atol = 10⁻³ × rtol` (Section 5.4). Four settings were tried: 10⁻¹, 10⁻³ and 10⁻⁶ × rtol, plus a "position-only" variant. Whichever was cheapest at equal risk on the *calibration* trajectories would be used, a choice made before looking at the evaluation trajectories. The winner was **10⁻¹ × rtol**. Against that better-tuned RK45 the policy is cheaper on **64.2%** of replication trajectories (instead of 71.6%), with ratio of totals 0.75 (0.73–0.77). (This was quoted in the abstract until Nov 3; it is now in the body only, to make room for the Section 15B results.)
 - **Stricter confidence (δ = 0.05 instead of 0.1).** The certified scales did not change (0.872 and 0.800), so the result does not hinge on the 90% confidence level.
 
 ### 15A.5 Checks that came out fine
@@ -976,7 +983,72 @@ The post hoc checks leave one claim standing: **the policy is cheaper in total a
 | E5 | Can an "am I out of my depth?" gate detect periodic orbits unlike the training data and hand them to the solver? |
 | E6 | The timing protocol for E1: idle machine, two sessions, a second kind of CPU. |
 
-Built-in fixes from the post hoc checks: the solvers are certified **symmetrically** and use `atol = 0.1 × rtol`; the main statistic is the **ratio of totals**, not the share; collisions are checked **between** steps; and the seal must refuse to run on an uncommitted (dirty) git tree, which Study D's seal did not enforce. Section 7 of the draft lists what must still be built before the dry run and seal (several weeks of work).
+Built-in fixes from the post hoc checks: adaptive solvers run **in Sundman time** are added as comparators (Section 15B.3); the document must be **registered on OSF before any run**, so its date can be verified by outsiders; the solvers are certified **symmetrically** and use `atol = 0.1 × rtol`; the main statistic is the **ratio of totals**, not the share; collisions are checked **between** steps; and the seal must refuse to run on an uncommitted (dirty) git tree, which Study D's seal did not enforce. Section 7 of the draft lists what must still be built before the dry run and seal (several weeks of work).
+
+---
+
+## 15B. The second round of checks (2026-11-03/04)
+
+**Why.** A reviewer-style read of the whole project (`DEFENSE_PLAN.md`) found that the weak points were mostly **sentences that claimed more than the data** plus **one missing comparison**. All of it was then run or fixed (`DEFENSE_STATUS.md`). The rules were the same as in Section 15A: definitions written into `posthoc/README.md` (P10–P23) before running, sealed numbers untouched, every new number labelled post hoc or exploratory.
+
+### 15B.1 Sentences that were corrected
+
+| Old claim | Why it was wrong | Now |
+|---|---|---|
+| "A fixed step in physical time **never** beat adaptive integration" | True only for Study B's slow, uncompiled model. Charged nothing for the model, Study B's policy would have won 27% against certified RK45 (though it still used about 11× as many evaluations in total). Study C's compiled physical-time policy won 31.6%. | "0/14,161 with an uncompiled model, 31.6% with a compiled one, and its failures were severe (median 12× the tolerance)" |
+| Title: Sundman time "recovers most of the cost gap" | Most of the cost drop came from other changes (Section 15B.2), and the policy loses in total | New title: "*…loses to adaptive integration…; in Sundman time it wins on most trajectories but not in total cost*" |
+| FTLE "changed neither prediction quality" | Study A's test was too small to tell: its best guess was a large loss. Adding FTLE cuts a third of the remaining error in Study D | "FTLE carries real information but costs an integration" |
+| Certificate "below 5%" | Only for trajectories that don't crash or escape (Section 8.2) | Said next to every use |
+| Per-stratum safety reported without its cost | Adaptive solvers certified per stratum the same way win on most trajectories (policy 42.5% / 20.7%) | Added to abstract and conclusions |
+
+The manuscript also gained a real **S1 Appendix** (8 pages: the dated deviations of every study, reference checks, label details, edge cases, the strata rule, IAS15 and more), p-values at their resampling floor are marked in Table 2, and "reference-divergent" became "terminating" to avoid confusion with "the two references disagree".
+
+### 15B.2 Who gets credit for the improvement? (the waterfall, P11)
+
+Averaged over **all** trajectories (failures included), the cost gap against oracle-tuned RK45 went:
+
+| Step | Mean gap (dex) | What changed |
+|---|---|---|
+| Study B policy | +1.39 | – |
+| Study C, physical time | +0.47 | compiled small model, periapsis features, end-to-end certificate |
+| Study C, Sundman time | +0.20 | the new clock |
+
+So about **0.9 dex** came from the other changes and **0.27 dex** from Sundman time. In *shares*, though, the clock is decisive: 0% → 31.6% → 71.4% against equal-risk RK45. Both statements are true; they measure different things.
+
+### 15B.3 Could an adaptive solver use the same tricks? (P20–P23, exploratory)
+
+These are new runs on the Study D replication set, not preregistered tests.
+
+| Comparator (tuned to the policy's risk) | Policy cheaper on | Solver's total ÷ policy's total |
+|---|---|---|
+| RK45, physical time (the headline) | 71.6% | 0.80 |
+| RK45 **in Sundman time** | 67.6% | 0.72 |
+| DOP853 **in Sundman time** | **45.7%** | **0.41** |
+| RK45 with a **learned tolerance** (same 25-input model, same overhead) | **34.0%** | 0.89 |
+| LSODA (a multistep solver) | 70.3% | 0.85 |
+
+**In words:** the time transformation makes adaptive solvers cheaper too, and DOP853 in Sundman time needs well under half the policy's work, even at 1–3 TU (ratio 0.85 there). And if you give RK45 the same machine-learning trick, predicting its *tolerance* instead of a fixed step, RK45 wins two thirds of the trajectories at the same failure rate. **The learned component is useful; a fixed step is the wrong place to put it.**
+
+**One open lead.** Is the negative result just about RK4? With the step chosen using perfect knowledge (an "oracle"), an **8th-order fixed step in Sundman time** was cheaper than the oracle-tuned RK45 on **297 of 300** trajectories and DOP853 on **294 of 300**, while the oracle RK4 step managed 127. That is a best case, not a working method: a learned step loses about as much again to prediction errors, the safety scale and overhead. It is the most promising thing to test in Study E.
+
+### 15B.4 Checks that held up
+
+- **Equal risk really is equal on test data**: policy 4.39% failures vs RK45 4.11%; the McNemar test finds no difference (p = 0.24). The preregistered *certified* solvers were much safer (1.3–1.9%), which is why the 82.4% share against them was optimistic; Table 3 now shows the solvers' failure rates and puts the fairer "symmetric" rows first.
+- **Multiple testing**: correcting over all 15 tests of Studies B–D at once changes no verdict (the closest, C3, goes to p = 0.030).
+- **The timescale law is not a horizon effect**: controlling for the horizon, the rank correlation stays 0.90 (and drops to 0.02 in Sundman time).
+- **D4 would pass at 5%** as well as at the preregistered 7% (p = 0.021).
+- **Overhead**: it is only about 1% of the policy's total; the 1–3 TU advantage survives doubling it (1.40) but not ×10 (0.99).
+- **Bootstrap intervals** barely change with the more careful BCa method (≤ 0.004).
+
+### 15B.5 Checks that weakened something
+
+- The policy's failures are **milder** than RK45's on three of the four evaluation sets (median 1.7× vs 2.5× the tolerance), **but not on the Study D lock set** (2.5× vs 2.1×).
+- **Mixture dial**: the share falls steadily as near-Moon starts become more common, from 75% (none) to 55% (all); the ratio of totals never rises above parity. The 55/20/25 sampling mix was fixed in the very first commit, before the Study A seal, but it isn't written in the Study A preregistration.
+- **Periodic orbits and "out of distribution"**: measured as distance to the nearest training examples, the Fig 10 grids and most periodic families are far from the training data, but the **axial and halo orbits are inside it and the axial ones still fail 96–100%**. A simple "am I far from my training data?" gate (Study E's E5) would not catch them.
+
+### 15B.6 A rule to know before any science fair
+
+The Society for Science guidance on generative AI (Oct 2025) says AI must **never** write the first draft of the research plan, abstract, paper, poster or conclusions; AI-written **code** is allowed with explicit citation and a log of the prompts. The manuscript, poster text and this document were drafted with AI. For a fair, the student has to write the abstract, poster and paper in their own words, and keep the AI transcripts as the prompt log.
 
 ---
 
@@ -1049,7 +1121,7 @@ Explained in Section 11.2.
 
 ### Table 2. Preregistered confirmatory tests
 
-All 18 tests (A-H1, A-H1′a, A-H2, A-H3, B-T1–T5, C-C1–C5, D-D1–D5) with hypothesis, result, Holm p and verdict. Summary: Study A 0 of 3 primary claims supported (H2 point estimates met); Study B 4 of 5; Study C 4 of 5; Study D 3 of 5. The negative results (A-H1, B-T3, C-C2, D-D2, D-D5) are reported with the same prominence as the positive ones, which is exactly right.
+All 18 tests (A-H1, A-H1′a, A-H2, A-H3, B-T1–T5, C-C1–C5, D-D1–D5) with hypothesis, result, Holm p and verdict. Summary: Study A 0 of 3 primary claims supported (H2 consistent with its guarantee); Study B 4 of 5; Study C 4 of 5; Study D 3 of 5. The negative results (A-H1, B-T3, C-C2, D-D2, D-D5) are reported with the same prominence as the positive ones, which is exactly right. Since Nov 3 the table also marks p-values that sit at the resampling floor (they are bounds) and notes that C3's threshold part did not replicate.
 
 ### Table 3. The Sundman policy across four independent evaluations
 
@@ -1076,7 +1148,7 @@ The manuscript's Table 3 now also carries **post hoc rows**, each labelled as su
 | Ratio of totals, DOP853 equal-risk | 0.69 | 0.67 | 0.70 | 0.69 |
 | Ratio of totals, DOP853 certified | 0.78 | 0.70 | 0.80 | 0.75 |
 
-These agree across the four evaluations too. What they consistently say is that **the policy wins most trajectories but loses on total cost** (Section 15A). A footnote also notes that the columns charged slightly different overheads (15.04 vs 16.09), and that this changes nothing material.
+These agree across the four evaluations too. What they consistently say is that **the policy wins most trajectories but loses on total cost** (Section 15A). A footnote also notes that the columns charged slightly different overheads (15.04 vs 16.09), and that this changes nothing material. Since Nov 3 the table also shows how often **the solvers themselves failed** at each tolerance (equal-risk RK45 about as often as the policy; the preregistered "certified" solvers far less, 1.1–1.9%), and lists the fairer symmetric rows before the preregistered certified ones.
 
 ---
 
@@ -1088,9 +1160,9 @@ A fixed physical step must be small enough for the fastest moment, so its cost s
 
 ### 17.2 How it fits the literature
 
-- **Learned step control during the run** (Dellnitz et al. 2023; Saz Ulibarrena & Portegies Zwart 2025) sees the trajectory and can correct itself; a pre-run choice cannot. Study B shows what a pre-run choice lacks is **information about the future**, not precision about the present.
+- **Learned step control during the run** (Dellnitz et al. 2023; Saz Ulibarrena & Portegies Zwart 2025) sees the trajectory and can correct itself; a pre-run choice cannot. The starting state fully determines the future, so what a pre-run choice lacks is not information but a **cheap summary** of what is coming; the periapsis features are such a summary for the next close approach.
 - **Physics step criteria** (Pham, Rein & Spiegel 2024) and **time-transformed integrators** (Mikkola & Tanikawa; Preto & Tremaine; Wang & Nitadori) encode the same physics the rules and features rediscover. A 4-coefficient rule recovering ~3/4 of the saving is consistent with that.
-- **Weak-baseline critique** (McGreivy & Hakim 2024: most of 76 "ML beats solver" papers used weak baselines). This project's headline is against RK45 at equal risk, which is fair but **not the strongest** baseline: it does not beat DOP853 at equal risk, either solver at an oracle tolerance, or compiled wall-clock over the full range. The project says this itself, which is its credibility. The post hoc checks (Section 15A) showed the baseline also needed **more tuning** than it got. Certified by the policy's own rule, or given a better absolute tolerance, the solvers cut the policy's advantage to about two thirds of trajectories, and DOP853 certified that way won on most of them. The manuscript now says so in its Discussion.
+- **Weak-baseline critique** (McGreivy & Hakim 2024: most of 76 "ML beats solver" papers used weak baselines). This project's headline is against RK45 at equal risk, which is fair but **not the strongest** baseline: it does not beat DOP853 at equal risk, either solver at an oracle tolerance, or compiled wall-clock over the full range. The project says this itself, which is its credibility. The post hoc checks (Section 15A) showed the baseline also needed **more tuning** than it got. Certified by the policy's own rule, or given a better absolute tolerance, the solvers cut the policy's advantage to about two thirds of trajectories, and DOP853 certified that way won on most of them. The manuscript now says so in its Discussion. The strongest baselines turned out to be ones no study had preregistered: adaptive solvers in Sundman time, and RK45 with a learned tolerance (Section 15B.3).
 
 ### 17.3 Limitations, in order of likely impact
 
@@ -1098,11 +1170,13 @@ A fixed physical step must be small enough for the fastest moment, so its cost s
 2. **Scope**: one system, one tolerance (100 km), one horizon range (1–20 TU). How conclusions move with tolerance is unknown (the planned D8 tolerance dial was not run).
 3. **Synthetic population**: all shares are specific to the sampling mixture. A near-Moon + L1 + L2 mix alone gives 58% instead of 72% (post hoc).
 4. **Endpoint-only error**: 2.6% of runs wrong mid-run.
-5. **Excluded doomed trajectories** (19%): event type matched on 99.9%, but cost there not compared.
+5. **Excluded terminating trajectories** (19%): event type matched on 99.9% but event time (strict rule) on only 46.7%, cost there not compared, and the certificate only covers trajectories that survive.
 6. **One machine, one compiler, no GPU** for timing, in one session started with a relaxed load guard.
 7. **Model vs reality**: CR3BP vs ephemeris differs by 2,000–50,000 km.
 8. **Not beaten**: oracle-tuned solvers and DOP853 at equal risk; and, post hoc, **not cheaper in total evaluations** over 1–20 TU (only at 1–3 TU).
-9. **Collisions checked only at step endpoints**: a long physical step could cross the Moon unnoticed. This can't happen to the Sundman policy (its steps shrink near the bodies), but it could hide collisions of the physical-time arms.
+9. **Beaten by adaptive solvers given the same ideas** (exploratory, Section 15B.3): DOP853 in Sundman time and RK45 with a learned tolerance.
+10. **Seals not externally verifiable** (Section 10.1).
+11. **Collisions checked only at step endpoints**: a long physical step could cross the Moon unnoticed. This can't happen to the Sundman policy (its steps shrink near the bodies), but it could hide collisions of the physical-time arms.
 
 ### 17.4 What is new (novelty), stated honestly
 
@@ -1117,14 +1191,14 @@ What is **not** new: the Sundman transformation (1913) and periapsis/Kepler math
 
 ### 17.5 Impact (realistic)
 
-- **Practical**: a possible tool for **short-horizon (≤ ~3–8 TU; post hoc, cheaper in total only at 1–3 TU) Monte Carlo dispersion studies** from a known population, with per-stratum certificates and an adaptive fallback. The manuscript states this as a hypothesis for future testing, not a proven recommendation. That is the right framing.
+- **Practical**: a possible tool for **short-horizon (≤ ~3–8 TU; post hoc, cheaper in total only at 1–3 TU) Monte Carlo dispersion studies** from a known population, with per-stratum certificates and an adaptive fallback. The manuscript states this as a hypothesis for future testing, not a proven recommendation. That is the right framing, and since Nov 3 it carries a further caution: even at 1–3 TU, DOP853 in Sundman time was cheaper in total, so a user should compare against that first.
 - **Scientific**: shows *why* pre-run step prediction fails in physical time (a structural, not a learning, limitation) and what fixes it. That knowledge transfers to other multiscale ODE problems with close encounters.
 - **Methodological**: a worked template for how to benchmark an ML-for-numerics claim fairly (count all costs, risk-match, certify, preregister, replicate, check wall-clock, test out of distribution).
-- **For a science fair**: the strongest selling point is not "ML beats solvers" (it mostly doesn't) but "a rigorous, preregistered investigation that found the real mechanism and a partial fix, and honestly mapped where it fails."
+- **For a science fair**: the strongest selling point is not "ML beats solvers" (it doesn't, once the solvers get the same ideas) but "a rigorous, preregistered investigation that found the real mechanism and a partial fix, and honestly mapped where it fails."
 
 ### 17.6 Future work the manuscript proposes
 
-Test tolerance and horizon dependence; train on or abstain for periodic-orbit families; replace the Sundman function with a regularizing Kustaanheimo–Stiefel transformation near the Moon; move to an ephemeris model and other mass ratios; certify a path error instead of an endpoint error; measure batched GPU execution. Several of these (tolerance dependence, path error, abstention on periodic orbits, the short-horizon total-cost claim) are now written into the draft **Study E** preregistration (Section 15A.7).
+Test tolerance and horizon dependence; train on or abstain for periodic-orbit families; replace the Sundman function with a regularizing Kustaanheimo–Stiefel transformation near the Moon; move to an ephemeris model and other mass ratios; certify a path error instead of an endpoint error; measure batched GPU execution. Since Nov 3 the list starts with a learned step for a **higher-order fixed-step method in Sundman time**, compared against adaptive solvers in the same time variable (Section 15B.3). Several of these (tolerance dependence, path error, abstention on periodic orbits, the short-horizon total-cost claim) are now written into the draft **Study E** preregistration (Section 15A.7).
 
 ---
 
@@ -1222,6 +1296,8 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 | `posthoc_metrics.py` | The post hoc statistics (Section 15A): share, ratio of totals and mean log ratio with bootstrap intervals; breakdowns by horizon, regime and family; re-weighting to the declared sampling mixtures; the "share of the saving recovered" used for "three quarters". Pure functions, unit-tested. |
 | `symmetric_cert.py` | Certifies an adaptive solver's tolerance with the policy's own rule (fixed sequence, full δ) on the fine grid 10⁻¹⁰…10⁻³ (0.125 dex apart); the absolute-tolerance variants; the equal-risk search; running SciPy solvers over a set of rows. |
 | `collision_segment.py` | Segment–sphere test: does the straight line between two integrator steps pass through the Earth or Moon? Not used by any sealed code; meant for Study E. |
+| `defense_metrics.py` (Nov 3) | Statistics of the second round (Section 15B): the McNemar test, failure severity, partial rank correlation, BCa intervals, cost concentration, the near-Moon mixture dial, resampling-floor flags. Pure functions, unit-tested. |
+| `defense_runs.py` (Nov 3) | The new comparators: SciPy RK45 / DOP853 in Sundman time (stopping exactly when physical time reaches $T$), RK45 with one tolerance per trajectory, and a fixed-step 8th-order Runge–Kutta in Sundman time with its oracle-step search. |
 
 ### 18.3 Top-level scripts
 
@@ -1249,7 +1325,7 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 | `run_fair_baseline_3d.py` | Small CLI around `fair_baseline_3d.py` (Study A era). |
 | `smoke_test_3d.py` | A quick smoke test, dated Oct 13, before the sealed studies. |
 | `archive/study_a_tools/` | Older tools dated Oct 13, moved here on 2026-10-30 with their git history kept: `run_3d_analysis_from_data.py` (the original analysis script), `cost_analysis.py` (a training-cost break-even calculator), `generalization_tests.py` (region-transfer tests), `phase_space_analysis.py` (phase-space FTLE grids). No Study B–D code uses them; a README says how to rerun them. |
-| `run_posthoc.py` | The post hoc checks of Section 15A, one command each: `aggregates`, `fig4_check`, `three_quarters`, `symmetric`, `atol`, `d4b_fine`, `compiled`, `seeds`. Each writes a timestamped folder in `posthoc/results/` and first checks it reproduces the sealed numbers. |
+| `run_posthoc.py` | The post hoc checks of Section 15A, one command each: `aggregates`, `fig4_check`, `three_quarters`, `symmetric`, `atol`, `d4b_fine`, `compiled`, `seeds`, and since Nov 3 the 14 commands of Section 15B (`risk`, `waterfall`, `overhead`, `concentration`, `timescale`, `mixture_curve`, `multiplicity`, `bca`, `refs`, `ood`, `sundman_adaptive`, `learned_rtol`, `multistep`, `rk8s`). Each writes a timestamped folder in `posthoc/results/` and first checks it reproduces the sealed numbers. |
 | `reproduce.sh` | One-command rebuilds: `env` (pinned conda environment from `environment.lock.txt`), `tests`, `b`/`c`/`d` (study figures), `manuscript` (Fig 1–10 and the PDF), `posthoc`, `check` (seal checks). Never reruns a confirmatory test. |
 
 ### 18.4 Tests (`tests/`)
@@ -1261,11 +1337,12 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 | `test_part_c.py` | 30 tests, e.g.: fixed-sequence certification's false-certification rate is ≤ δ; osculating periapsis matches a two-body integration; a receding hyperbola has no future periapsis; compiled trees equal scikit-learn; Sundman RK4 with constant $g$ is classical RK4 and converges at 4th order in $\Delta s$; the Sundman step shrinks near a body; the guard at infinite threshold reproduces unguarded runs; doomed-orbit agreement rules; endpoint-audit trajectories match the endpoint kernels. |
 | `test_part_d.py` | Compiled DP5(4) with SciPy's controller reproduces `solve_ivp` exactly; the DOP853 port matches SciPy's evaluation counts on almost every orbit; the PI controller is accurate; a rule fit recovers a planted linear law; the deploy runner matches Study C's integrator; strata cover every row; periodic-orbit references are stable. |
 | `test_posthoc.py` | 13 tests: the post hoc statistics match hand calculations and the sealed share; mixture weights and bootstrap behave; the solvers' new certification uses the same rule as the policy's on a grid at least as fine (and the sealed grid fails this); the equal-risk search matches the sealed one. |
+| `test_defense.py` | 12 tests (Nov 3): the new statistics match hand calculations; the Sundman-time adaptive solve ends exactly at $T$ and agrees with a tight physical solve; the 8th-order fixed step converges at 8th order; the RK4 helper reproduces the sealed kernel. |
 | `test_hardening.py` | 5 tests: a collision between step endpoints is caught; the new `usable_rows` rule picks the same rows on every dataset; a near-parabolic periapsis edge case; pipeline v6 labels equal v5's; the solver settings are defined in one place only. |
 
 ### 18.5 The manuscript folder
 
-`main.tex` (PLOS ONE template, 546 lines), `references.bib` (DOIs checked against Crossref on 2026-10-29 per its header), `plos2025.bst`, `main.pdf`/`main_draft.pdf`, `scripts/fig01–fig10.py` + `style.py`, `figures/` (TIFF), `figures/draft/` (PNG), `figures/data/` (CSV behind every panel), `figures/README.md` (build instructions). Added 2026-10-30: `scripts/si_tables.py`, which writes the supporting tables S1–S4 as CSV files into `si/` from the result files (nothing typed by hand; S3 includes bootstrap intervals on the rule coefficients, S4 the post hoc summaries), and `CITATION_AUDIT.md` (Section 19, note 21).
+`main.tex` (PLOS ONE template), `references.bib` (DOIs checked against Crossref on 2026-10-29 per its header), `plos2025.bst`, `main.pdf`/`main_draft.pdf`, `scripts/fig01–fig10.py` + `style.py`, `figures/` (TIFF), `figures/draft/` (PNG), `figures/data/` (CSV behind every panel), `figures/README.md` (build instructions). Added 2026-10-30: `scripts/si_tables.py`, which writes the supporting tables S1–S4 as CSV files into `si/` from the result files (nothing typed by hand; S3 includes bootstrap intervals on the rule coefficients, S4 the post hoc summaries), and `CITATION_AUDIT.md` (Section 19, note 21). Added Nov 3: `si/S1_Appendix.tex` and `.pdf` (the secondary methods and every study's dated deviations) and 23 more S4 CSV files for Section 15B.
 
 ### 18.6 Records and logs
 
@@ -1277,6 +1354,7 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 | `archive/study_a/RESULTS_REPORT.md` (Study A, ~440 KB; moved from the root), `STUDY_A_SUMMARY.md` (its executive summary), `part_*/RESULTS_PART_*.md`, `part_b/RESULTS_E3C_MU_DIAL.md`, `part_d/NARRATIVE.md` | Results write-ups. |
 | `posthoc/README.md`, `posthoc/results/` | The post hoc definitions (committed before any of them ran) and their run folders. |
 | `part_e/PREREGISTRATION_E.md` | The Study E draft (not sealed). |
+| `DEFENSE_PLAN.md`, `DEFENSE_STATUS.md` | The Nov 3 review of every claim and the record of what was done about each item (Section 15B). |
 | `environment.yml`, `environment.lock.txt` | The software environment, with exact package builds pinned. |
 | `part_*/PART_*_LOG.md` | Day-by-day decision logs. |
 | `CHANGES.md` | Every code change with dates. |
@@ -1293,20 +1371,20 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 
 You asked me to be critical. These are the problems and soft spots I found while reading. None overturns the main conclusions, but several should be fixed before submission or judging.
 
-**Status as of 2026-10-30.** Many of these notes have since been dealt with. Each note now ends with a **Status** line where something changed. Notes without one are unchanged.
+**Status as of 2026-11-04.** Many of these notes have since been dealt with (on Oct 30 and in the Nov 3–4 round, Section 15B). Each note ends with a **Status** line where something changed. Notes without one are unchanged.
 
 ### 19.1 Things that look wrong or inconsistent
 
 1. **The abstract's "0 of 14,161" sentence is ambiguous, arguably misleading.** It says "A fixed physical step was cheaper than an adaptive solver on 0 of 14,161 trajectories." That is the *predicted, safety-scaled, overhead-charged policy*. A *perfect* fixed physical step was cheaper than oracle-tuned RK45 on 25.8% and than certified RK45 on 67.9% (Study B). A reader will take the abstract sentence as a statement about fixed steps in general. Suggest: "A learned fixed physical step, with its overhead and safety margin counted, was cheaper … on 0 of 14,161." **Status: fixed**; the abstract now uses this wording.
 2. **Leapfrog cost in Study A is misstated.** The manuscript says "Studies A and B offered RK4 and leapfrog, with $e_{\text{RK4}} = 4$ and $e_{\text{leapfrog}} = 1$," and the Integrators paragraph says leapfrog needs one RHS evaluation per step. The sealed Study A snapshot (`snapshots/code_79a6455ddef8.tar.gz`, `physics_3d.py` line 1018) has `"leapfrog": 2`, and the current code comment confirms "Part A … charged 2." It does not change Study A's 0/996 conclusion (charging less would only help the policy, which still lost), but the sentence is factually wrong for Study A. **Status: fixed**; the manuscript now says leapfrog was charged 2 per step in Study A and 1 in Study B.
-3. **Supporting information is referenced but does not exist yet.** S1 Appendix, S1–S3 Tables and S1 Data are cited throughout (non-monotone labels, periapsis edge cases, landing rule, per-stratum and per-family tables, dated deviations). I found no such files in the folder. The manuscript is not submittable until they exist. **Status: partly fixed.** S1–S4 Tables now exist as CSV files in `manuscript/si/`, generated by `scripts/si_tables.py`; S4 is new and holds the post hoc summaries. The **S1 Appendix text and S1 Data are still missing.**
-4. **Placeholders remain**: author affiliation, corresponding email, repository DOI. **Status: still open**, and so is the Zenodo deposit the DOI would point to.
+3. **Supporting information was referenced but did not exist yet.** S1 Appendix, S1–S3 Tables and S1 Data are cited throughout (non-monotone labels, periapsis edge cases, landing rule, per-stratum and per-family tables, dated deviations). I found no such files in the folder. The manuscript is not submittable until they exist. **Status: partly fixed.** S1–S4 Tables now exist as CSV files in `manuscript/si/`, generated by `scripts/si_tables.py`; S4 is new and holds the post hoc summaries. Since Nov 3 the **S1 Appendix exists** (`manuscript/si/S1_Appendix.pdf`); **S1 Data** (the deposit of ledgers and figure data) is still missing.
+4. **Placeholders remain**: author affiliation, corresponding email, repository DOI. **Status: still open**, and so is the Zenodo deposit the DOI would point to. Also open since Nov 3: the **mentor acknowledgment and the contributions statement**, which only the author can write (a marked placeholder is in `main.tex`).
 5. **Fig 4, regime I × closest approach 0.05–0.17 DU is empty** (n = 0) while the neighbouring cells have hundreds. It may be physical (regime-I near-Moon orbits that start beyond 0.05 DU may fall closer or crash and be excluded), but it is worth a 5-minute check, because a reviewer will ask. **Status: checked; it is physical** (Section 15A.5), and the caption now explains it.
 6. **The Claude Project description is out of date** and would mislead anyone (including a judge or a new collaborator) who reads it: it describes random-forest hurdle models as the method, a 3-evaluation leapfrog, Richardson validation, FTLE as a default feature, and calls the project "well-positioned for … publication" without mentioning that the headline is a negative result plus a partial fix. Update it to the four-study story. **Status: still open**; it lives outside the repository, so only you can change it.
 
 ### 19.2 Claims that need careful wording when presenting
 
-7. **Always say which comparator.** "71% cheaper" is against **RK45 at equal marginal risk**. Against DOP853 at equal risk it is a coin flip (50.6%, 51.3%), against DOP853 certified per stratum it loses (23.5%), against oracle-tuned solvers it loses badly (6–9%), and in total compiled wall-clock it is slower (0.885). Leading with "ML beats adaptive solvers" would be false; the project's own wording rule ("cheaper than RK45 at equal marginal risk … never faster than adaptive solvers") is correct. **Since the post hoc checks, add two more cautions.** "Cheaper on 71% of trajectories" must never be said as "71% cheaper" or "saves cost overall": in total it used 19–25% *more* evaluations, and it is cheaper in total only at 1–3 TU. And against solvers certified as carefully as the policy, the shares are about 67–72% (RK45) and 45–52% (DOP853).
+7. **Always say which comparator.** "71% cheaper" is against **RK45 at equal marginal risk**. Against DOP853 at equal risk it is a coin flip (50.6%, 51.3%), against DOP853 certified per stratum it loses (23.5%), against oracle-tuned solvers it loses badly (6–9%), and in total compiled wall-clock it is slower (0.885). Leading with "ML beats adaptive solvers" would be false; the project's own wording rule ("cheaper than RK45 at equal marginal risk … never faster than adaptive solvers") is correct. **Since the post hoc checks, add two more cautions.** "Cheaper on 71% of trajectories" must never be said as "71% cheaper" or "saves cost overall": in total it used 19–25% *more* evaluations, and it is cheaper in total only at 1–3 TU. And against solvers certified as carefully as the policy, the shares are about 67–72% (RK45) and 45–52% (DOP853). **Since Nov 3, one more:** against adaptive solvers given the same ideas (Sundman time, or a learned tolerance), the policy loses (Section 15B.3).
 8. **"ML is needed" (D1) is only half true.** The trees beat the best rule by 18%, but a **linear model ties the trees**. The honest claim is "the periapsis information is needed; tree models are not."
 9. **C3(a) failed to replicate** (50.6%, p = 0.11). Don't cite C3 as a clean replicated success; cite its mechanism part (ρ 0.22 vs 0.91), which did replicate.
 10. **The original hypothesis did not survive** as a design principle (D6: proximity and Jacobi add nothing for the Sundman target; FTLE is unaffordable). Be upfront that the project's success came from abandoning it.
@@ -1317,13 +1395,13 @@ You asked me to be critical. These are the problems and soft spots I found while
 
 13. The headline equal-risk comparator is matched to the policy's risk on 4,000 calibration rows; a tolerance that is both safer and cheaper might exist. **Status: checked post hoc.** A better absolute tolerance (0.1 × rtol) does make RK45 cheaper at equal risk (share 64.2%), and the certified comparators were handicapped by a coarser grid and a weaker rule (Section 15A.3–15A.4).
 14. Overheads are wall-time ratios on one machine; RHS-equivalents depend on how fast the RHS is (18.3 vs 25–28 ns changed the same model from 15.04 to 16.09).
-15. The preregistrations are internal, not external registered reports; the Study D seal did not require a clean git tree. The hashes still make tampering detectable, which is the point.
+15. The preregistrations are internal, not external registered reports; the Study D seal did not require a clean git tree. The hashes make later changes detectable, but because the repository was never public, nobody outside can confirm *when* the seals were made (Section 10.1). **Status: stated in the manuscript and S1 Appendix;** Study E must be registered on OSF first.
 16. One tolerance (100 km), one system, horizons 1–20 TU only; the tolerance dial (D8) and path-error label (D9) were not run. (Both are now planned as E2 and E3 of the draft Study E.)
 17. Study A's H1′ was added after development data had been seen (properly recorded as a deviation).
 
 ### 19.4 Process and presentation notes
 
-18. **AI-assistance disclosure.** The manuscript states that the analysis code was written with an AI coding agent and the text drafted with an AI model under the author's direction. That is honest and PLOS ONE has an AI policy, but check that the model names are exactly right, and check the **current ISEF / regional fair rules** on AI assistance and how it must be disclosed; I'm not certain what this year's rules require, and judges will likely ask what the student personally did. The student should be able to explain every equation and design choice in this document without notes. **Status: still open**; the model names and this year's fair rules still need the author's own check.
+18. **AI-assistance disclosure.** The manuscript states that the analysis code was written with an AI coding agent and the text drafted with an AI model under the author's direction. That is honest and PLOS ONE has an AI policy, but check that the model names are exactly right, and check the **current ISEF / regional fair rules** on AI assistance and how it must be disclosed; I'm not certain what this year's rules require, and judges will likely ask what the student personally did. The student should be able to explain every equation and design choice in this document without notes. **Status: rules checked, action still needed.** The Society for Science's generative-AI table (Oct 2025) forbids AI-written first drafts of the abstract, paper, poster and conclusions, and allows AI-written code with citation and a prompt log (Section 15B.6). The model names in the manuscript still need the author's confirmation.
 19. **Housekeeping.** Old pre-seal tools (Section 18.3) and the very large `RESULTS_REPORT.md` could be archived or summarized; the top level mixes four studies' scripts. Not urgent, but it would help a reviewer reproduce things. **Status: done.** The old tools and the Study A report are in `archive/`, with `STUDY_A_SUMMARY.md` at the root; `reproduce.sh` and a pinned environment were added (Section 15A.6).
 20. **Citation mismatch for HiGHS.** The manuscript says the rules were fitted with the "HiGHS interior point solver~\cite{huangfu2018}", but `huangfu2018` is "Parallelizing the dual revised simplex method" (a simplex paper, not interior point). Either cite the HiGHS software/interior-point reference or say "HiGHS solver". Also verify which HiGHS method SciPy actually used. **Status: fixed.** SciPy's `highs-ipm` runs HiGHS's interior-point solver **IPX**, now cited separately as Schork & Gondzio (2020), with Huangfu & Hall kept for HiGHS itself.
 21. **Literature review caveats.** `LITERATURE_REVIEW.md` flags several items as unverified (authors not captured, 2026 items abstract-only). The manuscript's `references.bib` claims DOIs were checked; make sure no unverified item from the review slipped into the manuscript. **Status: checked** (`manuscript/CITATION_AUDIT.md`). None of the flagged items is cited, except Dellnitz et al. (2023), whose authors and journal were then verified. Three other entries were checked against publisher or index records. The remaining 39 standard references were not re-resolved one by one; do that once before submission.
@@ -1375,8 +1453,10 @@ You asked me to be critical. These are the problems and soft spots I found while
 | Lagrange (libration) points L1–L5 | Equilibrium points in the rotating frame. |
 | Learn-then-Test (LTT) | Framework for certifying risk of a tuned predictor via hypothesis testing. |
 | Leapfrog | 2nd-order symplectic kick–drift–kick integrator. |
+| Learned tolerance | Using a model to predict an adaptive solver's tolerance for each trajectory, instead of predicting a fixed step (Section 15B.3). |
 | Locked set | Data evaluated only once, at the very end. |
 | Lyapunov orbit | Planar periodic orbit around L1 or L2. |
+| McNemar test | Paired test of two methods on the same items that looks only at the items where exactly one of them failed. |
 | Mean / eccentric anomaly | Angles locating a body along a Kepler orbit in time/geometry. |
 | Monotone label | Largest step that passes along with all finer neighbours over two octaves. |
 | Numba | Just-in-time compiler that turns Python numerical code into fast machine code. |
@@ -1384,16 +1464,18 @@ You asked me to be critical. These are the problems and soft spots I found while
 | Order of a method | How fast error shrinks with step: $\propto \Delta t^p$. |
 | Osculating orbit | The two-body Kepler orbit that matches the current position and velocity. |
 | Overhead | Cost of features and model inference, in RHS-equivalents. |
+| Oracle step | The best step for a trajectory, found using the true answer; a best case no real method can reach. |
 | Paradigm gap $P$ | Penalty of the best possible single step vs adaptive. |
 | Periapsis | Closest point of an orbit to the body. |
 | Post hoc | Decided after the results were seen; can reveal problems but cannot confirm a claim the way a preregistered test can. |
 | PI controller | Step-size controller using current and previous error. |
+| Partial correlation | Correlation between two quantities after removing what a third one (here the horizon) explains in both. |
 | Pinball (quantile) loss | Loss that makes a model predict a chosen percentile. |
 | Preregistration | Public-in-advance (here: sealed internal) plan of hypotheses and tests. |
 | Random forest | Average of many randomized decision trees. |
 | Ratio of totals | Total solver evaluations ÷ total policy evaluations over a whole set (above 1: the policy is cheaper in total). Unlike the share, it is dominated by the expensive trajectories. |
 | Reference solution | The high-accuracy "truth" (DOP853 at 10⁻¹³). |
-| Reference-divergent ("doomed") | Trajectory whose reference collides or escapes before $T$. |
+| Terminating ("doomed", in code "reference-divergent") | Trajectory whose reference collides or escapes before $T$. |
 | Regularization (of collisions) | Coordinate + time change that removes the $1/r$ singularity (Levi-Civita, KS). |
 | RHS evaluation | One call of the force function; the cost unit. |
 | RHS-equivalent | Other costs (model, features) converted into RHS-evaluation units by timing. |
@@ -1421,11 +1503,17 @@ You asked me to be critical. These are the problems and soft spots I found while
 
 ## 21. Questions a judge or reviewer is likely to ask
 
-**"So does your ML beat standard solvers?"** Against RK45 tuned to the same failure rate, yes, on about 71% of trajectories in two independent datasets, in force evaluations. Against the stronger DOP853 it's a tie; against solvers tuned with knowledge of the answer, no; and in total compiled wall-clock time over 1–20 TU, no (it's faster only at short horizons). And winning most trajectories isn't winning in total: summed over all trajectories it used about 20% more evaluations than RK45, because it loses the long, expensive ones. It is cheaper in total only at 1–3 TU. Against solvers tuned as carefully as the policy (post hoc), the share drops to about two thirds against RK45 and below half against DOP853.
+**"So does your ML beat standard solvers?"** Against RK45 tuned to the same failure rate, yes, on about 71% of trajectories in two independent datasets, in force evaluations. Against the stronger DOP853 it's a tie; against solvers tuned with knowledge of the answer, no; and in total compiled wall-clock time over 1–20 TU, no (it's faster only at short horizons). And winning most trajectories isn't winning in total: summed over all trajectories it used about 20% more evaluations than RK45, because it loses the long, expensive ones. It is cheaper in total only at 1–3 TU. Against solvers tuned as carefully as the policy (post hoc), the share drops to about two thirds against RK45 and below half against DOP853. And when the solvers get the same ideas (run in Sundman time, or with a learned tolerance), they beat it.
 
 **"Isn't 'cheaper on 71% of trajectories' the same as 'saves money'?"** No. Think of a shop that is cheaper than its rival on 71% of items but far more expensive on the big-ticket ones: your total bill can still be higher. The study reports both numbers now, and the total is what a batch of simulations actually costs.
 
 **"Did you change your results after seeing them?"** No. The sealed verdicts and numbers are unchanged. Later checks are labelled post hoc, their definitions were committed before they ran, and their numbers sit next to the sealed ones, including the ones that make the result look worse. The claim they leave standing (short horizons) goes to a new preregistered Study E on fresh data.
+
+**"Couldn't an adaptive solver use Sundman time too?"** Yes, and that was tested (exploratory). DOP853 in Sundman time needs only 41% of the policy's evaluations. Giving RK45 a tolerance predicted by the same small model also beats the policy on most trajectories at the same failure rate. The lesson: the time variable and the periapsis information are the useful discoveries, and they help adaptive solvers most.
+
+**"Is the negative result just about RK4?"** Possibly. With a perfectly chosen step, an 8th-order fixed step in Sundman time beat the oracle-tuned solvers on 98–99% of 300 trajectories. Whether a *learned* step can keep enough of that margin is the open question for Study E.
+
+**"What did you do yourself, and what did the AI and your mentor do?"** This needs an honest, specific answer that matches the written contributions statement exactly; prepare it in your own words (Section 15B.6).
 
 **"Why not just use an adaptive solver?"** For most purposes you should. The value of a pre-run step is a known cost per run, which helps batch scheduling; the study shows when that can be had cheaply (short horizons, known population) and when it can't.
 
@@ -1433,13 +1521,13 @@ You asked me to be critical. These are the problems and soft spots I found while
 
 **"Why did your original hypothesis fail?"** FTLE is the most informative quantity, but computing it requires integrating the trajectory, which is exactly what we're trying to avoid (it cost ~70 adaptive solves). After the time transformation, proximity and Jacobi add nothing; the horizon and periapsis information carry it.
 
-**"How do you know it's safe?"** A binomial hypothesis test on held-out calibration trajectories certifies, with 90% confidence, that the average failure rate is ≤ 5%. We showed the average hides 13% failure near the Moon, and fixed it with per-stratum certificates (every stratum ≤ 3.1% on new data).
+**"How do you know it's safe?"** A binomial hypothesis test on held-out calibration trajectories certifies, with 90% confidence, that the average failure rate is ≤ 5% among trajectories that don't crash or escape before the end. We showed the average hides 13% failure near the Moon, and fixed it with per-stratum certificates (every stratum ≤ 3.1% on new data).
 
 **"How do you know you didn't tune until it worked?"** Every study was preregistered and sealed with file hashes before the confirmatory data were touched; each confirmatory step ran once; negative results (five of them) are reported; the headline replicated on fresh data.
 
 **"Is 100 km meaningful?"** It is an illustrative integrator-error tolerance inside the model. The model itself differs from the real Earth–Moon system by thousands of km, as the CAPSTONE comparison shows.
 
-**"Why does it fail on halo/vertical/axial orbits?"** They are rare, highly structured states the random training sample barely contains, so the model predicts steps 2–3× too long. It is a distribution-shift failure; the integrator itself converges correctly when the step is small enough.
+**"Why does it fail on halo/vertical/axial orbits?"** They are rare, highly structured states the random training sample barely contains, so the model predicts steps 2–3× too long. (Axial and halo orbits even look ordinary to the model, inside its training range, and still fail, so a simple "too unfamiliar" check would not catch them.) It is a distribution-shift failure; the integrator itself converges correctly when the step is small enough.
 
 **"What's novel?"** The rigorous test of pre-run step selection in the spatial CR3BP with all costs charged and certified risk; the decomposition that locates the loss; the timescale-range law and its removal by Sundman time; analytic periapsis features as a free lookahead; and the methodology.
 
