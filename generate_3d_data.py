@@ -54,7 +54,11 @@ def main():
     parser.add_argument("--tau_c", type=float, default=None, help="v5: cap of the Sundman time-scaling function (default 1.0 TU)")
     parser.add_argument("--sampling_weights", type=float, nargs=3, default=None, metavar=("LAGRANGE", "WIDE", "NEAR_MOON"),
                          help="override the lagrange/wide/near_moon mixture (default 0.55 0.20 0.25); v5 only")
+    parser.add_argument("--sim_time_min", type=float, default=None, help="Study E: horizon range lower end in TU (with --sim_time_max; log-uniform)")
+    parser.add_argument("--sim_time_max", type=float, default=None, help="Study E: horizon range upper end in TU")
     args = parser.parse_args()
+    if (args.sim_time_min is None) != (args.sim_time_max is None):
+        parser.error("--sim_time_min and --sim_time_max go together")
 
     os.makedirs(args.output_dir, exist_ok=True)
     os.chdir(args.output_dir)
@@ -78,6 +82,7 @@ def main():
         pipeline=args.pipeline,
         tau_c=args.tau_c,
         sampling_weights=(None if args.sampling_weights is None else dict(zip(("lagrange", "wide", "near_moon"), args.sampling_weights))),
+        sim_time_range=(None if args.sim_time_min is None else (args.sim_time_min, args.sim_time_max)),
     )
 
     print(f"\nUsable orbits: {combo_report['usable_count']} / {combo_report['num_candidates']}")

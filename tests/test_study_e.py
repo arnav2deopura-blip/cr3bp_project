@@ -290,6 +290,22 @@ def test_rows_with_event_matches_single_runs():
     assert np.all(a["path"][a["ok"] & np.isfinite(rck[:, 0, 0])] >= a["err"][a["ok"] & np.isfinite(rck[:, 0, 0])] - 1e-9)
 
 
+def test_tolerance_relabelling_keeps_the_states():
+    """Item 2: the same seed gives the same initial states at every tolerance and under a restricted horizon range (gen_part_e.sh relies on
+    this for E_tol and E_confirm); the horizon range is respected; leaving it out reproduces the earlier generator."""
+    from orbit_ml_cr3bp.data_3d import generate_one_3d_training_orbit as gen
+    cols = ["x", "y", "z", "vx", "vy", "vz", "sampling_branch"]
+    for idx in range(4):
+        kw = dict(mu=MU, base_seed=999, label_mode="accuracy_monotone", pipeline="v6", tau_c=2.0)
+        a = gen(idx, tol_km=100.0, **kw)["row"]
+        b = gen(idx, tol_km=10.0, **kw)["row"]
+        c = gen(idx, tol_km=100.0, sim_time_range=(1.0, 3.0), **kw)["row"]
+        d = gen(idx, tol_km=100.0, sim_time_range=None, **kw)["row"]
+        assert all(a[k] == b[k] == c[k] for k in cols) and a["sim_time"] == b["sim_time"]
+        assert 1.0 <= c["sim_time"] <= 3.0 and 1.0 <= a["sim_time"] <= 20.0
+        assert {k: v for k, v in a.items() if k == k} .keys() == d.keys() and all((a[k] == d[k]) or (a[k] != a[k] and d[k] != d[k]) for k in a)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
