@@ -102,7 +102,7 @@ Run the full test suite after each item; the existing 7 suites must still pass (
 
 ## Step 4: freeze and register
 
-1. Resolve every "proposed" item in the draft ; remove the "DRAFT" header line; keep "## Deviations" empty.
+1. Check that no "proposed" item is left in the draft; remove the "DRAFT" header line; keep "## Deviations" empty.
 2. Commit the tree (clean). **Register `PREREGISTRATION_E.md` on OSF** and put the OSF link in the document (you do this; I cannot create
    accounts). Push the commit to a public remote if you chose to.
 3. Generate seeds 61–66 (and the 10 km / 1,000 km relabels of 63), hash them into `part_e/FROZEN_FILES.json`, and do not load them.
