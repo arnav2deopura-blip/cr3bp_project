@@ -167,7 +167,12 @@ Not included: hybrid fixed/adaptive switching (excluded by the plan); new featur
 3. E3 path-error labels and certificate: dense-reference checkpoints and a `run_rows` variant that returns the maximum checkpoint error.
 4. E4 compiled event detection for DP5(4)-PI and DOP853 (collision / escape time by dense interpolation), and the strict event-time rule.
 5. E5 OOD gate: kNN distance in the 25-feature space with a conformal threshold chosen on E_select; leave-one-family-out driver over the
-   JPL families.
+   JPL families. **Built 2026-11-13 (`orbit_ml_cr3bp/ood_e.py`), definitions fixed now:** score = mean distance to the k = 10 nearest training
+   rows (Study C fitting sets) in the 25 standardized features (P19); threshold = split-conformal quantile at alpha = 0.05 of the usable E_select
+   rows (rank ceil((n + 1) 0.95)); abstained runs go to compiled DP5(4)-PI at its certified rtol. The gate uses no periodic-orbit data, so every
+   family is held out by construction and "leave-one-family-out" is the per-family rate and the D5 family-balanced statistic. The JPL members
+   are a third evenly spaced sample of each of the 21 streams (50 per stream, 1,050 members), disjoint from the Study D dry and confirmation
+   samples. Pilot on Study D data: a 5 % threshold set on the Study D selection set abstained on 3.9 % of the replication rows at 1–3 TU.
 6. E6: a timing script that refuses to start above load 1.0 (no relaxation), logs two sessions and records the machine (platform, CPU, numba version).
 7. Wire `collision_segment.crossed_bodies` into the physical-time runners used in Part E (not into any sealed kernel).
 8. Compiled DP5(4)-PI and DOP853 in Sundman time (event at t = T by dense interpolation), with unit tests against the SciPy version of P20.

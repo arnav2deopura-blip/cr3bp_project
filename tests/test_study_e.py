@@ -306,6 +306,28 @@ def test_tolerance_relabelling_keeps_the_states():
         assert {k: v for k, v in a.items() if k == k} .keys() == d.keys() and all((a[k] == d[k]) or (a[k] != a[k] and d[k] != d[k]) for k in a)
 
 
+def test_ood_gate():
+    """Item 5: the split-conformal rank, the gate on synthetic data, the third JPL sample disjoint from Study D's two, the gated violation."""
+    from orbit_ml_cr3bp import ood_e as oe
+    from orbit_ml_cr3bp.periodic_d import select_indices
+    sc = np.arange(1, 20, dtype=float)                       # n = 19: rank ceil(20 * 0.95) = 19
+    assert oe.conformal_threshold(sc, 0.05) == 19.0 and oe.conformal_threshold(sc[:10], 0.05) == np.inf
+    rng = np.random.RandomState(0)
+    tr = pd.DataFrame(rng.randn(3000, 3), columns=list("abc"))
+    cal = pd.DataFrame(rng.randn(2000, 3), columns=list("abc"))
+    g = oe.KnnGate(k=10, alpha=0.05).fit(tr, list("abc"))
+    g.calibrate(cal)
+    new = pd.DataFrame(rng.randn(4000, 3), columns=list("abc"))
+    assert abs(g.abstain(new).mean() - 0.05) < 0.015
+    assert g.abstain(pd.DataFrame([[8.0, 8.0, 8.0]], columns=list("abc")))[0]
+    for n_total in (1535, 5731, 19782, 120):
+        e = set(oe.select_indices_e(n_total, 50))
+        assert not e & set(select_indices(n_total, 50, "confirm")) and not e & set(select_indices(n_total, 50, "dry"))
+        assert len(e) >= 45
+    v = oe.gated_violations([True, False, True], [True, True, False], [False, False, True])
+    assert v.tolist() == [False, True, True]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
