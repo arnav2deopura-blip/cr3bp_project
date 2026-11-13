@@ -67,8 +67,8 @@ The horizon range of E_confirm is restricted **by design** (the claim is about 1
   `orbit_ml_cr3bp/defense_runs.py::run_sundman_adaptive` for SciPy; compiled versions to be built, section 7). Added 2026-11-03, before any seal,
   because the post hoc P20 run (`posthoc/README.md`) found that a time transformation also helps the adaptive solvers: on the Study D replication
   set, at equal risk, the policy was cheaper than Sundman-time RK45 on 67.6 % of orbits (ratio of totals 0.72) and than Sundman-time DOP853 on
-  45.7 % (ratio of totals 0.41). Proposed (to be decided before the seal): E1a and E1b tested against compiled DP5(4)-PI in physical time **and** in Sundman
-  time (intersection–union: p = the larger), with the Sundman-time DOP853 reported for every test.
+  45.7 % (ratio of totals 0.41). **Decided 2026-11-13, before any Study E data:** E1a and E1b are tested against compiled DP5(4)-PI in physical time **and** in
+  Sundman time (intersection–union: p = the larger), and compiled DOP853 in Sundman time is reported (not tested) for every test.
 - **Comparator certification is symmetric** with the policy's (`orbit_ml_cr3bp/symmetric_cert.py`): fixed sequence, safest first, full δ,
   grid `RTOL_GRID_FINE` (1e-10 … 1e-3, 0.125 dex). `tests/test_posthoc.py::test_comparator_symmetry` must pass at the seal. The equal-risk
   comparator keeps the sealed rule (scan + four bisections).
@@ -91,8 +91,8 @@ The horizon range of E_confirm is restricted **by design** (the claim is about 1
 
 | Test | Statistic | H1 | Unit / resampling |
 |---|---|---|---|
-| **E1a** | ratio of totals, RHS evaluations: Σ comparator / Σ policy (policy overhead included, violating runs included), compiled DP5(4)-PI at equal risk, E_confirm evaluation rows | > 1 | orbit bootstrap, 4,000 resamples, p = share of resamples ≤ 1 |
-| **E1b** | throughput ratio, compiled wall-clock, same rows and comparator, single thread, E6 protocol | > 1 | same |
+| **E1a** | ratio of totals, RHS evaluations: Σ comparator / Σ policy (policy overhead included, violating runs included), compiled DP5(4)-PI at equal risk, in physical time and in Sundman time, E_confirm evaluation rows | > 1 against both (intersection–union: p = the larger) | orbit bootstrap, 4,000 resamples, p = share of resamples ≤ 1 |
+| **E1b** | throughput ratio, compiled wall-clock, same rows and comparators, single thread, E6 protocol | > 1 against both (IUT) | same |
 | E1 | intersection–union: p = max(p_E1a, p_E1b) | | |
 | **E2** | E1a at 10 km and at 1,000 km on E_tol (1–8 TU), each comparator recalibrated at that tolerance | ratio > 1 at both (intersection–union) | orbit bootstrap |
 | **E3** | violation rate of the policy under a path-error certificate (maximum position error at K = 20 checkpoints on the dense reference) | rate ≤ 5 % (H0: rate > 5 %) and E1a > 1 with the path-certified scale | exact binomial; bootstrap; IUT |
@@ -112,7 +112,9 @@ endpoints.
 ## 5. Expectations (to be written from the E_select dry run BEFORE the seal)
 
 - E1: [dry run]. Priors at 1–3 TU: RHS ratio of totals 1.48 (1.44–1.52) against SciPy RK45 at equal risk (Study D replication set, post hoc);
-  compiled throughput 1.61 against DP5(4)-PI (D2, Study D confirmation set, by horizon band).
+  compiled throughput 1.61 against DP5(4)-PI (D2, Study D confirmation set, by horizon band). Against the Sundman-time comparators at 1–3 TU
+  (P20, SciPy, Study D replication set, post hoc): RK45 1.31, DOP853 **0.85**. DP5(4)-PI in Sundman time was not run; if it behaves like
+  Sundman-time RK45, E1 may pass narrowly; the reported Sundman-time DOP853 is expected to need less work than the RK4 policy (below 1).
 - E2: expected to shrink at 10 km (the policy's certified scale shrinks and the landing steps weigh more): [dry run].
 - E3: [dry run]; the endpoint audit of Study C found 2.6 % of runs wrong mid-run.
 - E4: [dry run]; the policy matched the event type on 99.9 % of doomed orbits but the strict event time on 46.7 %, so E4 may fail on success.

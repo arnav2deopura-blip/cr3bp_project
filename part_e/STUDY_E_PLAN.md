@@ -45,7 +45,7 @@ the same overall violation rate (3.5 % vs 3.6–3.9 %), but the policy put its v
 comparators at long ones (~10.6 % at 8–20 TU vs 4.9 %). Overall equal risk is the sealed rule and keeps E7 comparable with Studies C–D;
 per-band calibration (as D4's per-stratum certificate) is fairer per band but costs power. Decide before the seal; report the other as secondary.
 
-**D2. Which comparators enter E1?** The draft lists Sundman-time solvers as "proposed, decide before the seal". The McGreivy–Hakim standard
+**D2. Which comparators enter E1?** **Decided 2026-11-13: DP5(4)-PI in physical and in Sundman time, both in the IUT; Sundman-time DOP853 reported for every test** (draft §3–§5). The draft lists Sundman-time solvers as "proposed, decide before the seal". The McGreivy–Hakim standard
 that the earlier parts followed says include the strongest baseline. My recommendation: include compiled DP5(4)-PI in physical **and** Sundman
 time in the intersection–union test, and report Sundman-time DOP853 for every test, with the 0.85 prior written into the expectations.
 
@@ -102,7 +102,7 @@ Run the full test suite after each item; the existing 7 suites must still pass (
 
 ## Step 4: freeze and register
 
-1. Resolve every "proposed" item in the draft (D1, D2, D4); remove the "DRAFT" header line; keep "## Deviations" empty.
+1. Resolve every "proposed" item in the draft (D4); remove the "DRAFT" header line; keep "## Deviations" empty.
 2. Commit the tree (clean). **Register `PREREGISTRATION_E.md` on OSF** and put the OSF link in the document (you do this; I cannot create
    accounts). Push the commit to a public remote if you chose to.
 3. Generate seeds 61–66 (and the 10 km / 1,000 km relabels of 63), hash them into `part_e/FROZEN_FILES.json`, and do not load them.
