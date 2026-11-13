@@ -38,3 +38,7 @@ CR3BP_Poster.af
 poster/
 affinity_bridge/
 cr3bp_poster_48x36.js
+
+# Part E working data and run folders (results worth keeping are copied to part_e/results)
+data_e/
+out_e/

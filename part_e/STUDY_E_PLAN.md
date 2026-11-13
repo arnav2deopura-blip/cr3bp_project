@@ -77,6 +77,24 @@ Study D data are not Study E test data, so looking at them is allowed. Everythin
 
 ## Step 2: build the missing pieces (draft §7), each with a unit test
 
+**Done 2026-11-13** (commits `857b18b` … this one; 18 tests in `tests/test_study_e.py`, the older suites unchanged): item 8
+`compiled_sundman_e.py`, item 4 and 7 and 3 `events_e.py`, item 2 `generate_3d_data.py --sim_time_min/max` and `gen_part_e.sh`, item 5
+`ood_e.py`, item 6 `timing_e.py`, item 9 `e7_policy.py`, item 1 `freeze_e.py` and `run_confirm_e_3d.py`, plus `run_part_e_3d.py` (the
+pre-seal preparation) and `confirm_e_3d.py` (the statistics). The whole chain ran in smoke mode on Study D rows (`--smoke 300`). Definitions fixed
+while building are in draft §4.1.
+
+**Commands from here** (Step 3):
+```
+./gen_part_e.sh select
+python run_part_e_3d.py e7_labels      # ~30 min (the P25 reference cache is reused)
+python run_part_e_3d.py e7_select
+python run_part_e_3d.py e7_freeze
+python run_part_e_3d.py overheads      # idle machine only
+python run_part_e_3d.py gate
+python run_confirm_e_3d.py run e1 --target dry      # then e2, e3, e4, e5, e7, timing (idle machine)
+python run_confirm_e_3d.py tests --target dry       # -> the expectations of draft §5
+```
+
 Suggested order (dependencies first):
 1. **Item 8**: compiled DP5(4)-PI and DOP853 in Sundman time; test RHS counts and endpoints against `run_sundman_adaptive` on ~50 orbits.
 2. **Item 4**: compiled event detection (collision / escape) for every comparator; strict event-time rule; test on the Study C doomed ledger.

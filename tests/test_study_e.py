@@ -386,6 +386,35 @@ def test_e7_policy_pipeline():
     assert rep["n_at_ceiling"] > 0 and rep["n_at_ceiling_multi_step"] == 0 and rep["rule_holds"]
 
 
+def test_confirm_statistics():
+    """Item 1: the section 4 statistics on hand-checkable inputs."""
+    from orbit_ml_cr3bp import confirm_e_3d as ce
+    from scipy.stats import binom
+    r = ce.ratio_test(np.full(400, 10.0), np.full(400, 15.0), n_boot=500)
+    assert np.isclose(r["ratio"], 1.5) and r["p"] == 0.0
+    r = ce.ratio_test(np.full(400, 10.0), np.full(400, 8.0), n_boot=500)
+    assert r["p"] == 1.0
+    assert ce.iut({"a": {"p": 0.01}, "b": {"p": 0.2}})["p"] == 0.2
+    b = ce.binom_le(30, 1000, 0.05)
+    assert np.isclose(b["p"], binom.cdf(30, 1000, 0.05)) and b["p"] < 0.01
+    ni = ce.noninferiority(np.ones(500), np.ones(500), n_boot=300)
+    assert ni["diff"] == 0.0 and ni["p"] == 0.0
+    h = ce.holm({"E1": 0.001, "E2": 0.02, "E3": 0.04, "E4": 0.5})
+    assert h["E1"]["reject"] and not h["E2"]["reject"] and np.isclose(h["E2"]["p_adj"], 0.06) and not h["E3"]["reject"]
+    h = ce.holm({"E1": 0.001, "E2": 0.012, "E3": 0.02})
+    assert h["E1"]["reject"] and h["E2"]["reject"] and h["E3"]["reject"]
+
+
+def test_seal_refuses_without_preconditions():
+    """freeze_e.py: no seal while the draft is a draft, there is no OSF link or no frozen-file list (the current state)."""
+    import freeze_e
+    if os.path.exists(freeze_e.RECORD):
+        print("  skipped (sealed)")
+        return
+    bad = freeze_e.preconditions()
+    assert any("DRAFT" in b for b in bad) and any("OSF" in b for b in bad)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

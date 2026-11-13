@@ -123,41 +123,47 @@ def training_labels(Utr, ref, pool):
     return L
 
 
-def select_e7(train, weights, features, sel_df, sel_ref, comparator_rows, overhead, grid=GRID, log=print):
-    """The draft section 3 selection on E_select (sel_df usable rows, sel_ref their reference positions). comparator_rows(states, T, ref, rtol) ->
-    dict(nfev, met, capped) of compiled DOP853 in Sundman time. Returns (chosen (n, q), table of every config)."""
-    from . import deploy_d as dd, policy_c_3d as pc, symmetric_cert as sc
-    from .posthoc_metrics import cost_stats
+def select_e7(train, weights, features, sel_df, sel_ref, rows_fn, overhead, comparator="DOP853s", grid=GRID, log=print):
+    """The draft section 3 selection on E_select (sel_df usable rows, sel_ref their reference positions). rows_fn(method, states, T, param, ref)
+    -> dict(evals, met, ...) runs any Part E method (events_e.rows_with_event: the same kernels and checks for the policy and the comparator).
+    Returns (chosen (n_trees, quantile), table of every config)."""
+    from . import policy_c_3d as pc, symmetric_cert as sc
+    from .confirm_e_3d import ratio_test
     cal, ev = pc.split_folds(len(sel_df), seed=42)
     S = sel_df[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(dtype=float)
     T = sel_df["sim_time"].to_numpy(dtype=float)
-    runner = e8.Rk8sRunner(MU)
+    ccache = {}
+
+    def comp_viol(rt):
+        if rt not in ccache:
+            ccache[rt] = int((~rows_fn(comparator, S[cal], T[cal], rt, sel_ref[cal])["met"]).sum())
+        return ccache[rt], len(cal)
     rows = []
     for n_trees, q in grid:
         models = fit_e7(train, weights, features, n_trees, q)
         raw = raw_ds(models, sel_df)
-        cert = dd.certify_scale(runner, S[cal], T[cal], raw[cal], sel_ref[cal])
+        pcache = {}
+
+        def viol(sc_):
+            if sc_ not in pcache:
+                pcache[sc_] = int((~rows_fn("rk8s", S[cal], T[cal], raw[cal] * sc_, sel_ref[cal])["met"]).sum())
+            return pcache[sc_], len(cal)
+        cert = pc.certify_sequence(viol, pc.FIXED_SEQ_GRID, pc.ALPHA, pc.DELTA, "fixed_sequence")
         scale = cert["chosen_scale"]
         row = {"n_trees": n_trees, "quantile": q, "scale": scale}
         if scale is None:
             rows.append({**row, "ratio_of_totals": np.nan})
             log(f"  {n_trees} trees q {q}: no scale certified")
             continue
-        target = cert["violations_by_scale"][float(scale)] / len(cal)
-        cache = {}
-
-        def viol(rt):
-            if rt not in cache:
-                cache[rt] = int((~comparator_rows(S[cal], T[cal], sel_ref[cal], rt)["met"]).sum())
-            return cache[rt], len(cal)
-        eqr, _chain = sc.equal_risk_rtol(viol, target)
-        r = dd.run_rows(runner, S[ev], T[ev], raw[ev] * scale, sel_ref[ev])
-        c = comparator_rows(S[ev], T[ev], sel_ref[ev], eqr)
-        st = cost_stats(r["evals"] + overhead, c["nfev"], r["met"], n_boot=200, capped=c["capped"])
-        row.update({"cal_violation_rate": target, "comparator_rtol": eqr, "ratio_of_totals": st["aggregate_ratio"], "share": st["share"],
+        target = pcache[float(scale)] / len(cal)
+        eqr, _chain = sc.equal_risk_rtol(comp_viol, target)
+        r = rows_fn("rk8s", S[ev], T[ev], raw[ev] * scale, sel_ref[ev])
+        c = rows_fn(comparator, S[ev], T[ev], eqr, sel_ref[ev])
+        st = ratio_test(r["evals"] + overhead, c["evals"], n_boot=200)
+        row.update({"cal_violation_rate": target, "comparator_rtol": eqr, "ratio_of_totals": st["ratio"], "share": st["share_policy_cheaper"],
                     "eval_violation_rate": float((~r["met"]).mean()), "comparator_eval_violation_rate": float((~c["met"]).mean())})
         rows.append(row)
-        log(f"  {n_trees} trees q {q}: scale {scale:.3f}, ratio of totals {st['aggregate_ratio']:.4f}")
+        log(f"  {n_trees} trees q {q}: scale {scale:.3f}, ratio of totals {st['ratio']:.4f}")
     tab = pd.DataFrame(rows)
     ok = tab[np.isfinite(tab["ratio_of_totals"])].copy()
     ok["r3"] = ok["ratio_of_totals"].round(3)

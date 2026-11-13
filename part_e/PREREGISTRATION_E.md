@@ -116,6 +116,26 @@ of the Study C doomed-orbit ledger), where v is the reference speed at the event
 Collisions of every run are detected between nodes by the segment–sphere test (`orbit_ml_cr3bp/collision_segment.py`), not only at step
 endpoints.
 
+### 4.1 Definitions fixed while building the code (2026-11-13, before any Study E data)
+
+- **One set of kernels for every arm** (`events_e.py`, `compiled_sundman_e.py`): the policy and every comparator run with the endpoint
+  collision / ejection / non-finite check and the chord test between consecutive nodes (item 7). The comparator's cost includes every
+  evaluation it spent, also on violating runs (no run is dropped from a ratio of totals). Wall-clock arms (E6) all use the endpoint check only.
+- **Calibration**: the policy scale by the sealed fixed-sequence rule on `FIXED_SEQ_GRID` on the 4,000 calibration rows (`run_part_d_3d.standard_split`);
+  each comparator at equal risk by the sealed scan-and-four-bisections rule (`symmetric_cert.equal_risk_rtol`) to the policy's calibration
+  violation rate. E2 repeats both at 10 km and 1,000 km.
+- **E3**: the path-certified scale uses the path violation (maximum error over the K = 20 checkpoints t_k = kT/20, positions by quintic Hermite
+  interpolation of each method's own nodes, `events_e.ck_record`); its comparators are set to equal **path** risk, so both sides of the E3 ratio
+  are judged by the same criterion.
+- **E4**: against both tested E1 comparators (intersection–union over the two success differences and the two ratios), at the E1 scale and
+  rtols. The population is every candidate whose reference reached T or ended in a collision or ejection; other reference outcomes are counted
+  and not run. Event times of every method are located by the same cubic Hermite rule (`events_e.hermite_event_time`).
+- **E5**: the RK4 policy's scale and the comparator's certified rtol are set on the E_confirm_20 calibration rows (1–20 TU, the range of the
+  JPL runs); the policy and gate features are computed at JPL's mass ratio, as in D5.
+- **Order of the last steps**: OSF registration of this document, then the confirmation data (`gen_part_e.sh confirm` refuses without the
+  OSF link), then `run_part_e_3d.py frozen_list` and `freeze_e.py seal` (clean git tree, the OSF link, the hashes of every frozen file),
+  then the upload of `FREEZE_E.json` and a `git bundle` to OSF; their links go into `part_e/OSF_LINKS.json`, never into `FREEZE_E.json`.
+
 ## 5. Expectations (to be written from the E_select dry run BEFORE the seal)
 
 - E1: [dry run]. Priors at 1–3 TU: RHS ratio of totals 1.48 (1.44–1.52) against SciPy RK45 at equal risk (Study D replication set, post hoc);

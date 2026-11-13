@@ -2,8 +2,9 @@
 # Part E data generation (pipeline v6 = v5 without the FTLE; part_e/PREREGISTRATION_E.md section 2). Run from the repository root with the
 # project environment's python.
 #   ./gen_part_e.sh select    E_select (seed 60) only: the dry run, the expectations, the E7 selection and the OOD threshold. Before the seal.
-#   ./gen_part_e.sh confirm   every confirmation set (seeds 61-66, and seed 63 at 10 km and 1,000 km). ONLY AFTER THE SEAL; the files are then
-#                             hashed into part_e/FROZEN_FILES.json and not opened before the confirmatory runner.
+#   ./gen_part_e.sh confirm   every confirmation set (seeds 61-66, and seed 63 at 10 km and 1,000 km). Only AFTER the OSF registration and
+#                             BEFORE the seal: the files are hashed into part_e/FROZEN_FILES.json (run_part_e_3d.py frozen_list), sealed by
+#                             freeze_e.py, and not opened before the confirmatory runner.
 # The 100 km sets use --tol_km 100. E_tol (seed 63) is generated twice from the same seed, once per tolerance; the initial states are the same
 # (tests/test_study_e.py::test_tolerance_relabelling_keeps_the_states).
 set -u
@@ -22,7 +23,9 @@ case "${1:-}" in
     gen select 10000 60 100
     ;;
   confirm)
-    if [ ! -f FREEZE_E.json ]; then echo "refusing: FREEZE_E.json does not exist (seal first)"; exit 1; fi
+    if ! grep -q '"registration": *"https://osf.io/' part_e/OSF_LINKS.json 2>/dev/null; then
+      echo "refusing: part_e/OSF_LINKS.json has no OSF registration URL (register the pre-registration on OSF first)"; exit 1; fi
+    if [ -f FREEZE_E.json ]; then echo "refusing: FREEZE_E.json exists; the confirmation data are generated before the seal, once"; exit 1; fi
     gen confirm 20000 61 100 --sim_time_min 1 --sim_time_max 3
     gen confirm_8 20000 62 100 --sim_time_min 1 --sim_time_max 8
     gen tol_10 10000 63 10 --sim_time_min 1 --sim_time_max 8
