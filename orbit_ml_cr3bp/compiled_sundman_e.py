@@ -122,8 +122,9 @@ def _dense_dop853(y_old, F, x, out):
 
 
 @njit(cache=True)
-def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8):
-    """Returns (ok, X_end (6), nfev, n_accepted, n_rejected, s_end, reason)."""
+def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8, info):
+    """Returns (ok, X_end (6), nfev, n_accepted, n_rejected, s_end, reason). When a collision / ejection / non-finite check fails, `info`
+    (length 14) receives t_good, X_good (6), t_bad, X_bad (6): the last good state and the first bad one, in physical time (events_e.py)."""
     n = 7
     if method == METHOD_RK45:
         ns = B.shape[0]               # 6 stages + FSAL
@@ -295,6 +296,11 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
             if check_bad:
                 bad = _bad_state(Xout, mu, rc1, rc2, rej)
                 if bad != 0:
+                    info[0] = y[6]
+                    info[7] = T
+                    for i in range(6):
+                        info[1 + i] = y[i]
+                        info[8 + i] = Xout[i]
                     return False, Xout, nfev, n_acc, n_rej, s + hi * h, bad
             for i in range(6):
                 if not math.isfinite(Xout[i]):
@@ -303,8 +309,12 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
         if check_bad:
             bad = _bad_state(ynew, mu, rc1, rc2, rej)
             if bad != 0:
+                info[0] = y[6]
+                info[7] = ynew[6]
                 for i in range(6):
                     Xout[i] = ynew[i]
+                    info[1 + i] = y[i]
+                    info[8 + i] = ynew[i]
                 return False, Xout, nfev, n_acc, n_rej, s_new, bad
         for i in range(n):
             y[i] = ynew[i]
@@ -321,12 +331,13 @@ def rk_s_batch(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, c
     nf = np.zeros(n)
     rs = np.zeros(n, dtype=np.int64)
     Y0 = np.empty(7)
+    info = np.empty(14)
     for i in range(n):
         for j in range(6):
             Y0[j] = states[i, j]
         Y0[6] = 0.0
         o, yy, e, _a, _r, _s, r = rk_s_endpoint(Y0, T[i], rtol, rtol * atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej,
-                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8)
+                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, info)
         ok[i] = o
         for j in range(6):
             y[i, j] = yy[j]
@@ -344,11 +355,12 @@ def rk_s_batch_par(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfe
     rs = np.zeros(n, dtype=np.int64)
     for i in prange(n):
         Y0 = np.empty(7)
+        info = np.empty(14)
         for j in range(6):
             Y0[j] = states[i, j]
         Y0[6] = 0.0
         o, yy, e, _a, _r, _s, r = rk_s_endpoint(Y0, T[i], rtol, rtol * atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej,
-                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8)
+                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, info)
         ok[i] = o
         for j in range(6):
             y[i, j] = yy[j]

@@ -145,6 +145,73 @@ def test_compiled_sundman_adaptive_variants():
     assert np.all((r > 0.3) & (r < 3.0)), r
 
 
+def _doomed_rows(n=10, seed=3):
+    if not os.path.exists(C_CONFIRM):
+        return None
+    d = pd.read_csv(C_CONFIRM, nrows=3000, low_memory=False)
+    d = d[d["reference_outcome"].astype(str).isin(["primary_collision", "secondary_collision", "ejection"])]
+    d = d.sample(min(n, len(d)), random_state=seed)
+    return d[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(float), d["sim_time"].to_numpy(float)
+
+
+def _mixed_rows():
+    a, b = _real_rows(6, 4), _doomed_rows(6, 4)
+    if a is None:
+        return STATES, HORIZONS
+    return np.vstack([a[0], b[0]]), np.concatenate([a[1], b[1]])
+
+
+def test_event_kernels_equal_the_originals():
+    """Item 4: the event-keeping copies of the fixed-step Sundman kernels and the generic physical-time adaptive kernel give the same run as
+    the kernels they copy (usable and doomed orbits)."""
+    from orbit_ml_cr3bp import events_e as ee, compiled_solvers_d as csd
+    from orbit_ml_cr3bp.sundman_3d import integrate_endpoint_rk4s
+    from orbit_ml_cr3bp.config import collision_radii, EJECTION_RADIUS
+    rc1, rc2 = collision_radii(MU)
+    S, T = _mixed_rows()
+    tb = csd.scipy_tableaux()["dop853"]
+    n_bad = 0
+    for s, t in zip(S, T):
+        for ds in (0.3, 0.05):
+            a = ee.run_with_event("rk4s", s, t, ds)
+            r = integrate_endpoint_rk4s(s, ds, t, MU, 4_000_000)
+            assert a["ok"] == bool(r[0]) and a["reason"] == int(r[5]) and a["evals"] == 4 * (r[6] + r[7])
+            assert np.array_equal(a["final"], np.asarray(r[2]))
+            b = ee.run_with_event("rk8s", s, t, ds * 4)
+            r = dr.integrate_endpoint_rk8s(s, ds * 4, t, MU)
+            assert b["ok"] == bool(r[0]) and b["reason"] == int(r[5]) and b["evals"] == 12 * (r[6] + r[7])
+            assert np.array_equal(b["final"], np.asarray(r[2]))
+            n_bad += int(not a["ok"])
+        for rt in (1e-6, 1e-10):
+            for meth, ref_fn in (("DP54PI", lambda: csd.KR.dp54_endpoint(s, t, rt, rt * 1e-3, MU, csd.CTRL_PI, 2_000_000, rc1, rc2, EJECTION_RADIUS)),
+                                 ("RK45", lambda: csd.KR.dp54_endpoint(s, t, rt, rt * 1e-3, MU, csd.CTRL_SCIPY, 2_000_000, rc1, rc2, EJECTION_RADIUS)),
+                                 ("DOP853", lambda: csd.KR.dop853_endpoint(s, t, rt, rt * 1e-3, MU, *tb, 2_000_000, rc1, rc2, EJECTION_RADIUS))):
+                a = ee.run_with_event(meth, s, t, rt)
+                r = ref_fn()
+                assert a["ok"] == bool(r[0]) and a["reason"] == int(r[5]) and a["evals"] == r[2], (meth, rt, a["evals"], r[2])
+                assert np.allclose(a["final"], np.asarray(r[1]), rtol=0, atol=1e-12)
+    assert n_bad > 0, "the doomed rows should produce some bad runs"
+
+
+def test_event_times_converge_to_the_reference():
+    """On doomed orbits a tight run of every method finds the reference's event type, and its Hermite event time agrees with the reference's
+    event time to well within the strict rule's window."""
+    from orbit_ml_cr3bp import events_e as ee
+    rows = _doomed_rows(8, 5)
+    if rows is None:
+        print("  skipped (no data_c/confirm)")
+        return
+    for s, t in zip(*rows):
+        code, te, v = ee.reference_event(s, t)
+        assert code in (1, 2, 3)
+        window = (100.0 / DU_KM) / v
+        for meth, prm in (("rk4s", 0.01), ("rk8s", 0.05), ("DP54PI", 1e-11), ("DOP853", 1e-11), ("DP54PIs", 1e-11), ("DOP853s", 1e-11)):
+            r = ee.run_with_event(meth, s, t, prm)
+            assert not r["ok"] and r["event"] == code, (meth, r, code)
+            assert abs(r["t_event"] - te) < 0.01 * window, (meth, r["t_event"], te, window)
+            assert ee.strict_success(r["event"], r["t_event"], code, te, v)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
