@@ -246,6 +246,50 @@ def test_segment_check_in_the_kernels():
                 assert a["ok"] or a["evals"] >= b["evals"]
 
 
+def test_checkpoints_path_error():
+    """Item 3: recording checkpoints changes no run; a checkpoint at a node time returns that node (endpoint_audit_3d's node list); the last
+    checkpoint is the final position; a tight run has a small path error and a loose one a path error at least its final error."""
+    from orbit_ml_cr3bp import events_e as ee
+    from orbit_ml_cr3bp.endpoint_audit_3d import trajectory_rk4s
+    S, T = _real_rows(5, 8) if _real_rows() is not None else (STATES, HORIZONS)
+    for s, t in zip(S, T):
+        ts, xs = trajectory_rk4s(s, 0.2, t, MU)
+        nodes = ts[1:-1][:: max(1, (len(ts) - 2) // 10)]
+        r = ee.run_with_event("rk4s", s, t, 0.2, seg=False, checkpoints=nodes)
+        idx = np.searchsorted(ts, nodes)
+        assert np.allclose(r["ck_pos"], xs[idx, :3], rtol=0, atol=1e-13)
+        ck = ee.checkpoint_times(t)
+        ref = ee.reference_checkpoints(s, t)
+        for meth, prm in (("rk4s", 0.2), ("rk8s", 0.5), ("DP54PI", 1e-7), ("DOP853", 1e-7), ("DP54PIs", 1e-7), ("DOP853s", 1e-7)):
+            a = ee.run_with_event(meth, s, t, prm, seg=False)
+            b = ee.run_with_event(meth, s, t, prm, seg=False, checkpoints=ck)
+            assert a["ok"] == b["ok"] and a["evals"] == b["evals"] and np.array_equal(a["final"], b["final"])
+            if b["ok"]:
+                assert np.allclose(b["ck_pos"][-1], b["final"][:3], rtol=0, atol=1e-13), meth
+                fin = float(np.linalg.norm(b["final"][:3] - ref[-1])) * DU_KM
+                pe = ee.path_error_km(b["ck_pos"], ref)
+                assert pe >= fin - 1e-9, meth
+        tight = ee.run_with_event("DOP853", s, t, 1e-12, seg=False, checkpoints=ck)
+        assert ee.path_error_km(tight["ck_pos"], ref) < 1.0
+
+
+def test_rows_with_event_matches_single_runs():
+    from multiprocessing import Pool
+    from orbit_ml_cr3bp import events_e as ee
+    S, T = _mixed_rows()
+    ref = np.array([_ref(s, t) for s, t in zip(S, T)])
+    rck = ee.reference_checkpoints_rows(S, T)
+    with Pool(2) as pool:
+        a = ee.rows_with_event("rk4s", S, T, 0.1, ref, rck, pool=pool)
+    b = ee.rows_with_event("rk4s", S, T, 0.1, ref, rck)
+    for k in a:
+        assert np.array_equal(a[k], b[k], equal_nan=True) if a[k].dtype.kind == "f" else np.array_equal(a[k], b[k]), k
+    for i in range(len(S)):
+        r = ee.run_with_event("rk4s", S[i], T[i], 0.1)
+        assert r["ok"] == a["ok"][i] and r["evals"] == a["evals"][i] and r["event"] == a["event"][i]
+    assert np.all(a["path"][a["ok"] & np.isfinite(rck[:, 0, 0])] >= a["err"][a["ok"] & np.isfinite(rck[:, 0, 0])] - 1e-9)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

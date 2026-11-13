@@ -28,6 +28,7 @@ from .config import MU, EJECTION_RADIUS, ADAPTIVE_ATOL_RATIO, MAX_ADAPTIVE_NFEV,
 from .physics_3d import REASON_OK, REASON_NONFINITE, REASON_STEP_CAP
 from .sundman_3d import _G, _bad_state, SUNDMAN_TAU_C
 from .physics_3d import REASON_COLLISION
+from .compiled_solvers_d import _rhs as _rhs6
 
 __all__ = ["S_MAX", "CTRL_SCIPY", "CTRL_PI", "METHOD_RK45", "METHOD_DOP853", "REASON_NO_EVENT", "REASON_TOO_SMALL", "tableaux",
            "rk_s_endpoint", "rk_s_batch", "rk_s_batch_par", "SundmanAdaptive"]
@@ -72,6 +73,38 @@ def _seg_hit(Xa, Xb, mu, rc1, rc2):
         if math.sqrt(qx * qx + qy * qy + qz * qz) < rc:
             return body
     return 0
+
+
+@njit(cache=True)
+def ck_record(t0, X0, t1, X1, mu, ck_t, ck_out):
+    """Item 3: for every checkpoint time ck_t[k] in (t0, t1], the position of the quintic Hermite interpolant between the states X0 and X1
+    (positions, velocities and the accelerations of the right-hand side at both ends) into ck_out[k]. The two right-hand-side calls are part of
+    the audit, not of the method, and are not counted in its cost. Interpolation error O(dt^6): a cubic (O(dt^4)) added km-level error between
+    the long steps of DOP853 and RK8 and would have penalized the high-order methods. ck_t empty = disabled."""
+    dt = t1 - t0
+    if dt <= 0.0:
+        return
+    a0 = np.empty(6)
+    a1 = np.empty(6)
+    have = False
+    for k in range(ck_t.shape[0]):
+        tk = ck_t[k]
+        if tk > t0 and tk <= t1:
+            if not have:
+                _rhs6(X0, mu, a0)
+                _rhs6(X1, mu, a1)
+                have = True
+            th = (tk - t0) / dt
+            t2, t3, t4, t5 = th * th, th ** 3, th ** 4, th ** 5
+            H0 = 1.0 - 10.0 * t3 + 15.0 * t4 - 6.0 * t5
+            H1 = th - 6.0 * t3 + 8.0 * t4 - 3.0 * t5
+            H2 = 0.5 * t2 - 1.5 * t3 + 1.5 * t4 - 0.5 * t5
+            H3 = 0.5 * t3 - t4 + 0.5 * t5
+            H4 = -4.0 * t3 + 7.0 * t4 - 3.0 * t5
+            H5 = 10.0 * t3 - 15.0 * t4 + 6.0 * t5
+            for i in range(3):
+                ck_out[k, i] = (H0 * X0[i] + H1 * dt * X0[3 + i] + H2 * dt * dt * a0[3 + i]
+                                + H3 * dt * dt * a1[3 + i] + H4 * dt * X1[3 + i] + H5 * X1[i])
 
 
 @njit(cache=True)
@@ -145,7 +178,7 @@ def _dense_dop853(y_old, F, x, out):
 
 
 @njit(cache=True)
-def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info):
+def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info, ck_t, ck_out):
     """Returns (ok, X_end (6), nfev, n_accepted, n_rejected, s_end, reason). seg: the between-node collision test of events_e.seg_hit
     (item 7) after every accepted step. When a collision / ejection / non-finite check fails, `info`
     (length 15) receives t_good, X_good (6), t_bad, X_bad (6) and, for a chord crossing, the body code: the last good state and the first bad one, in physical time (events_e.py)."""
@@ -340,6 +373,7 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
                         info[1 + i] = y[i]
                         info[8 + i] = Xout[i]
                     return False, Xout, nfev, n_acc, n_rej, s + hi * h, REASON_COLLISION
+            ck_record(y[6], y, T, Xout, mu, ck_t, ck_out)
             return True, Xout, nfev, n_acc, n_rej, s + hi * h, REASON_OK
         if check_bad:
             bad = _bad_state(ynew, mu, rc1, rc2, rej)
@@ -363,6 +397,7 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
                     info[1 + i] = y[i]
                     info[8 + i] = ynew[i]
                 return False, Xout, nfev, n_acc, n_rej, s_new, REASON_COLLISION
+        ck_record(y[6], y, ynew[6], ynew, mu, ck_t, ck_out)
         for i in range(n):
             y[i] = ynew[i]
             K[0, i] = K[ns, i]
@@ -379,12 +414,14 @@ def rk_s_batch(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, c
     rs = np.zeros(n, dtype=np.int64)
     Y0 = np.empty(7)
     info = np.empty(15)
+    ck_t = np.empty(0)
+    ck_out = np.empty((0, 3))
     for i in range(n):
         for j in range(6):
             Y0[j] = states[i, j]
         Y0[6] = 0.0
         o, yy, e, _a, _r, _s, r = rk_s_endpoint(Y0, T[i], rtol, rtol * atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej,
-                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info)
+                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info, ck_t, ck_out)
         ok[i] = o
         for j in range(6):
             y[i, j] = yy[j]
@@ -403,11 +440,13 @@ def rk_s_batch_par(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfe
     for i in prange(n):
         Y0 = np.empty(7)
         info = np.empty(15)
+        ck_t = np.empty(0)
+        ck_out = np.empty((0, 3))
         for j in range(6):
             Y0[j] = states[i, j]
         Y0[6] = 0.0
         o, yy, e, _a, _r, _s, r = rk_s_endpoint(Y0, T[i], rtol, rtol * atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej,
-                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info)
+                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info, ck_t, ck_out)
         ok[i] = o
         for j in range(6):
             y[i, j] = yy[j]

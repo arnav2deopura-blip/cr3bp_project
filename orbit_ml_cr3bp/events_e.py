@@ -31,6 +31,7 @@ from .physics_3d import REASON_OK, REASON_NONFINITE, REASON_STEP_CAP, REASON_COL
 from .sundman_3d import _G, _bad_state, SUNDMAN_TAU_C
 from .compiled_solvers_d import _rhs
 from . import compiled_sundman_e as cs
+from .compiled_sundman_e import ck_record
 from . import defense_runs as dr
 
 __all__ = ["rk4s_event", "rk8s_event", "rk_p_endpoint", "hermite_event_time", "bad_code", "reference_event", "strict_success",
@@ -77,7 +78,7 @@ def _keep(info, t_good, Xg, t_bad, Xb):
 
 
 @njit(cache=True)
-def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, seg, info):
+def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, seg, info, ck_t, ck_out):
     """sundman_3d._integrate_endpoint_rk4s_numba (gfix = 0) with `info` filled on a bad state. Returns (ok, X, t, reason, n_s, n_f)."""
     X = state.copy()
     t = 0.0
@@ -124,6 +125,7 @@ def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, seg, inf
             if tmp[6] >= limit_t - 1e-12:
                 land = True
             else:
+                ck_record(t, X, tmp[6], tmp, mu, ck_t, ck_out)
                 for i in range(6):
                     X[i] = tmp[i]
                 t = tmp[6]
@@ -146,6 +148,8 @@ def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, seg, inf
                         _keep(info, t, X, t + h, s_new)
                         info[14] = hb
                         return False, X, t, REASON_COLLISION, n_s, n_f
+                t_next = limit_t if j == nf - 1 else t + h
+                ck_record(t, X, t_next, s_new, mu, ck_t, ck_out)
                 for i in range(6):
                     X[i] = s_new[i]
                 t = t + h
@@ -155,7 +159,7 @@ def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, seg, inf
 
 
 @njit(cache=True)
-def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, seg, info):
+def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, seg, info, ck_t, ck_out):
     """defense_runs._integrate_endpoint_rk8s_numba (gfix = 0) with `info` filled on a bad state. Returns (ok, X, t, reason, n_s, n_f)."""
     ns = B.shape[0]
     X = state.copy()
@@ -192,6 +196,7 @@ def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, se
             if out[6] >= limit_t - 1e-12:
                 land = True
             else:
+                ck_record(t, X, out[6], out, mu, ck_t, ck_out)
                 for i in range(6):
                     X[i] = out[i]
                 t = out[6]
@@ -217,6 +222,8 @@ def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, se
                         _keep(info, t, X, t + h, out)
                         info[14] = hb
                         return False, X, t, REASON_COLLISION, n_s, n_f
+                t_next = limit_t if j == nf - 1 else t + h
+                ck_record(t, X, t_next, out, mu, ck_t, ck_out)
                 for i in range(6):
                     X[i] = out[i]
                 t = t + h
@@ -261,7 +268,7 @@ def _initial_step_p(y, f0, T, rtol, atol, mu, order, tmp, f1):
 
 
 @njit(cache=True)
-def rk_p_endpoint(y0, T, rtol, atol, mu, method, ctrl, max_nfev, rc1, rc2, rej, A, B, E, A8, B8, E3, E5, seg, info):
+def rk_p_endpoint(y0, T, rtol, atol, mu, method, ctrl, max_nfev, rc1, rc2, rej, A, B, E, A8, B8, E3, E5, seg, info, ck_t, ck_out):
     """Physical-time RK45 (method 0; ctrl 0 SciPy, 1 PI) or DOP853 (method 1) from 0 to T. Returns (ok, y_end, nfev, reason); `info` as above."""
     n = 6
     if method == 0:
@@ -377,6 +384,7 @@ def rk_p_endpoint(y0, T, rtol, atol, mu, method, ctrl, max_nfev, rc1, rc2, rej, 
                 _keep(info, t, y, t_new, ynew)
                 info[14] = hb
                 return False, ynew.copy(), nfev, REASON_COLLISION
+        ck_record(t, y, t_new, ynew, mu, ck_t, ck_out)
         for i in range(n):
             y[i] = ynew[i]
             K[0, i] = K[ns, i]
@@ -467,6 +475,28 @@ def reference_event(state, T, mu=MU):
     return int(sol.reference_event), te, v
 
 
+def checkpoint_times(T, K=20):
+    """E3's K checkpoints: t_k = k T / K, k = 1 ... K (the last is the horizon)."""
+    t = np.arange(1, K + 1, dtype=float) * (float(T) / K)
+    t[-1] = float(T)                      # exactly the horizon (K * (T / K) can exceed T by one ulp and would never be recorded)
+    return t
+
+
+def reference_checkpoints(state, T, K=20, mu=MU):
+    """(K, 3) reference positions at checkpoint_times(T, K), or None if the reference does not reach T."""
+    from .physics_3d import reference_trajectory_dense_3d
+    sol, reached = reference_trajectory_dense_3d(np.asarray(state, dtype=np.float64), float(T), mu)
+    if not reached:
+        return None
+    return np.asarray(sol.sol(checkpoint_times(T, K)))[:3].T.copy()
+
+
+def path_error_km(ck_pos, ref_ck, mu=MU):
+    """E3's statistic: the maximum position error over the checkpoints (inf if any checkpoint is missing, i.e. the run failed first)."""
+    e = np.linalg.norm(np.asarray(ck_pos) - np.asarray(ref_ck), axis=1) * du_km_for_mu(mu)
+    return float(np.inf) if not np.all(np.isfinite(e)) else float(e.max())
+
+
 def strict_success(run_event, run_t, ref_code, ref_t, ref_speed, tol_km=POSITION_TOL_KM, mu=MU):
     """E4's rule for a doomed orbit: the same event type and |t_run - t_ref| <= tol / |v_ref| (tol in the system's length unit)."""
     if ref_code in (0, 9) or run_event != ref_code:
@@ -491,38 +521,43 @@ def _tab():
 
 
 def run_with_event(method, state, T, param, mu=MU, tau_c=SUNDMAN_TAU_C, atol_ratio=ADAPTIVE_ATOL_RATIO, max_nfev=MAX_ADAPTIVE_NFEV,
-                   max_steps=4_000_000, seg=True):
+                   max_steps=4_000_000, seg=True, checkpoints=None):
     """param = fictitious step ds (rk4s, rk8s) or rtol (adaptive). Returns dict(ok, final (6), evals, reason, event, t_event, seg_hit);
     event 0 and t_event = T when the run reached the horizon. seg = True (the Part E default) adds the between-node collision test (item 7);
-    seg = False is the endpoint-only check of the sealed kernels."""
+    seg = False is the endpoint-only check of the sealed kernels. checkpoints: physical times (item 3); the result then has "ck_pos" (K, 3),
+    the Hermite-interpolated positions at those times (NaN for checkpoints after a failure)."""
     rc1, rc2 = collision_radii(mu)
     rej = EJECTION_RADIUS
     st = np.ascontiguousarray(state, dtype=np.float64)
     info = np.full(15, np.nan)
+    ck_t = np.empty(0) if checkpoints is None else np.ascontiguousarray(checkpoints, dtype=np.float64)
+    ck_out = np.full((len(ck_t), 3), np.nan)
     rk, d8 = _tab()
     if method == "rk4s":
-        ok, X, _t, reason, n_s, n_f = rk4s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), bool(seg), info)
+        ok, X, _t, reason, n_s, n_f = rk4s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), bool(seg), info, ck_t, ck_out)
         evals = 4 * (n_s + n_f)
     elif method == "rk8s":
-        ok, X, _t, reason, n_s, n_f = rk8s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), dr._A8, dr._B8, bool(seg), info)
+        ok, X, _t, reason, n_s, n_f = rk8s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), dr._A8, dr._B8, bool(seg), info, ck_t, ck_out)
         evals = dr.RK8_STAGES * (n_s + n_f)
     elif method in ("DP54PI", "DOP853", "RK45"):
         m, c = {"DP54PI": (0, 1), "DOP853": (1, 0), "RK45": (0, 0)}[method]
         rt = float(param)
         ok, X, evals, reason = rk_p_endpoint(st, float(T), rt, rt * atol_ratio, mu, m, c, int(max_nfev), rc1, rc2, rej,
-                                             rk["A"], rk["B"], rk["E"], np.ascontiguousarray(d8["A"][:12, :12]), d8["B"], d8["E3"], d8["E5"], bool(seg), info)
+                                             rk["A"], rk["B"], rk["E"], np.ascontiguousarray(d8["A"][:12, :12]), d8["B"], d8["E3"], d8["E5"], bool(seg), info, ck_t, ck_out)
     elif method in cs.SundmanAdaptive.SPECS:
         m, c = cs.SundmanAdaptive.SPECS[method]
         rt = float(param)
         Y0 = np.concatenate([st, [0.0]])
         ok, X, evals, _a, _r, _s, reason = cs.rk_s_endpoint(Y0, float(T), rt, rt * atol_ratio, mu, float(tau_c), m, c, int(max_nfev), True,
                                                              rc1, rc2, rej, rk["A"], rk["B"], rk["C"], rk["E"], rk["P"], d8["A"], d8["B"], d8["C"],
-                                                             d8["E3"], d8["E5"], d8["D"], bool(seg), info)
+                                                             d8["E3"], d8["E5"], d8["D"], bool(seg), info, ck_t, ck_out)
     else:
         raise ValueError(method)
     ok = bool(ok)
     out = {"ok": ok, "final": np.asarray(X, dtype=float).copy(), "evals": float(evals), "reason": int(reason), "event": 0, "t_event": float(T),
            "seg_hit": False}
+    if checkpoints is not None:
+        out["ck_pos"] = ck_out
     if ok:
         return out
     if reason in (REASON_COLLISION, REASON_EJECTION) and np.isfinite(info[0]):
@@ -545,3 +580,50 @@ def run_with_event(method, state, T, param, mu=MU, tau_c=SUNDMAN_TAU_C, atol_rat
         out["event"] = 9
         out["t_event"] = float("nan")
     return out
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# many rows (item 3: the run_rows variant with the path error; used by the Part E runner and the path-certified calibration)
+# ---------------------------------------------------------------------------------------------------------------------
+
+def _rows_chunk(a):
+    method, S, T, P, R, RC, seg, mu = a
+    out = []
+    for i in range(len(S)):
+        ck = None if RC is None else checkpoint_times(T[i], RC.shape[1])
+        r = run_with_event(method, S[i], T[i], P[i], mu=mu, seg=seg, checkpoints=ck)
+        e = float(np.linalg.norm(r["final"][:3] - R[i]) * du_km_for_mu(mu)) if (r["ok"] and R is not None) else float("nan")
+        pe = path_error_km(r["ck_pos"], RC[i], mu) if (RC is not None and r["ok"]) else float("nan")
+        out.append((r["ok"], e, pe, r["evals"], r["reason"], r["event"], r["t_event"], r["seg_hit"]))
+    return out
+
+
+def rows_with_event(method, states, T, params, ref_pos=None, ref_ck=None, seg=True, tol_km=POSITION_TOL_KM, mu=MU, pool=None, n_chunks=64):
+    """One run per row (params: per-row ds or rtol, or a scalar). Returns dict of arrays: ok, err (final error, km), path (max checkpoint error,
+    km; NaN without ref_ck), evals, reason, event, t_event, seg_hit, met (final error <= tol), met_path (path error <= tol)."""
+    S = np.ascontiguousarray(states, dtype=np.float64)
+    T = np.asarray(T, dtype=np.float64)
+    P = np.broadcast_to(np.asarray(params, dtype=np.float64), (len(S),)).copy()
+    R = None if ref_pos is None else np.asarray(ref_pos, dtype=np.float64)
+    RC = None if ref_ck is None else np.asarray(ref_ck, dtype=np.float64)
+    idx = np.array_split(np.arange(len(S)), max(1, min(n_chunks, len(S))))
+    jobs = [(method, S[j], T[j], P[j], None if R is None else R[j], None if RC is None else RC[j], bool(seg), float(mu)) for j in idx if len(j)]
+    res = pool.map(_rows_chunk, jobs) if pool is not None else [_rows_chunk(j) for j in jobs]
+    flat = [x for chunk in res for x in chunk]
+    ok, err, pe, ev, rs, evn, te, sh = (np.array(c) for c in zip(*flat))
+    ok = ok.astype(bool)
+    return {"ok": ok, "err": err.astype(float), "path": pe.astype(float), "evals": ev.astype(float), "reason": rs.astype(int),
+            "event": evn.astype(int), "t_event": te.astype(float), "seg_hit": sh.astype(bool),
+            "met": ok & (err <= tol_km), "met_path": ok & (pe <= tol_km)}
+
+
+def reference_checkpoints_rows(states, T, K=20, mu=MU, pool=None):
+    """(n, K, 3) reference checkpoints for many usable rows (NaN rows where the reference does not reach T)."""
+    jobs = [(np.asarray(states[i], dtype=float), float(T[i]), int(K), float(mu)) for i in range(len(states))]
+    res = pool.map(_ref_ck_job, jobs, chunksize=max(1, len(jobs) // 256)) if pool is not None else [_ref_ck_job(j) for j in jobs]
+    return np.stack([np.full((K, 3), np.nan) if r is None else r for r in res])
+
+
+def _ref_ck_job(a):
+    s, T, K, mu = a
+    return reference_checkpoints(s, T, K, mu)
