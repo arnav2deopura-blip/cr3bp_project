@@ -483,3 +483,23 @@ class SundmanAdaptive:
         capped = rs == REASON_STEP_CAP
         nfev = np.where(ok, nf, np.nan)
         return {"ok": ok, "err": err, "nfev": nfev, "capped": capped, "met": ok & (err <= tol_km), "reason": rs}
+
+
+@njit(cache=True)
+def loop_rk_s(st, T, reps, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8):
+    """Timing loop (E6): `reps` runs of one orbit (the state perturbed by 1e-15 so nothing is hoisted), endpoint checks only, as every arm of
+    the timing protocol. Returns a checksum."""
+    Y0 = np.empty(7)
+    info = np.empty(15)
+    ck_t = np.empty(0)
+    ck_out = np.empty((0, 3))
+    acc = 0.0
+    for r in range(reps):
+        for j in range(6):
+            Y0[j] = st[j]
+        Y0[0] = st[0] + 1e-15 * (r % 7)
+        Y0[6] = 0.0
+        _o, y, nf, _a, _r, _s, _re = rk_s_endpoint(Y0, T, rtol, rtol * atol_ratio, mu, tau_c, method, ctrl, max_nfev, True, rc1, rc2, rej,
+                                                   A, B, C, E, P, A8, B8, C8, E3, E5, D8, False, info, ck_t, ck_out)
+        acc += y[0] + nf
+    return acc

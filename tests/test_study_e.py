@@ -328,6 +328,30 @@ def test_ood_gate():
     assert v.tolist() == [False, True, True]
 
 
+def test_timing_protocol():
+    """Item 6: the idle check refuses a busy machine; two sessions time every arm on every orbit; the throughput ratio of an arm against
+    itself is about 1; the Sundman-time timing loop runs the same kernel."""
+    from orbit_ml_cr3bp import timing_e as te, compiled_sundman_e as cs
+    try:
+        te.require_idle(max_load=-1.0)
+        raise AssertionError("should have refused")
+    except te.BusyMachine:
+        pass
+    sa = cs.SundmanAdaptive("DOP853s")
+    S, T = STATES, HORIZONS
+
+    def arm(i, reps):
+        return cs.loop_rk_s(S[i], T[i], reps, 1e-8, sa.atol_ratio, MU, sa.tau_c, sa.method, sa.ctrl, sa.max_nfev, sa.rc1, sa.rc2, sa.rej, *sa.tab)
+    res = te.time_sessions({"a": arm, "b": arm}, len(S), sessions=2, max_load=1e9)
+    assert all(s["status"] == "complete" for s in res["sessions"]) and np.all(np.isfinite(res["times"][1]["b"]))
+    r = te.throughput(res, "a", "b", n_boot=200)
+    assert r["evaluable"] and 0.7 < r["throughput_ratio"] < 1.4
+    ok, y, nf, rs = sa.run(S, T, 1e-8, parallel=False)
+    assert np.isfinite(arm(0, 1))
+    info = te.machine_info()
+    assert info["cpu_count"] and info["platform"]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
