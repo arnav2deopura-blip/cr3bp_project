@@ -16,7 +16,7 @@ What already exists and can be reused (checked 2026-11-13):
 | 3. Path-error certificate | `endpoint_audit_3d.checkpoint_errors` (Study C, 50 checkpoints) | a K = 20 checkpoint variant inside the runner, path-certified scale calibration |
 | 4. Compiled event detection | compiled DP5(4)-PI / DOP853 in `compiled_solvers_d.py` (no events) | collision / escape time by dense interpolation; the strict event-time rule |
 | 5. OOD gate | `conformal_uncertainty.py`, the JPL family responses from D5 | kNN distance on the 25 features, conformal threshold, leave-one-family-out driver |
-| 6. Timing script | Study D timing code (`time_per_orbit`) | load-average gate (`os.getloadavg`), two-session log, **an x86-64 Linux machine** |
+| 6. Timing script | Study D timing code (`time_per_orbit`) | load-average gate (`os.getloadavg`), two-session log (second architecture dropped, D4) |
 | 7. Segment collision in runners | `collision_segment.crossed_bodies` + its test | wiring into the physical-time runners used by Part E only |
 | 8. Compiled adaptive solvers in Sundman time | SciPy version `defense_runs.run_sundman_adaptive` | numba version with event at t(s) = T; unit test against the SciPy one |
 
@@ -52,7 +52,7 @@ time in the intersection–union test, and report Sundman-time DOP853 for every 
 **D3. Deadline.** If there is a competition or submission date, Study E must fit before it, or it becomes "future work, preregistered" in the
 manuscript. That is a legitimate outcome: a sealed, OSF-registered Study E that has not yet been run is still worth stating.
 
-**D4. Second CPU architecture (E6).** Do you have access to an x86-64 Linux machine (school cluster, a cloud VM, a friend's PC)? If not, drop
+**D4. Second CPU architecture (E6).** **Decided 2026-11-13: dropped** (no x86-64 machine); E6 runs on this Mac only and the draft states the one-machine limitation. Do you have access to an x86-64 Linux machine (school cluster, a cloud VM, a friend's PC)? If not, drop
 the second architecture from E6 before the seal rather than as a deviation afterwards.
 
 **D5. Committing and going public.** A clean-tree seal means the whole tree has to be committed first, including or ignoring the untracked
@@ -102,7 +102,7 @@ Run the full test suite after each item; the existing 7 suites must still pass (
 
 ## Step 4: freeze and register
 
-1. Resolve every "proposed" item in the draft (D4); remove the "DRAFT" header line; keep "## Deviations" empty.
+1. Resolve every "proposed" item in the draft ; remove the "DRAFT" header line; keep "## Deviations" empty.
 2. Commit the tree (clean). **Register `PREREGISTRATION_E.md` on OSF** and put the OSF link in the document (you do this; I cannot create
    accounts). Push the commit to a public remote if you chose to.
 3. Generate seeds 61–66 (and the 10 km / 1,000 km relabels of 63), hash them into `part_e/FROZEN_FILES.json`, and do not load them.
@@ -111,7 +111,7 @@ Run the full test suite after each item; the existing 7 suites must still pass (
 ## Step 5: the confirmatory run (once)
 
 1. `run_confirm_e_3d.py` on E_confirm, E_confirm_8, E_tol, E_confirm_20 and the JPL families; Holm over E1–E5 and E7.
-2. E6 timing on this Mac (two sessions) and on the x86-64 machine if D4 = yes.
+2. E6 timing on this Mac (two sessions, idle machine).
 3. Last: E_lock (seed 64) and E_lock_20 (seed 66), one evaluation each.
 4. Write `part_e/RESULTS_PART_E.md`; anything that goes wrong is a dated entry under "## Deviations".
 

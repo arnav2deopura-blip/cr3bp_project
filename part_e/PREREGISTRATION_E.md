@@ -30,7 +30,9 @@ E7's expectations come from the pilots P24–P25 (`posthoc/README.md`, run on St
 - **E5.** Can a pre-run out-of-distribution gate keep the policy safe on held-out periodic-orbit families while abstaining rarely in distribution?
 - **E7.** Over 1–20 TU, is a learned 8th-order fixed step in Sundman time (the E7 policy, section 3) cheaper in aggregate than the strongest
   adaptive comparators at equal risk, in RHS counts and in compiled wall-clock throughput?
-- **E6** is the timing protocol for the wall-clock part of E1 (idle machine, two sessions, a second CPU architecture); it is not a separate test.
+- **E6** is the timing protocol for the wall-clock part of E1 (idle machine, two sessions, one machine: the author's Apple-silicon arm64 Mac); it is not a separate test. A second CPU
+  architecture was dropped on 2026-11-13, before any Study E data, because no x86-64 machine is available; the wall-clock results (E1b, E7b)
+  therefore hold for one machine only, and this is stated as a limitation with every wall-clock number.
 
 ## 2. Data (new seeds; nothing from Studies A–D is reused as a test set)
 
@@ -163,7 +165,7 @@ Not included: hybrid fixed/adaptive switching (excluded by the plan); new featur
 4. E4 compiled event detection for DP5(4)-PI and DOP853 (collision / escape time by dense interpolation), and the strict event-time rule.
 5. E5 OOD gate: kNN distance in the 25-feature space with a conformal threshold chosen on E_select; leave-one-family-out driver over the
    JPL families.
-6. E6: a timing script that refuses to start above load 1.0 (no relaxation), logs two sessions, and runs on an x86-64 Linux machine.
+6. E6: a timing script that refuses to start above load 1.0 (no relaxation), logs two sessions and records the machine (platform, CPU, numba version).
 7. Wire `collision_segment.crossed_bodies` into the physical-time runners used in Part E (not into any sealed kernel).
 8. Compiled DP5(4)-PI and DOP853 in Sundman time (event at t = T by dense interpolation), with unit tests against the SciPy version of P20.
 9. E7: an RK8 Sundman-time step function for the monotone label search; relabelling of D_train and D_train_enriched (and of E_select and
