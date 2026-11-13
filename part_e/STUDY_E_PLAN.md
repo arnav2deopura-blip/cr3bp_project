@@ -40,7 +40,7 @@ DOP853, and (c) censored on 40 of 300 orbits.
   result against the strongest comparator. It adds a training and selection phase (Step 1b and Step 3) before the seal.
 - Option C: a minimal Study E (E1 + E4 only) if time is short.
 
-**D6 (new, from the P25 pilot). Equal risk overall or per horizon band?** In P25 the learned RK8 policy and its equal-risk comparators had
+**D6 (new, from the P25 pilot). Equal risk overall or per horizon band?** **Decided 2026-11-13: overall (primary), per band reported as a declared secondary analysis** (draft §4 and §6). In P25 the learned RK8 policy and its equal-risk comparators had
 the same overall violation rate (3.5 % vs 3.6–3.9 %), but the policy put its violations at short horizons (3.8 % at 1–3 TU vs ~0.1 %) and the
 comparators at long ones (~10.6 % at 8–20 TU vs 4.9 %). Overall equal risk is the sealed rule and keeps E7 comparable with Studies C–D;
 per-band calibration (as D4's per-stratum certificate) is fairer per band but costs power. Decide before the seal; report the other as secondary.

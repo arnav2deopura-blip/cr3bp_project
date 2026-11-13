@@ -97,7 +97,7 @@ The horizon range of E_confirm is restricted **by design** (the claim is about 1
 | **E2** | E1a at 10 km and at 1,000 km on E_tol (1–8 TU), each comparator recalibrated at that tolerance | ratio > 1 at both (intersection–union) | orbit bootstrap |
 | **E3** | violation rate of the policy under a path-error certificate (maximum position error at K = 20 checkpoints on the dense reference) | rate ≤ 5 % (H0: rate > 5 %) and E1a > 1 with the path-certified scale | exact binomial; bootstrap; IUT |
 | **E4** | full population (usable and doomed orbits), success defined below; policy minus comparator success rate, and ratio of totals | success difference > −1 point (non-inferiority) and ratio of totals > 1 | orbit bootstrap; IUT |
-| **E7a** | ratio of totals, RHS evaluations: Σ comparator / Σ E7 policy (overhead and violating runs included), each comparator at equal risk to the E7 policy's calibration violation rate, E_confirm_20 evaluation rows; comparators: compiled DOP853 in Sundman time, compiled DP5(4)-PI in Sundman time and in physical time | > 1 against every comparator (intersection–union: p = the largest) | orbit bootstrap, 4,000 resamples |
+| **E7a** | ratio of totals, RHS evaluations: Σ comparator / Σ E7 policy (overhead and violating runs included), each comparator at equal risk to the E7 policy's **overall** calibration violation rate (the sealed rule; decided 2026-11-13, see below), E_confirm_20 evaluation rows; comparators: compiled DOP853 in Sundman time, compiled DP5(4)-PI in Sundman time and in physical time | > 1 against every comparator (intersection–union: p = the largest) | orbit bootstrap, 4,000 resamples |
 | **E7b** | throughput ratio, compiled wall-clock, same rows and comparators, single thread, E6 protocol | > 1 against every comparator (IUT) | same |
 | E7 | intersection–union: p = max(p_E7a, p_E7b) | | |
 | **E5** | leave-one-family-out family-balanced violation rate with the OOD gate (abstentions run on the certified comparator) | < 10 %, with in-distribution abstention ≤ 5 % on E_confirm | cluster bootstrap within family (D5 statistic); IUT |
@@ -125,7 +125,8 @@ endpoints.
   against Sundman DOP853 88.9 %. So E7a against Sundman-time DOP853 is expected to be close to a tie and could fail. **The risk is not equal
   within horizon bands**: at 1–3 TU the policy violated 3.8 % and the equal-risk comparators about 0.1 %; at 8–20 TU 4.9 % against about 10.6 %.
   By-band ratios (Sundman DOP853: 1.51 at 1–3 TU, 1.11 at 3–8, 0.91 at 8–20) are therefore not equal-risk comparisons. Whether to
-  calibrate per horizon band must be decided before the seal (plan, decision D6). Earlier priors, kept for the record: the oracle 8th-order step needed a median 0.27 dex (≈ 1.9×) fewer evaluations than the oracle
+  calibrate per horizon band was decided on 2026-11-13, before any Study E data: equal risk stays **overall** for E7 (and E1, E2), as in
+  Studies B–D; the per-band version is a declared secondary analysis (section 6). Earlier priors, kept for the record: the oracle 8th-order step needed a median 0.27 dex (≈ 1.9×) fewer evaluations than the oracle
   RK4 step (P23); the RK4 policy's total was 2.4× that of Sundman-time DOP853 (P20, ratio 0.41). The gain grows with the horizon (median
   0.12 dex at 1–3 TU, 0.30 at 3–8 TU, 0.42 at 8–20 TU, i.e. 1.3×, 2.0× and 2.6×), and the long horizons carry most of the total, so against
   Sundman-time DOP853 the outcome is close and E7 may fail. A learned step also loses some of the oracle margin to prediction error and the safety
@@ -143,6 +144,11 @@ endpoints.
 - The E7 policy on E_tol, under the path-error certificate and on the full population (doomed orbits included): the E2–E4 questions asked of
   the 8th-order step, reported as exploratory.
 - The E7 policy against the frozen RK4 policy, orbit by orbit (descriptive).
+- **Per-band equal risk (secondary, declared 2026-11-13).** For E7a (and E1a), each comparator is also set to equal risk with the policy
+  separately within each horizon band (1–3, 3–8, 8–20 TU; the sealed scan-and-four-bisections rule on the calibration rows of that band, target
+  = the policy's calibration violation rate in that band), and the ratio of totals is reported per band and pooled over bands. Reported next to
+  the primary result, never in its place; every band's realized violation rates of policy and comparator are shown beside it. Reason: in the
+  P25 pilot the overall-equal-risk comparators violated ~0.1 % at 1–3 TU and ~10.6 % at 8–20 TU while the policy violated 3.8 % and 4.9 %.
 
 Not included: hybrid fixed/adaptive switching (excluded by the plan); new feature families unless the dry run justifies them.
 
