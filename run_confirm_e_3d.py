@@ -166,7 +166,8 @@ class Runner:
                 cache[s] = int((~self.rows(method, S, T, raw * s, ref, rck, tol_km)[key]).sum())
                 log(f"    scale {s:.4f}: {cache[s]} / {len(S)} violations")
             return cache[s], len(S)
-        rep = pc.certify_sequence(viol, pc.FIXED_SEQ_GRID, pc.ALPHA, pc.DELTA, "fixed_sequence")
+        from orbit_ml_cr3bp.confirm_e_3d import SCALE_GRID_E
+        rep = pc.certify_sequence(viol, SCALE_GRID_E, pc.ALPHA, pc.DELTA, "fixed_sequence")
         s = rep["chosen_scale"]
         return {"scale": s, "chain": rep["chain"], "cal_violation_rate": None if s is None else cache[float(s)] / len(S)}
 

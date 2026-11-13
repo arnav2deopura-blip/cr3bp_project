@@ -1,0 +1,18 @@
+{
+ "chosen": {
+  "n_trees": 25,
+  "quantile": 0.1
+ },
+ "overhead_used_for_selection": 15.04,
+ "select_rows": 8081,
+ "ceiling_on_select": {
+  "ds_max": 64.0,
+  "n": 8081,
+  "n_at_ceiling": 921,
+  "share_at_ceiling": 0.11397104318772429,
+  "n_at_ceiling_multi_step": 0,
+  "share_at_ceiling_multi_step": 0.0,
+  "rule_holds": true
+ },
+ "seconds": 198.1875319480896
+}

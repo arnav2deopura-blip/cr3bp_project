@@ -1,0 +1,11 @@
+E_select ceiling: {'ds_max': 64.0, 'n': 8081, 'n_at_ceiling': 921, 'share_at_ceiling': 0.11397104318772429, 'n_at_ceiling_multi_step': 0, 'share_at_ceiling_multi_step': 0.0, 'rule_holds': True}
+  25 trees q 0.1: scale 0.872, ratio of totals 1.1064
+  25 trees q 0.2: scale 0.800, ratio of totals 1.0375
+  25 trees q 0.3: scale 0.673, ratio of totals 0.9844
+  50 trees q 0.1: scale 0.872, ratio of totals 1.1007
+  50 trees q 0.2: scale 0.800, ratio of totals 1.0463
+  50 trees q 0.3: scale 0.734, ratio of totals 0.9738
+chosen: (25, 0.1)
+select rc=0
+frozen: {'name': 'e7_rk8s', 'n_iter': 25, 'q': 0.1, 'max_depth': 3, 'learning_rate': 0.2, 'seed': 42, 'features': 'osc', 'label': 'rk8s ds in [1e-4, 64]'}
+freeze rc=0

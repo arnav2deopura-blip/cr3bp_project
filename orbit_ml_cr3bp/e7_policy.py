@@ -148,7 +148,8 @@ def select_e7(train, weights, features, sel_df, sel_ref, rows_fn, overhead, comp
             if sc_ not in pcache:
                 pcache[sc_] = int((~rows_fn("rk8s", S[cal], T[cal], raw[cal] * sc_, sel_ref[cal])["met"]).sum())
             return pcache[sc_], len(cal)
-        cert = pc.certify_sequence(viol, pc.FIXED_SEQ_GRID, pc.ALPHA, pc.DELTA, "fixed_sequence")
+        from .confirm_e_3d import SCALE_GRID_E
+        cert = pc.certify_sequence(viol, SCALE_GRID_E, pc.ALPHA, pc.DELTA, "fixed_sequence")
         scale = cert["chosen_scale"]
         row = {"n_trees": n_trees, "quantile": q, "scale": scale}
         if scale is None:

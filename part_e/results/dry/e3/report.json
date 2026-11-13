@@ -1,0 +1,385 @@
+{
+ "step": "e3",
+ "target": "dry",
+ "utc": "2026-11-13T18:24:07.704612+00:00",
+ "wall_seconds": 20.355725049972534,
+ "seal_utc": null,
+ "policy": "rk4s",
+ "n_cal": 1494,
+ "n_eval": 1494,
+ "overhead": 15.036794812388587,
+ "tol_km": 100.0,
+ "certificate": {
+  "scale": 0.8724061861322062,
+  "chain": [
+   {
+    "scale": 0.1,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.10905077326652578,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.11892071150027211,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.12968395546510098,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.14142135623730953,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.15422108254079409,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.16817928305074292,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.18340080864093425,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.2,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.21810154653305155,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.23784142300054423,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.25936791093020195,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.28284271247461906,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.30844216508158817,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.33635856610148585,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.3668016172818685,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.4,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.4362030930661031,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.47568284600108846,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.5187358218604039,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.5656854249492381,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.6168843301631763,
+    "n": 1494,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 5.236803781139941e-34,
+    "certified": true
+   },
+   {
+    "scale": 0.6727171322029717,
+    "n": 1494,
+    "violations": 1,
+    "violation_rate": 0.0006693440428380187,
+    "p_value": 4.1701495372969787e-32,
+    "certified": true
+   },
+   {
+    "scale": 0.733603234563737,
+    "n": 1494,
+    "violations": 5,
+    "violation_rate": 0.0033467202141900937,
+    "p_value": 1.390528290892763e-26,
+    "certified": true
+   },
+   {
+    "scale": 0.8,
+    "n": 1494,
+    "violations": 8,
+    "violation_rate": 0.00535475234270415,
+    "p_value": 2.0716358627308538e-23,
+    "certified": true
+   },
+   {
+    "scale": 0.8724061861322062,
+    "n": 1494,
+    "violations": 22,
+    "violation_rate": 0.014725568942436412,
+    "p_value": 2.7920642908641554e-13,
+    "certified": true
+   },
+   {
+    "scale": 0.9513656920021769,
+    "n": 1494,
+    "violations": 108,
+    "violation_rate": 0.07228915662650602,
+    "p_value": 0.9999235491738158,
+    "certified": false
+   }
+  ],
+  "cal_violation_rate": 0.014725568942436412
+ },
+ "criterion": "path",
+ "comparators": {
+  "DP54PI": {
+   "equal_risk": {
+    "rtol": 1.2252798573828638e-06,
+    "chain": [
+     {
+      "rtol": 0.001,
+      "n": 1494,
+      "violations": 622,
+      "violation_rate": 0.41633199464524767
+     },
+     {
+      "rtol": 0.0002955209235202888,
+      "n": 1494,
+      "violations": 477,
+      "violation_rate": 0.3192771084337349
+     },
+     {
+      "rtol": 8.733261623828437e-05,
+      "n": 1494,
+      "violations": 374,
+      "violation_rate": 0.250334672021419
+     },
+     {
+      "rtol": 2.5808615404180768e-05,
+      "n": 1494,
+      "violations": 274,
+      "violation_rate": 0.18340026773761714
+     },
+     {
+      "rtol": 7.626985859023451e-06,
+      "n": 1494,
+      "violations": 164,
+      "violation_rate": 0.10977242302543508
+     },
+     {
+      "rtol": 2.2539339047347933e-06,
+      "n": 1494,
+      "violations": 56,
+      "violation_rate": 0.03748326639892905
+     },
+     {
+      "rtol": 6.660846290809154e-07,
+      "n": 1494,
+      "violations": 3,
+      "violation_rate": 0.002008032128514056
+     },
+     {
+      "rtol": 1.2252798573828638e-06,
+      "n": 1494,
+      "violations": 21,
+      "violation_rate": 0.014056224899598393,
+      "refine": true
+     },
+     {
+      "rtol": 1.66183627753875e-06,
+      "n": 1494,
+      "violations": 42,
+      "violation_rate": 0.028112449799196786,
+      "refine": true
+     },
+     {
+      "rtol": 1.4269598863094747e-06,
+      "n": 1494,
+      "violations": 31,
+      "violation_rate": 0.020749665327978582,
+      "refine": true
+     },
+     {
+      "rtol": 1.3222803053771696e-06,
+      "n": 1494,
+      "violations": 25,
+      "violation_rate": 0.01673360107095047,
+      "refine": true
+     }
+    ]
+   }
+  },
+  "DP54PIs": {
+   "equal_risk": {
+    "rtol": 3.299000284067299e-06,
+    "chain": [
+     {
+      "rtol": 0.001,
+      "n": 1494,
+      "violations": 848,
+      "violation_rate": 0.5676037483266398
+     },
+     {
+      "rtol": 0.0002955209235202888,
+      "n": 1494,
+      "violations": 588,
+      "violation_rate": 0.39357429718875503
+     },
+     {
+      "rtol": 8.733261623828437e-05,
+      "n": 1494,
+      "violations": 416,
+      "violation_rate": 0.2784471218206158
+     },
+     {
+      "rtol": 2.5808615404180768e-05,
+      "n": 1494,
+      "violations": 251,
+      "violation_rate": 0.1680053547523427
+     },
+     {
+      "rtol": 7.626985859023451e-06,
+      "n": 1494,
+      "violations": 76,
+      "violation_rate": 0.050870147255689425
+     },
+     {
+      "rtol": 2.2539339047347933e-06,
+      "n": 1494,
+      "violations": 9,
+      "violation_rate": 0.006024096385542169
+     },
+     {
+      "rtol": 4.146169559796823e-06,
+      "n": 1494,
+      "violations": 33,
+      "violation_rate": 0.02208835341365462,
+      "refine": true
+     },
+     {
+      "rtol": 3.0569907009353843e-06,
+      "n": 1494,
+      "violations": 18,
+      "violation_rate": 0.012048192771084338,
+      "refine": true
+     },
+     {
+      "rtol": 3.5601687865605853e-06,
+      "n": 1494,
+      "violations": 24,
+      "violation_rate": 0.01606425702811245,
+      "refine": true
+     },
+     {
+      "rtol": 3.299000284067299e-06,
+      "n": 1494,
+      "violations": 20,
+      "violation_rate": 0.013386880856760375,
+      "refine": true
+     }
+    ]
+   }
+  }
+ }
+}

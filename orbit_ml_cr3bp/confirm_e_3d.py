@@ -17,6 +17,11 @@ from scipy.stats import binom
 __all__ = ["N_BOOT", "ratio_test", "iut", "binom_le", "noninferiority", "holm", "band_table"]
 
 N_BOOT = 4000
+# The policy-scale grid of Part E: the sealed FIXED_SEQ_GRID (0.1 * 2^(k/8), k = 0..26, and 1.0) continued upward in the same 1/8-octave steps
+# to 9.8 (k = 53). Added 2026-11-13 after the E_select dry run, before the seal: at 1,000 km the policy reached the top of the sealed grid (1.0)
+# with 3 / 2,900 calibration violations, i.e. it was capped while the comparators could loosen freely. Under the fixed-sequence rule the extra
+# values cost no power, and where the scale is not capped (every 100 km step of the dry run stopped at 0.872) nothing changes.
+SCALE_GRID_E = tuple(sorted(set([float(0.1 * 2.0 ** (k / 8.0)) for k in range(54)] + [1.0])))
 
 
 def _boot_idx(n, n_boot, seed):

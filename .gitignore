@@ -42,3 +42,5 @@ cr3bp_poster_48x36.js
 # Part E working data and run folders (results worth keeping are copied to part_e/results)
 data_e/
 out_e/
+# the E5 gate's 18 MB nearest-neighbour index: rebuilt exactly by run_part_e_3d.py gate; hashed by the seal like the datasets
+part_e/frozen/gate/gate.joblib

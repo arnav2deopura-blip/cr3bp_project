@@ -1,0 +1,67 @@
+[    132s]   certifying the rk8s scale on 4000 calibration rows
+[    135s]     scale 0.1000: 0 / 4000 violations
+[    135s]     scale 0.1091: 0 / 4000 violations
+[    135s]     scale 0.1189: 0 / 4000 violations
+[    135s]     scale 0.1297: 0 / 4000 violations
+[    136s]     scale 0.1414: 0 / 4000 violations
+[    136s]     scale 0.1542: 0 / 4000 violations
+[    136s]     scale 0.1682: 0 / 4000 violations
+[    136s]     scale 0.1834: 0 / 4000 violations
+[    136s]     scale 0.2000: 0 / 4000 violations
+[    136s]     scale 0.2181: 1 / 4000 violations
+[    137s]     scale 0.2378: 1 / 4000 violations
+[    137s]     scale 0.2594: 1 / 4000 violations
+[    137s]     scale 0.2828: 1 / 4000 violations
+[    137s]     scale 0.3084: 2 / 4000 violations
+[    137s]     scale 0.3364: 3 / 4000 violations
+[    137s]     scale 0.3668: 4 / 4000 violations
+[    137s]     scale 0.4000: 6 / 4000 violations
+[    137s]     scale 0.4362: 7 / 4000 violations
+[    137s]     scale 0.4757: 8 / 4000 violations
+[    138s]     scale 0.5187: 9 / 4000 violations
+[    138s]     scale 0.5657: 11 / 4000 violations
+[    138s]     scale 0.6169: 17 / 4000 violations
+[    138s]     scale 0.6727: 25 / 4000 violations
+[    138s]     scale 0.7336: 36 / 4000 violations
+[    138s]     scale 0.8000: 69 / 4000 violations
+[    138s]     scale 0.8724: 109 / 4000 violations
+[    138s]     scale 0.9514: 182 / 4000 violations
+[    138s]   DOP853s: equal risk 0.0272
+[    138s]     DOP853s rtol 1.000e-03: 2769 / 4000 violations
+[    138s]     DOP853s rtol 2.955e-04: 2173 / 4000 violations
+[    138s]     DOP853s rtol 8.733e-05: 1672 / 4000 violations
+[    138s]     DOP853s rtol 2.581e-05: 1111 / 4000 violations
+[    138s]     DOP853s rtol 7.627e-06: 685 / 4000 violations
+[    138s]     DOP853s rtol 2.254e-06: 396 / 4000 violations
+[    138s]     DOP853s rtol 6.661e-07: 207 / 4000 violations
+[    138s]     DOP853s rtol 1.968e-07: 84 / 4000 violations
+[    138s]     DOP853s rtol 3.621e-07: 137 / 4000 violations
+[    138s]     DOP853s rtol 2.670e-07: 111 / 4000 violations
+[    138s]     DOP853s rtol 2.292e-07: 98 / 4000 violations
+[    138s]     DOP853s rtol 2.474e-07: 104 / 4000 violations
+[    139s]   DP54PIs: equal risk 0.0272
+[    139s]     DP54PIs rtol 1.000e-03: 3248 / 4000 violations
+[    139s]     DP54PIs rtol 2.955e-04: 2846 / 4000 violations
+[    139s]     DP54PIs rtol 8.733e-05: 2415 / 4000 violations
+[    139s]     DP54PIs rtol 2.581e-05: 1849 / 4000 violations
+[    139s]     DP54PIs rtol 7.627e-06: 1010 / 4000 violations
+[    140s]     DP54PIs rtol 2.254e-06: 355 / 4000 violations
+[    140s]     DP54PIs rtol 6.661e-07: 78 / 4000 violations
+[    140s]     DP54PIs rtol 1.225e-06: 168 / 4000 violations
+[    140s]     DP54PIs rtol 9.034e-07: 124 / 4000 violations
+[    140s]     DP54PIs rtol 7.757e-07: 99 / 4000 violations
+[    140s]     DP54PIs rtol 8.371e-07: 110 / 4000 violations
+[    141s]   DP54PI: equal risk 0.0272
+[    141s]     DP54PI rtol 1.000e-03: 2977 / 4000 violations
+[    141s]     DP54PI rtol 2.955e-04: 2640 / 4000 violations
+[    141s]     DP54PI rtol 8.733e-05: 2182 / 4000 violations
+[    141s]     DP54PI rtol 2.581e-05: 1613 / 4000 violations
+[    141s]     DP54PI rtol 7.627e-06: 1032 / 4000 violations
+[    141s]     DP54PI rtol 2.254e-06: 538 / 4000 violations
+[    141s]     DP54PI rtol 6.661e-07: 213 / 4000 violations
+[    141s]     DP54PI rtol 1.968e-07: 52 / 4000 violations
+[    142s]     DP54PI rtol 3.621e-07: 115 / 4000 violations
+[    142s]     DP54PI rtol 2.670e-07: 84 / 4000 violations
+[    142s]     DP54PI rtol 3.109e-07: 97 / 4000 violations
+[    142s]     DP54PI rtol 3.355e-07: 108 / 4000 violations
+[    143s] done (e7, dry)

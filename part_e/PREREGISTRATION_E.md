@@ -136,16 +136,39 @@ endpoints.
   OSF link), then `run_part_e_3d.py frozen_list` and `freeze_e.py seal` (clean git tree, the OSF link, the hashes of every frozen file),
   then the upload of `FREEZE_E.json` and a `git bundle` to OSF; their links go into `part_e/OSF_LINKS.json`, never into `FREEZE_E.json`.
 
-## 5. Expectations (to be written from the E_select dry run BEFORE the seal)
+## 5. Expectations (written from the E_select dry run of 2026-11-13, BEFORE the seal)
 
-- E1: [dry run]. Priors at 1–3 TU: RHS ratio of totals 1.48 (1.44–1.52) against SciPy RK45 at equal risk (Study D replication set, post hoc);
+The dry run (`run_confirm_e_3d.py run <step> --target dry`, then `tests --target dry`; `out_e/dry/`) used E_select (seed 60: 10,000
+candidates, 8,081 usable) split 50 / 50 into calibration and evaluation rows, the Study D dry JPL sample for E5, and a **provisional overhead**
+of 15.04 RHS-equivalents for both policies (the machine was not idle; `part_e/frozen/overheads.json` is re-measured on an idle machine before
+the seal). The wall-clock parts (E1b, E7b) were not run yet (idle machine needed). The E7 model was chosen on the same E_select rows, so its dry
+numbers are in-sample and optimistic. Holm over the dry p-values: **only E7 supported**; E1–E5 not supported.
+
+- **E1: expected not supported.** Dry (1–3 TU, 1,494 evaluation rows, scale 0.87, calibration violation rate 1.1 %): ratio of totals 1.28
+  (95 % CI 1.21–1.36) against physical DP5(4)-PI, but **1.00 (0.96–1.05), p = 0.45** against Sundman-time DP5(4)-PI, which binds the
+  intersection–union test. Reported Sundman-time DOP853: 0.78 (0.73–0.84), i.e. it needs less work than the RK4 policy.
+
+- Priors kept for the record (E1). Priors at 1–3 TU: RHS ratio of totals 1.48 (1.44–1.52) against SciPy RK45 at equal risk (Study D replication set, post hoc);
   compiled throughput 1.61 against DP5(4)-PI (D2, Study D confirmation set, by horizon band). Against the Sundman-time comparators at 1–3 TU
   (P20, SciPy, Study D replication set, post hoc): RK45 1.31, DOP853 **0.85**. DP5(4)-PI in Sundman time was not run; if it behaves like
   Sundman-time RK45, E1 may pass narrowly; the reported Sundman-time DOP853 is expected to need less work than the RK4 policy (below 1).
-- E2: expected to shrink at 10 km (the policy's certified scale shrinks and the landing steps weigh more): [dry run].
-- E3: [dry run]; the endpoint audit of Study C found 2.6 % of runs wrong mid-run.
-- E4: [dry run]; the policy matched the event type on 99.9 % of doomed orbits but the strict event time on 46.7 %, so E4 may fail on success.
-- E7: [dry run]. **Pilots, run 2026-11-13 on Study D data only** (`posthoc/results/rk8s_vs_sundman_20261113T133953Z`,
+- **E2: expected not supported.** Dry (E_select rows up to 8 TU): at 10 km the ratio is 0.79 against physical and 0.61 against Sundman-time
+  DP5(4)-PI (DOP853 in Sundman time 0.40); at 1,000 km 1.29 and 0.97 (0.71). **Dry-run fix, before the seal:** with the sealed scale grid
+  (top value 1.0) the policy was capped at 1,000 km (scale 1.0 with 3 of 2,900 calibration violations, against comparators free to loosen);
+  the grid is now continued upward to 9.9 (`confirm_e_3d.SCALE_GRID_E`, every Part E certificate), after which the 1,000 km scale is 1.47 at a
+  2.5 % calibration violation rate. The capped run is kept (`out_e/dry/e2_capped_grid`).
+- **E3: expected not supported, through its ratio part.** Dry: path-certified scale 0.87, path violation rate on the evaluation rows 3.3 %
+  (50 of 1,494; exact binomial p = 0.001 against 5 %), so the rate part is expected to hold; the ratio against Sundman-time DP5(4)-PI at equal
+  path risk is about 1.0 (p = 0.45) and binds. (Study C's endpoint audit had found 2.6 % of runs wrong mid-run.)
+- **E4: expected not supported.** Dry (3,594 rows up to 3 TU, usable and doomed): success 98.5 % for the policy against 99.0 % and 99.1 % for
+  the two comparators (differences −0.5 and −0.6 points, inside the 1-point margin but with p = 0.022 and 0.058); ratio of totals 1.31
+  against physical DP5(4)-PI but 0.996 (0.97–1.02) against Sundman-time DP5(4)-PI, which binds.
+- **E7: expected supported, with a smaller margin than the dry run shows.** Dry (all 4,081 E_select evaluation rows, 1–20 TU; scale 0.87;
+  calibration violation rate 2.7 %): ratio of totals 1.11 (1.07–1.15) against Sundman-time DOP853, 1.73 against Sundman-time DP5(4)-PI,
+  2.14 against physical DP5(4)-PI, all p < 0.001; above 1 in every horizon band under per-band equal risk (DOP853 in Sundman time: 1.30,
+  1.15, 1.11). These rows also chose the model (25 trees, quantile 0.1, out of 6 configurations), so they are optimistic; out of sample, the
+  P25 pilot found 1.016 (0.994–1.040). The expectation is a ratio between about 1.02 and 1.10 against Sundman-time DOP853, which may or may
+  not clear 1 at the 4,000-resample bootstrap. E7b (wall-clock) not yet run. **Pilots, run 2026-11-13 on Study D data only** (`posthoc/results/rk8s_vs_sundman_20261113T133953Z`,
   `posthoc/results/rk8s_learned_20261113T134043Z`). P24: the oracle RK8 step was cheaper than the oracle-tuned Sundman-time DOP853 on 97.3 %
   of the 300 orbits, ratio of totals 1.28 (1.27 with atol = 0.1 · rtol); raising the grid ceiling from 4 to 64 changed no cost (the 33 orbits
   still at the ceiling are run almost entirely by landing steps). P25: the learned RK8 policy (sund model class and size, certified scale 0.80,
@@ -160,8 +183,11 @@ endpoints.
   0.12 dex at 1–3 TU, 0.30 at 3–8 TU, 0.42 at 8–20 TU, i.e. 1.3×, 2.0× and 2.6×), and the long horizons carry most of the total, so against
   Sundman-time DOP853 the outcome is close and E7 may fail. A learned step also loses some of the oracle margin to prediction error and the safety
   scale. P25 has since measured it (above).
-- E5: risk that periodic orbits lie inside the feature distribution (they are a measure-zero subset of it), so a feature-distance gate may not
-  fire on them; expected outcome [dry run].
+- **E5: expected not supported, on both parts.** Dry (Study D dry JPL sample, 1,599 in-range trusted runs, 11 families): the gate lowers the
+  family-balanced violation rate from 70 % (ungated) to 52 % (95 % CI 50–54 %), far above 10 %. In-distribution abstention: 5.6 % (83 of
+  1,494) on the dry evaluation rows and 4.6 % on all E_select rows up to 3 TU (the pilot's 3.9 % on Study D data was optimistic), so the
+  abstention criterion (≤ 5 %, exact binomial) is borderline at best. Almost all in-distribution abstentions are "wide"-branch orbits (23 % of
+  them at 1–3 TU abstain).
 
 ## 6. Exploratory (not in the Holm family; every number labelled exploratory)
 

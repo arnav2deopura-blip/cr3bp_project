@@ -1,0 +1,14 @@
+{
+ "n": 94611,
+ "success_rate": 0.9999894304044984,
+ "ceiling": {
+  "ds_max": 64.0,
+  "n": 94611,
+  "n_at_ceiling": 10567,
+  "share_at_ceiling": 0.1116889156651975,
+  "n_at_ceiling_multi_step": 0,
+  "share_at_ceiling_multi_step": 0.0,
+  "rule_holds": true
+ },
+ "seconds": 24.09258484840393
+}

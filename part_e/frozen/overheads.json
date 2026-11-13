@@ -1,0 +1,6 @@
+{
+ "provisional": true,
+ "note": "2026-11-13: the machine was not idle (load ~2 from other programs), so the dry run uses the sealed Study C overhead for both pipelines (E7's chosen model has the same 25 features and 25 trees of depth 3). Replaced by `run_part_e_3d.py overheads` on an idle machine before the seal.",
+ "rk4s": 15.036794812388587,
+ "rk8s": 15.036794812388587
+}
