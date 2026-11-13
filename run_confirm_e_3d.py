@@ -378,7 +378,7 @@ def step_timing(a, R, log):
     from orbit_ml_cr3bp import timing_e as te, compiled_solvers_d as csd, compiled_sundman_e as cs, e7_policy as e7
     from orbit_ml_cr3bp.config import collision_radii, EJECTION_RADIUS
     if not SMOKE["on"]:
-        te.require_idle()
+        te.wait_idle()
     rc1, rc2 = collision_radii(MU)
     rej = EJECTION_RADIUS
     res = {"machine": te.machine_info()}

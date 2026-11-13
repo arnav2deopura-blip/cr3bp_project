@@ -39,6 +39,19 @@ def require_idle(max_load=MAX_LOAD):
     return l1
 
 
+def wait_idle(max_load=MAX_LOAD, timeout_s=900, poll_s=15):
+    """Waits until the 1-minute load average is at most max_load (the threshold is never relaxed); raises BusyMachine after timeout_s.
+    Needed between sessions: the previous session's own thread keeps the 1-minute average near 1 for a few minutes after it ends."""
+    t0 = time.time()
+    while True:
+        l1 = os.getloadavg()[0]
+        if l1 <= max_load:
+            return l1
+        if time.time() - t0 > timeout_s:
+            raise BusyMachine(f"1-minute load average {l1:.2f} > {max_load} for {timeout_s} s: close other programs (E6 does not relax this)")
+        time.sleep(poll_s)
+
+
 def machine_info():
     import numba
     import subprocess
@@ -60,7 +73,7 @@ def time_sessions(arms, n_orbits, sessions=2, seed=0, log_path=None, max_load=MA
         arms[nm](0, 1)
     out, meta = {}, []
     for ses in range(sessions):
-        l0 = require_idle(max_load)
+        l0 = wait_idle(max_load) if max_load < 1e8 else os.getloadavg()[0]
         rng = np.random.RandomState(seed + ses)
         T = {nm: np.full(n_orbits, np.nan) for nm in names}
         status, t0 = "complete", time.time()
