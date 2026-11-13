@@ -320,10 +320,10 @@ def test_ood_gate():
     new = pd.DataFrame(rng.randn(4000, 3), columns=list("abc"))
     assert abs(g.abstain(new).mean() - 0.05) < 0.015
     assert g.abstain(pd.DataFrame([[8.0, 8.0, 8.0]], columns=list("abc")))[0]
-    for n_total in (1535, 5731, 19782, 120):
+    for n_total in (1535, 2198, 5731, 19782):              # the smallest and some larger JPL stream sizes
         e = set(oe.select_indices_e(n_total, 50))
         assert not e & set(select_indices(n_total, 50, "confirm")) and not e & set(select_indices(n_total, 50, "dry"))
-        assert len(e) >= 45
+        assert len(e) == 50
     v = oe.gated_violations([True, False, True], [True, True, False], [False, False, True])
     assert v.tolist() == [False, True, True]
 
