@@ -352,6 +352,40 @@ def test_timing_protocol():
     assert info["cpu_count"] and info["platform"]
 
 
+def test_e7_policy_pipeline():
+    """Item 9: the compiled E7 pipeline gives the sklearn model's step and the RK8 runner's run; the ceiling rule counts multi-step ceiling
+    labels only. Uses the P25 training-label cache (skipped without it)."""
+    lab = os.path.join(ROOT, "posthoc/cache/rk8s_labels_c_train.csv.gz")
+    if not os.path.exists(lab):
+        print("  skipped (no P25 label cache)")
+        return
+    import joblib
+    import run_part_c_3d as rc
+    from orbit_ml_cr3bp import e7_policy as e7
+    feats = list(joblib.load(os.path.join(ROOT, "part_c/frozen/sund/policy_frozen.joblib"))["spec"]["features"])
+    paths = [os.path.join(ROOT, p) for p in ("data_c/train/cr3bp_3d_training_data_accuracy_monotone_seed41.csv",
+                                             "data_c/train_enriched/cr3bp_3d_training_data_accuracy_monotone_seed141.csv")]
+    U, w = rc.load_c_frame(paths, MU, enriched={paths[1]})
+    L = pd.read_csv(lab)
+    assert np.array_equal(L["row_id"].to_numpy(), U["row_id"].to_numpy())
+    keep = np.random.RandomState(0).choice(len(U), 3000, replace=False)
+    tr = U.iloc[keep].reset_index(drop=True)
+    tr["dt_rk8s"], tr["rk8s_success"] = L["dt_rk8s"].to_numpy()[keep], L["rk8s_success"].to_numpy()[keep]
+    models = e7.fit_e7(tr, w[keep], feats, 25, 0.2)
+    pol = e7.CompiledE7(models)
+    test = U.iloc[:200]
+    S, T = test[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(float), test["sim_time"].to_numpy(float)
+    a, b = pol.raw_ds(S, T), e7.raw_ds(models, test)
+    assert np.allclose(a, b, rtol=1e-9), np.max(np.abs(a / b - 1))
+    ok, y, ev, rs = e8.Rk8sRunner(MU).run_ds(S[:20], T[:20], a[:20] * 0.8)
+    for i in range(20):
+        o, yy, e, r, ds = pol.one(S[i], T[i], 0.8)
+        assert bool(o) == bool(ok[i]) and e == ev[i] and np.array_equal(yy, y[i]) and np.isclose(ds, a[i] * 0.8)
+    assert np.isfinite(pol.loop(S[0], T[0], 3, 0.8))
+    rep = e7.ceiling_report(L)
+    assert rep["n_at_ceiling"] > 0 and rep["n_at_ceiling_multi_step"] == 0 and rep["rule_holds"]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):

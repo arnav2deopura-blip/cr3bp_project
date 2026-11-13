@@ -82,8 +82,11 @@ The horizon range of E_confirm is restricted **by design** (the claim is about 1
 - **The E7 policy** (`part_e/frozen/rk8s/policy_frozen.joblib`, frozen before the seal). Integrator: fixed-step 8th-order Runge–Kutta (the
   12-stage propagation formula of DOP853, no error control) in Sundman time, same g and τ_c = 2, with the RK4 kernel's landing rule
   (`defense_runs.integrate_endpoint_rk8s`); cost 12 RHS evaluations per step. Label: log10 of the largest fictitious step that meets 100 km, by
-  the sealed monotone search (`find_dt_for_integrator_accuracy_monotone_3d`) with an RK8 step function, ds in [1e-4, ds_max]; ds_max is set on
-  E_select so that at most 1 % of labels are censored (P23 found 40 of 300 censored at 4). Features: the same 25 as the Study C `sund` policy.
+  the sealed monotone search (`find_dt_for_integrator_accuracy_monotone_3d`) with an RK8 step function, ds in [1e-4, ds_max], ds_max = 64. **Amended
+  2026-11-13, before any Study E data:** the earlier rule "at most 1 % of labels censored" is replaced, because in P25 every one of the 10,567
+  training labels at the ceiling (11.2 %) costs exactly 12 evaluations, i.e. the run is a single landing step and no larger ds can make it
+  cheaper. The rule is now: labels at the ceiling whose run takes more than one step are counted on E_select; if they exceed 1 % of the labels,
+  ds_max is raised by factors of 4 until they do not (`e7_policy.ceiling_report`). Features: the same 25 as the Study C `sund` policy.
   Model: histogram gradient boosting, pinball loss, seed 42, depth 3, learning rate 0.2; trees ∈ {25, 50} and quantile ∈ {0.1, 0.2, 0.3},
   the one chosen on E_select (calibration fold for the scale, evaluation fold for the ratio of totals against the compiled Sundman-time DOP853 at
   equal risk; ties go to the smaller model). Safety scale: the sealed fixed-sequence rule (α = 0.05, δ = 0.1) on the 4,000 calibration rows of
