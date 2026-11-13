@@ -97,6 +97,54 @@ def test_sundman_matched_accuracy():
         assert r["rtol"] == 0.1 or not (lambda x: x["ok"] and x["err_km"] <= 100.0)(dr.run_sundman_adaptive(s, T, ref, 0.1, MU, m))
 
 
+def _real_rows(n=12, seed=1):
+    if not os.path.exists(C_CONFIRM):
+        return None
+    d = pd.read_csv(C_CONFIRM, nrows=400, low_memory=False)
+    d = d[d["reference_outcome"].astype(str) == "ok"].sample(n, random_state=seed)
+    return d[["x", "y", "z", "vx", "vy", "vz"]].to_numpy(float), d["sim_time"].to_numpy(float)
+
+
+def test_compiled_sundman_adaptive_matches_scipy_p20():
+    """Item 8: the compiled Sundman-time RK45 / DOP853 (SciPy controller, no collision check) reproduce P20's SciPy solver: the same nfev on
+    every orbit and the same endpoint to well under a metre."""
+    from orbit_ml_cr3bp import compiled_sundman_e as cs
+    rows = _real_rows()
+    S, T = rows if rows is not None else (STATES, HORIZONS)
+    for name, m in (("RK45s", "RK45"), ("DOP853s", "DOP853")):
+        sa = cs.SundmanAdaptive(name, check_bad=False)
+        for rt in (1e-5, 1e-9):
+            ok, y, nf, rs = sa.run(S, T, rt, parallel=False)
+            for i in range(len(S)):
+                r = dr.run_sundman_adaptive(S[i], T[i], y[i, :3], rt, MU, m)
+                assert r["ok"] == bool(ok[i]), (name, rt, i)
+                if r["ok"]:
+                    assert nf[i] == r["nfev"], (name, rt, i, nf[i], r["nfev"])
+                    assert r["err_km"] < 1e-3, (name, rt, i, r["err_km"])
+
+
+def test_compiled_sundman_adaptive_variants():
+    """The parallel batch equals the serial one; the collision check changes nothing on orbits that stay clear; DP5(4)-PI meets a tight
+    tolerance with an nfev of the same order as the SciPy controller."""
+    from orbit_ml_cr3bp import compiled_sundman_e as cs
+    rows = _real_rows(8, 2)
+    S, T = rows if rows is not None else (STATES, HORIZONS)
+    for name in ("RK45s", "DP54PIs", "DOP853s"):
+        a, b = cs.SundmanAdaptive(name, check_bad=True), cs.SundmanAdaptive(name, check_bad=False)
+        s1, s2, s3 = a.run(S, T, 1e-8, parallel=False), a.run(S, T, 1e-8, parallel=True), b.run(S, T, 1e-8, parallel=False)
+        for k in range(4):
+            assert np.array_equal(s1[k], s2[k])
+        clear = s1[0]
+        assert np.array_equal(s1[2][clear], s3[2][clear]) and np.array_equal(s1[1][clear], s3[1][clear])
+    ref = np.array([_ref(s, t) for s, t in zip(S, T)])
+    pi = cs.SundmanAdaptive("DP54PIs").rows(S, T, ref, 1e-10)
+    sp = cs.SundmanAdaptive("RK45s").rows(S, T, ref, 1e-10)
+    both = pi["ok"] & sp["ok"]
+    assert both.sum() >= len(S) - 1 and np.all(pi["err"][both] < 100.0)
+    r = pi["nfev"][both] / sp["nfev"][both]
+    assert np.all((r > 0.3) & (r < 3.0)), r
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
