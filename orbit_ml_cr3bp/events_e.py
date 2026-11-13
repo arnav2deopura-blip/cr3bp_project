@@ -44,16 +44,40 @@ REASON_TOO_SMALL = cs.REASON_TOO_SMALL
 # ---------------------------------------------------------------------------------------------------------------------
 
 @njit(cache=True)
+def seg_hit(Xa, Xb, mu, rc1, rc2):
+    """Item 7 (collision_segment.py, compiled): 1 / 2 if the straight chord between the positions of Xa and Xb comes within rc1 / rc2 of the
+    primary / secondary, else 0. Costs no RHS evaluation."""
+    d0 = Xb[0] - Xa[0]
+    d1 = Xb[1] - Xa[1]
+    d2 = Xb[2] - Xa[2]
+    dd = d0 * d0 + d1 * d1 + d2 * d2
+    for body in (1, 2):
+        cx = -mu if body == 1 else 1.0 - mu
+        rc = rc1 if body == 1 else rc2
+        tt = 0.0
+        if dd > 0.0:
+            tt = ((cx - Xa[0]) * d0 + (0.0 - Xa[1]) * d1 + (0.0 - Xa[2]) * d2) / dd
+            tt = min(1.0, max(0.0, tt))
+        qx = Xa[0] + tt * d0 - cx
+        qy = Xa[1] + tt * d1
+        qz = Xa[2] + tt * d2
+        if math.sqrt(qx * qx + qy * qy + qz * qz) < rc:
+            return body
+    return 0
+
+
+@njit(cache=True)
 def _keep(info, t_good, Xg, t_bad, Xb):
     info[0] = t_good
     info[7] = t_bad
+    info[14] = np.nan
     for i in range(6):
         info[1 + i] = Xg[i]
         info[8 + i] = Xb[i]
 
 
 @njit(cache=True)
-def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, info):
+def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, seg, info):
     """sundman_3d._integrate_endpoint_rk4s_numba (gfix = 0) with `info` filled on a bad state. Returns (ok, X, t, reason, n_s, n_f)."""
     X = state.copy()
     t = 0.0
@@ -91,6 +115,12 @@ def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, info):
             if bad != 0:
                 _keep(info, t, X, tmp[6], tmp)
                 return False, X, t, bad, n_s, n_f
+            if seg and tmp[6] < limit_t - 1e-12:
+                hb = seg_hit(X, tmp, mu, rc1, rc2)
+                if hb != 0:
+                    _keep(info, t, X, tmp[6], tmp)
+                    info[14] = hb
+                    return False, X, t, REASON_COLLISION, n_s, n_f
             if tmp[6] >= limit_t - 1e-12:
                 land = True
             else:
@@ -110,6 +140,12 @@ def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, info):
                 if bad != 0:
                     _keep(info, t, X, t + h, s_new)
                     return False, X, t, bad, n_s, n_f
+                if seg:
+                    hb = seg_hit(X, s_new, mu, rc1, rc2)
+                    if hb != 0:
+                        _keep(info, t, X, t + h, s_new)
+                        info[14] = hb
+                        return False, X, t, REASON_COLLISION, n_s, n_f
                 for i in range(6):
                     X[i] = s_new[i]
                 t = t + h
@@ -119,7 +155,7 @@ def rk4s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, info):
 
 
 @njit(cache=True)
-def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, info):
+def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, seg, info):
     """defense_runs._integrate_endpoint_rk8s_numba (gfix = 0) with `info` filled on a bad state. Returns (ok, X, t, reason, n_s, n_f)."""
     ns = B.shape[0]
     X = state.copy()
@@ -147,6 +183,12 @@ def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, in
             if bad != 0:
                 _keep(info, t, X, out[6], out)
                 return False, X, t, bad, n_s, n_f
+            if seg and out[6] < limit_t - 1e-12:
+                hb = seg_hit(X, out, mu, rc1, rc2)
+                if hb != 0:
+                    _keep(info, t, X, out[6], out)
+                    info[14] = hb
+                    return False, X, t, REASON_COLLISION, n_s, n_f
             if out[6] >= limit_t - 1e-12:
                 land = True
             else:
@@ -169,6 +211,12 @@ def rk8s_event(state, ds, limit_t, mu, max_steps, rc1, rc2, rej, tau_c, A, B, in
                 if bad != 0:
                     _keep(info, t, X, t + h, out)
                     return False, X, t, bad, n_s, n_f
+                if seg:
+                    hb = seg_hit(X, out, mu, rc1, rc2)
+                    if hb != 0:
+                        _keep(info, t, X, t + h, out)
+                        info[14] = hb
+                        return False, X, t, REASON_COLLISION, n_s, n_f
                 for i in range(6):
                     X[i] = out[i]
                 t = t + h
@@ -213,7 +261,7 @@ def _initial_step_p(y, f0, T, rtol, atol, mu, order, tmp, f1):
 
 
 @njit(cache=True)
-def rk_p_endpoint(y0, T, rtol, atol, mu, method, ctrl, max_nfev, rc1, rc2, rej, A, B, E, A8, B8, E3, E5, info):
+def rk_p_endpoint(y0, T, rtol, atol, mu, method, ctrl, max_nfev, rc1, rc2, rej, A, B, E, A8, B8, E3, E5, seg, info):
     """Physical-time RK45 (method 0; ctrl 0 SciPy, 1 PI) or DOP853 (method 1) from 0 to T. Returns (ok, y_end, nfev, reason); `info` as above."""
     n = 6
     if method == 0:
@@ -323,6 +371,12 @@ def rk_p_endpoint(y0, T, rtol, atol, mu, method, ctrl, max_nfev, rc1, rc2, rej, 
         if bad != 0:
             _keep(info, t, y, t_new, ynew)
             return False, ynew.copy(), nfev, bad
+        if seg:
+            hb = seg_hit(y, ynew, mu, rc1, rc2)
+            if hb != 0:
+                _keep(info, t, y, t_new, ynew)
+                info[14] = hb
+                return False, ynew.copy(), nfev, REASON_COLLISION
         for i in range(n):
             y[i] = ynew[i]
             K[0, i] = K[ns, i]
@@ -437,42 +491,56 @@ def _tab():
 
 
 def run_with_event(method, state, T, param, mu=MU, tau_c=SUNDMAN_TAU_C, atol_ratio=ADAPTIVE_ATOL_RATIO, max_nfev=MAX_ADAPTIVE_NFEV,
-                   max_steps=4_000_000):
-    """param = fictitious step ds (rk4s, rk8s) or rtol (adaptive). Returns dict(ok, final (6), evals, reason, event, t_event); event 0 and
-    t_event = T when the run reached the horizon."""
+                   max_steps=4_000_000, seg=True):
+    """param = fictitious step ds (rk4s, rk8s) or rtol (adaptive). Returns dict(ok, final (6), evals, reason, event, t_event, seg_hit);
+    event 0 and t_event = T when the run reached the horizon. seg = True (the Part E default) adds the between-node collision test (item 7);
+    seg = False is the endpoint-only check of the sealed kernels."""
     rc1, rc2 = collision_radii(mu)
     rej = EJECTION_RADIUS
     st = np.ascontiguousarray(state, dtype=np.float64)
-    info = np.full(14, np.nan)
+    info = np.full(15, np.nan)
     rk, d8 = _tab()
     if method == "rk4s":
-        ok, X, _t, reason, n_s, n_f = rk4s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), info)
+        ok, X, _t, reason, n_s, n_f = rk4s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), bool(seg), info)
         evals = 4 * (n_s + n_f)
     elif method == "rk8s":
-        ok, X, _t, reason, n_s, n_f = rk8s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), dr._A8, dr._B8, info)
+        ok, X, _t, reason, n_s, n_f = rk8s_event(st, float(param), float(T), mu, int(max_steps), rc1, rc2, rej, float(tau_c), dr._A8, dr._B8, bool(seg), info)
         evals = dr.RK8_STAGES * (n_s + n_f)
     elif method in ("DP54PI", "DOP853", "RK45"):
         m, c = {"DP54PI": (0, 1), "DOP853": (1, 0), "RK45": (0, 0)}[method]
         rt = float(param)
         ok, X, evals, reason = rk_p_endpoint(st, float(T), rt, rt * atol_ratio, mu, m, c, int(max_nfev), rc1, rc2, rej,
-                                             rk["A"], rk["B"], rk["E"], np.ascontiguousarray(d8["A"][:12, :12]), d8["B"], d8["E3"], d8["E5"], info)
+                                             rk["A"], rk["B"], rk["E"], np.ascontiguousarray(d8["A"][:12, :12]), d8["B"], d8["E3"], d8["E5"], bool(seg), info)
     elif method in cs.SundmanAdaptive.SPECS:
         m, c = cs.SundmanAdaptive.SPECS[method]
         rt = float(param)
         Y0 = np.concatenate([st, [0.0]])
         ok, X, evals, _a, _r, _s, reason = cs.rk_s_endpoint(Y0, float(T), rt, rt * atol_ratio, mu, float(tau_c), m, c, int(max_nfev), True,
                                                              rc1, rc2, rej, rk["A"], rk["B"], rk["C"], rk["E"], rk["P"], d8["A"], d8["B"], d8["C"],
-                                                             d8["E3"], d8["E5"], d8["D"], info)
+                                                             d8["E3"], d8["E5"], d8["D"], bool(seg), info)
     else:
         raise ValueError(method)
     ok = bool(ok)
-    out = {"ok": ok, "final": np.asarray(X, dtype=float).copy(), "evals": float(evals), "reason": int(reason), "event": 0, "t_event": float(T)}
+    out = {"ok": ok, "final": np.asarray(X, dtype=float).copy(), "evals": float(evals), "reason": int(reason), "event": 0, "t_event": float(T),
+           "seg_hit": False}
     if ok:
         return out
     if reason in (REASON_COLLISION, REASON_EJECTION) and np.isfinite(info[0]):
-        code = int(bad_code(info[8:14], mu, rc1, rc2, rej))
+        X0, X1 = info[1:7].copy(), info[8:14].copy()
+        if np.isfinite(info[14]):              # a chord crossing with both endpoints outside the body
+            code = int(info[14])
+            out["seg_hit"] = True
+        else:
+            code = int(bad_code(X1, mu, rc1, rc2, rej))
+        te = float(hermite_event_time(code, info[0], X0, info[7], X1, mu, rc1, rc2, rej))
+        if out["seg_hit"] and te == info[7]:   # the Hermite curve stays outside: the chord's closest approach
+            c = np.array([-mu if code == 1 else 1.0 - mu, 0.0, 0.0])
+            d = X1[:3] - X0[:3]
+            dd = float(d @ d)
+            th = 0.0 if dd == 0 else float(np.clip((c - X0[:3]) @ d / dd, 0.0, 1.0))
+            te = float(info[0] + th * (info[7] - info[0]))
         out["event"] = code
-        out["t_event"] = float(hermite_event_time(code, info[0], info[1:7].copy(), info[7], info[8:14].copy(), mu, rc1, rc2, rej))
+        out["t_event"] = te
     else:
         out["event"] = 9
         out["t_event"] = float("nan")

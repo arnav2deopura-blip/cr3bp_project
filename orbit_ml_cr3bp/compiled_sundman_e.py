@@ -27,6 +27,7 @@ from numba import njit, prange
 from .config import MU, EJECTION_RADIUS, ADAPTIVE_ATOL_RATIO, MAX_ADAPTIVE_NFEV, collision_radii, du_km_for_mu, POSITION_TOL_KM
 from .physics_3d import REASON_OK, REASON_NONFINITE, REASON_STEP_CAP
 from .sundman_3d import _G, _bad_state, SUNDMAN_TAU_C
+from .physics_3d import REASON_COLLISION
 
 __all__ = ["S_MAX", "CTRL_SCIPY", "CTRL_PI", "METHOD_RK45", "METHOD_DOP853", "REASON_NO_EVENT", "REASON_TOO_SMALL", "tableaux",
            "rk_s_endpoint", "rk_s_batch", "rk_s_batch_par", "SundmanAdaptive"]
@@ -49,6 +50,28 @@ def tableaux():
           "C": np.ascontiguousarray(dc.C, dtype=np.float64), "E3": np.ascontiguousarray(dc.E3, dtype=np.float64),
           "E5": np.ascontiguousarray(dc.E5, dtype=np.float64), "D": np.ascontiguousarray(dc.D, dtype=np.float64)}
     return rk, d8
+
+
+@njit(cache=True)
+def _seg_hit(Xa, Xb, mu, rc1, rc2):
+    """The chord test of events_e.seg_hit (duplicated here to avoid a circular import; tests check they agree)."""
+    d0 = Xb[0] - Xa[0]
+    d1 = Xb[1] - Xa[1]
+    d2 = Xb[2] - Xa[2]
+    dd = d0 * d0 + d1 * d1 + d2 * d2
+    for body in (1, 2):
+        cx = -mu if body == 1 else 1.0 - mu
+        rc = rc1 if body == 1 else rc2
+        tt = 0.0
+        if dd > 0.0:
+            tt = ((cx - Xa[0]) * d0 + (0.0 - Xa[1]) * d1 + (0.0 - Xa[2]) * d2) / dd
+            tt = min(1.0, max(0.0, tt))
+        qx = Xa[0] + tt * d0 - cx
+        qy = Xa[1] + tt * d1
+        qz = Xa[2] + tt * d2
+        if math.sqrt(qx * qx + qy * qy + qz * qz) < rc:
+            return body
+    return 0
 
 
 @njit(cache=True)
@@ -122,9 +145,10 @@ def _dense_dop853(y_old, F, x, out):
 
 
 @njit(cache=True)
-def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8, info):
-    """Returns (ok, X_end (6), nfev, n_accepted, n_rejected, s_end, reason). When a collision / ejection / non-finite check fails, `info`
-    (length 14) receives t_good, X_good (6), t_bad, X_bad (6): the last good state and the first bad one, in physical time (events_e.py)."""
+def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info):
+    """Returns (ok, X_end (6), nfev, n_accepted, n_rejected, s_end, reason). seg: the between-node collision test of events_e.seg_hit
+    (item 7) after every accepted step. When a collision / ejection / non-finite check fails, `info`
+    (length 15) receives t_good, X_good (6), t_bad, X_bad (6) and, for a chord crossing, the body code: the last good state and the first bad one, in physical time (events_e.py)."""
     n = 7
     if method == METHOD_RK45:
         ns = B.shape[0]               # 6 stages + FSAL
@@ -298,6 +322,7 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
                 if bad != 0:
                     info[0] = y[6]
                     info[7] = T
+                    info[14] = np.nan
                     for i in range(6):
                         info[1 + i] = y[i]
                         info[8 + i] = Xout[i]
@@ -305,17 +330,39 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
             for i in range(6):
                 if not math.isfinite(Xout[i]):
                     return False, Xout, nfev, n_acc, n_rej, s + hi * h, REASON_NONFINITE
+            if seg and check_bad:
+                hb = _seg_hit(y, Xout, mu, rc1, rc2)
+                if hb != 0:
+                    info[0] = y[6]
+                    info[7] = T
+                    info[14] = hb
+                    for i in range(6):
+                        info[1 + i] = y[i]
+                        info[8 + i] = Xout[i]
+                    return False, Xout, nfev, n_acc, n_rej, s + hi * h, REASON_COLLISION
             return True, Xout, nfev, n_acc, n_rej, s + hi * h, REASON_OK
         if check_bad:
             bad = _bad_state(ynew, mu, rc1, rc2, rej)
             if bad != 0:
                 info[0] = y[6]
                 info[7] = ynew[6]
+                info[14] = np.nan
                 for i in range(6):
                     Xout[i] = ynew[i]
                     info[1 + i] = y[i]
                     info[8 + i] = ynew[i]
                 return False, Xout, nfev, n_acc, n_rej, s_new, bad
+        if seg and check_bad:
+            hb = _seg_hit(y, ynew, mu, rc1, rc2)
+            if hb != 0:
+                info[0] = y[6]
+                info[7] = ynew[6]
+                info[14] = hb
+                for i in range(6):
+                    Xout[i] = ynew[i]
+                    info[1 + i] = y[i]
+                    info[8 + i] = ynew[i]
+                return False, Xout, nfev, n_acc, n_rej, s_new, REASON_COLLISION
         for i in range(n):
             y[i] = ynew[i]
             K[0, i] = K[ns, i]
@@ -324,20 +371,20 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
 
 
 @njit(cache=True)
-def rk_s_batch(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8):
+def rk_s_batch(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg):
     n = states.shape[0]
     ok = np.zeros(n, dtype=np.bool_)
     y = np.empty((n, 6))
     nf = np.zeros(n)
     rs = np.zeros(n, dtype=np.int64)
     Y0 = np.empty(7)
-    info = np.empty(14)
+    info = np.empty(15)
     for i in range(n):
         for j in range(6):
             Y0[j] = states[i, j]
         Y0[6] = 0.0
         o, yy, e, _a, _r, _s, r = rk_s_endpoint(Y0, T[i], rtol, rtol * atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej,
-                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, info)
+                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info)
         ok[i] = o
         for j in range(6):
             y[i, j] = yy[j]
@@ -347,7 +394,7 @@ def rk_s_batch(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, c
 
 
 @njit(parallel=True, cache=True)
-def rk_s_batch_par(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8):
+def rk_s_batch_par(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej, A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg):
     n = states.shape[0]
     ok = np.zeros(n, dtype=np.bool_)
     y = np.empty((n, 6))
@@ -355,12 +402,12 @@ def rk_s_batch_par(states, T, rtol, atol_ratio, mu, tau_c, method, ctrl, max_nfe
     rs = np.zeros(n, dtype=np.int64)
     for i in prange(n):
         Y0 = np.empty(7)
-        info = np.empty(14)
+        info = np.empty(15)
         for j in range(6):
             Y0[j] = states[i, j]
         Y0[6] = 0.0
         o, yy, e, _a, _r, _s, r = rk_s_endpoint(Y0, T[i], rtol, rtol * atol_ratio, mu, tau_c, method, ctrl, max_nfev, check_bad, rc1, rc2, rej,
-                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, info)
+                                                A, B, C, E, P, A8, B8, C8, E3, E5, D8, seg, info)
         ok[i] = o
         for j in range(6):
             y[i, j] = yy[j]
@@ -375,10 +422,11 @@ class SundmanAdaptive:
 
     SPECS = {"RK45s": (METHOD_RK45, CTRL_SCIPY), "DP54PIs": (METHOD_RK45, CTRL_PI), "DOP853s": (METHOD_DOP853, CTRL_SCIPY)}
 
-    def __init__(self, name, mu=MU, tau_c=SUNDMAN_TAU_C, atol_ratio=ADAPTIVE_ATOL_RATIO, max_nfev=MAX_ADAPTIVE_NFEV, check_bad=True):
+    def __init__(self, name, mu=MU, tau_c=SUNDMAN_TAU_C, atol_ratio=ADAPTIVE_ATOL_RATIO, max_nfev=MAX_ADAPTIVE_NFEV, check_bad=True, seg=False):
         self.name = name
         self.method, self.ctrl = self.SPECS[name]
         self.mu, self.tau_c, self.atol_ratio, self.max_nfev, self.check_bad = float(mu), float(tau_c), float(atol_ratio), int(max_nfev), bool(check_bad)
+        self.seg = bool(seg) and self.check_bad
         self.rc1, self.rc2 = collision_radii(mu)
         self.rej = EJECTION_RADIUS
         self.du_km = du_km_for_mu(mu)
@@ -388,7 +436,7 @@ class SundmanAdaptive:
     def run(self, states, T, rtol, parallel=True):
         f = rk_s_batch_par if parallel else rk_s_batch
         return f(np.ascontiguousarray(states, dtype=np.float64), np.ascontiguousarray(T, dtype=np.float64), float(rtol), self.atol_ratio, self.mu,
-                 self.tau_c, self.method, self.ctrl, self.max_nfev, self.check_bad, self.rc1, self.rc2, self.rej, *self.tab)
+                 self.tau_c, self.method, self.ctrl, self.max_nfev, self.check_bad, self.rc1, self.rc2, self.rej, *self.tab, self.seg)
 
     def rows(self, states, T, ref_pos, rtol, tol_km=POSITION_TOL_KM, parallel=True):
         ok, y, nf, rs = self.run(states, T, rtol, parallel)

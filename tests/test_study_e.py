@@ -173,11 +173,11 @@ def test_event_kernels_equal_the_originals():
     n_bad = 0
     for s, t in zip(S, T):
         for ds in (0.3, 0.05):
-            a = ee.run_with_event("rk4s", s, t, ds)
+            a = ee.run_with_event("rk4s", s, t, ds, seg=False)
             r = integrate_endpoint_rk4s(s, ds, t, MU, 4_000_000)
             assert a["ok"] == bool(r[0]) and a["reason"] == int(r[5]) and a["evals"] == 4 * (r[6] + r[7])
             assert np.array_equal(a["final"], np.asarray(r[2]))
-            b = ee.run_with_event("rk8s", s, t, ds * 4)
+            b = ee.run_with_event("rk8s", s, t, ds * 4, seg=False)
             r = dr.integrate_endpoint_rk8s(s, ds * 4, t, MU)
             assert b["ok"] == bool(r[0]) and b["reason"] == int(r[5]) and b["evals"] == 12 * (r[6] + r[7])
             assert np.array_equal(b["final"], np.asarray(r[2]))
@@ -186,7 +186,7 @@ def test_event_kernels_equal_the_originals():
             for meth, ref_fn in (("DP54PI", lambda: csd.KR.dp54_endpoint(s, t, rt, rt * 1e-3, MU, csd.CTRL_PI, 2_000_000, rc1, rc2, EJECTION_RADIUS)),
                                  ("RK45", lambda: csd.KR.dp54_endpoint(s, t, rt, rt * 1e-3, MU, csd.CTRL_SCIPY, 2_000_000, rc1, rc2, EJECTION_RADIUS)),
                                  ("DOP853", lambda: csd.KR.dop853_endpoint(s, t, rt, rt * 1e-3, MU, *tb, 2_000_000, rc1, rc2, EJECTION_RADIUS))):
-                a = ee.run_with_event(meth, s, t, rt)
+                a = ee.run_with_event(meth, s, t, rt, seg=False)
                 r = ref_fn()
                 assert a["ok"] == bool(r[0]) and a["reason"] == int(r[5]) and a["evals"] == r[2], (meth, rt, a["evals"], r[2])
                 assert np.allclose(a["final"], np.asarray(r[1]), rtol=0, atol=1e-12)
@@ -210,6 +210,40 @@ def test_event_times_converge_to_the_reference():
             assert not r["ok"] and r["event"] == code, (meth, r, code)
             assert abs(r["t_event"] - te) < 0.01 * window, (meth, r["t_event"], te, window)
             assert ee.strict_success(r["event"], r["t_event"], code, te, v)
+
+
+def test_segment_check_in_the_kernels():
+    """Item 7: the compiled chord test agrees with collision_segment.py; a run whose step jumps across the Moon is flagged only with seg = True;
+    with seg = True nothing changes on runs that never pass near a body."""
+    from orbit_ml_cr3bp import events_e as ee, compiled_sundman_e as cs
+    from orbit_ml_cr3bp.collision_segment import crossed_bodies
+    from orbit_ml_cr3bp.config import collision_radii
+    rc1, rc2 = collision_radii(MU)
+    rng = np.random.RandomState(0)
+    moon, earth = np.array([1.0 - MU, 0, 0]), np.array([-MU, 0, 0])
+    for _ in range(400):
+        c = moon if rng.rand() < 0.5 else earth
+        a = np.r_[c + rng.normal(scale=0.03, size=3), np.zeros(3)]
+        b = np.r_[c + rng.normal(scale=0.03, size=3), np.zeros(3)]
+        r = crossed_bodies(np.vstack([a[:3], b[:3]]), MU)
+        want = 1 if r["primary"] == 0 else (2 if r["secondary"] == 0 else 0)
+        assert ee.seg_hit(a, b, MU, rc1, rc2) == want == cs._seg_hit(a, b, MU, rc1, rc2)
+    # a straight fast pass through the Moon: one long physical step (fixed-step RK8 landing with a huge ds) jumps across it
+    s0 = np.array([1.0 - MU - 0.05, 0.0005, 0.0, 2.0, 0.0, 0.0])
+    T = 0.05
+    for meth, prm in (("DP54PI", 1e-1), ("rk8s", 50.0)):          # both step across the Moon: the endpoint check alone misses it
+        plain = ee.run_with_event(meth, s0, T, prm, seg=False)
+        checked = ee.run_with_event(meth, s0, T, prm, seg=True)
+        assert plain["ok"], meth
+        assert not checked["ok"] and checked["event"] == 2 and checked["seg_hit"] and 0.0 < checked["t_event"] < T, (meth, checked)
+    S, Tt = _real_rows(6, 7) if _real_rows() is not None else (STATES, HORIZONS)
+    for s, t in zip(S, Tt):
+        for meth, prm in (("rk4s", 0.1), ("rk8s", 0.5), ("DP54PI", 1e-8), ("DOP853s", 1e-8)):
+            a, b = ee.run_with_event(meth, s, t, prm, seg=False), ee.run_with_event(meth, s, t, prm, seg=True)
+            if a["ok"] and b["ok"]:
+                assert np.array_equal(a["final"], b["final"]) and a["evals"] == b["evals"]
+            elif b["seg_hit"]:
+                assert a["ok"] or a["evals"] >= b["evals"]
 
 
 if __name__ == "__main__":
