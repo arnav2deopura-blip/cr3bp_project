@@ -82,7 +82,9 @@ def ck_record(t0, X0, t1, X1, mu, ck_t, ck_out):
     the audit, not of the method, and are not counted in its cost. Interpolation error O(dt^6): a cubic (O(dt^4)) added km-level error between
     the long steps of DOP853 and RK8 and would have penalized the high-order methods. ck_t empty = disabled."""
     dt = t1 - t0
-    if dt <= 0.0:
+    if dt <= 0.0 or ck_t.shape[0] == 0:
+        return
+    if ck_t[ck_t.shape[0] - 1] <= t0 or ck_t[0] > t1:      # checkpoints are increasing: none in (t0, t1]
         return
     a0 = np.empty(6)
     a1 = np.empty(6)
@@ -187,10 +189,14 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
         ns = B.shape[0]               # 6 stages + FSAL
         order = 4.0
         expo = -1.0 / 5.0
+        Am = A
+        Bm = B
     else:
         ns = B8.shape[0]              # 12 stages + FSAL
         order = 7.0
         expo = -1.0 / 8.0
+        Am = A8
+        Bm = B8
     K = np.empty((16, n))
     y = Y0.copy()
     ynew = np.empty(n)
@@ -226,29 +232,51 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
                 s_new = S_MAX
             h = s_new - s
             h_abs = abs(h)
-            for st in range(1, ns):
-                for i in range(n):
-                    acc = 0.0
-                    for j in range(st):
-                        acc += K[j, i] * (A[st, j] if method == METHOD_RK45 else A8[st, j])
-                    tmp[i] = y[i] + acc * h
-                _G(tmp, mu, tau_c, 0.0, K[st])
-            for i in range(n):
-                acc = 0.0
-                for j in range(ns):
-                    acc += K[j, i] * (B[j] if method == METHOD_RK45 else B8[j])
-                ynew[i] = y[i] + h * acc
-            _G(ynew, mu, tau_c, 0.0, K[ns])
-            nfev += ns
-            for i in range(n):
-                sc[i] = atol + max(abs(y[i]), abs(ynew[i])) * rtol
             if method == METHOD_RK45:
+                # Dormand-Prince 5(4) unrolled, the arithmetic of compiled_solvers_d's physical kernel (and of SciPy's rk_step)
+                for i in range(n):
+                    tmp[i] = y[i] + (0.2 * K[0, i]) * h
+                _G(tmp, mu, tau_c, 0.0, K[1])
+                for i in range(n):
+                    tmp[i] = y[i] + (3.0 / 40.0 * K[0, i] + 9.0 / 40.0 * K[1, i]) * h
+                _G(tmp, mu, tau_c, 0.0, K[2])
+                for i in range(n):
+                    tmp[i] = y[i] + (44.0 / 45.0 * K[0, i] - 56.0 / 15.0 * K[1, i] + 32.0 / 9.0 * K[2, i]) * h
+                _G(tmp, mu, tau_c, 0.0, K[3])
+                for i in range(n):
+                    tmp[i] = y[i] + (19372.0 / 6561.0 * K[0, i] - 25360.0 / 2187.0 * K[1, i] + 64448.0 / 6561.0 * K[2, i] - 212.0 / 729.0 * K[3, i]) * h
+                _G(tmp, mu, tau_c, 0.0, K[4])
+                for i in range(n):
+                    tmp[i] = y[i] + (9017.0 / 3168.0 * K[0, i] - 355.0 / 33.0 * K[1, i] + 46732.0 / 5247.0 * K[2, i] + 49.0 / 176.0 * K[3, i]
+                                     - 5103.0 / 18656.0 * K[4, i]) * h
+                _G(tmp, mu, tau_c, 0.0, K[5])
+                for i in range(n):
+                    ynew[i] = y[i] + h * (35.0 / 384.0 * K[0, i] + 500.0 / 1113.0 * K[2, i] + 125.0 / 192.0 * K[3, i] - 2187.0 / 6784.0 * K[4, i]
+                                          + 11.0 / 84.0 * K[5, i])
+                _G(ynew, mu, tau_c, 0.0, K[6])
+            else:
+                for st in range(1, ns):
+                    for i in range(n):
+                        acc = 0.0
+                        for j in range(st):
+                            acc += K[j, i] * Am[st, j]
+                        tmp[i] = y[i] + acc * h
+                    _G(tmp, mu, tau_c, 0.0, K[st])
                 for i in range(n):
                     acc = 0.0
-                    for j in range(ns + 1):
-                        acc += K[j, i] * E[j]
-                    err[i] = acc * h / sc[i]
-                en = _rms(err, n)
+                    for j in range(ns):
+                        acc += K[j, i] * Bm[j]
+                    ynew[i] = y[i] + h * acc
+                _G(ynew, mu, tau_c, 0.0, K[ns])
+            nfev += ns
+            if method == METHOD_RK45:
+                en = 0.0
+                for i in range(n):
+                    e = (-71.0 / 57600.0 * K[0, i] + 71.0 / 16695.0 * K[2, i] - 71.0 / 1920.0 * K[3, i] + 17253.0 / 339200.0 * K[4, i]
+                         - 22.0 / 525.0 * K[5, i] + 1.0 / 40.0 * K[6, i]) * h
+                    sci = atol + max(abs(y[i]), abs(ynew[i])) * rtol
+                    en += (e / sci) ** 2
+                en = math.sqrt(en / n)
             else:
                 e5 = 0.0
                 e3 = 0.0
@@ -258,10 +286,9 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
                     for j in range(ns + 1):
                         a5 += K[j, i] * E5[j]
                         a3 += K[j, i] * E3[j]
-                    err[i] = a5 / sc[i]
-                    err3[i] = a3 / sc[i]
-                    e5 += err[i] * err[i]
-                    e3 += err3[i] * err3[i]
+                    sci = atol + max(abs(y[i]), abs(ynew[i])) * rtol
+                    e5 += (a5 / sci) ** 2
+                    e3 += (a3 / sci) ** 2
                 if e5 == 0.0 and e3 == 0.0:
                     en = 0.0
                 else:
@@ -330,20 +357,39 @@ def rk_s_endpoint(Y0, T, rtol, atol, mu, tau_c, method, ctrl, max_nfev, check_ba
                         for k in range(16):
                             acc += D8[r, k] * K[k, i]
                         F[3 + r, i] = h * acc
+            # root of t(x) - T on x in (0, 1]: Illinois (modified regula falsi), keeping the bracket; t(0) < T <= t(1)
             lo = 0.0
             hi = 1.0
-            for _it in range(200):
-                mid = 0.5 * (lo + hi)
-                if mid <= lo or mid >= hi:
+            glo = y[6] - T
+            ghi = ynew[6] - T
+            side = 0
+            for _it in range(100):
+                if ghi == glo:
                     break
+                mid = hi - ghi * (hi - lo) / (ghi - glo)
+                if not (mid > lo and mid < hi):
+                    mid = 0.5 * (lo + hi)
+                    if not (mid > lo and mid < hi):
+                        break
                 if method == METHOD_RK45:
                     _dense_rk45(y, h, Q, mid, dense)
                 else:
                     _dense_dop853(y, F, mid, dense)
-                if dense[6] - T >= 0.0:
+                gm = dense[6] - T
+                if gm >= 0.0:
                     hi = mid
+                    ghi = gm
+                    if side == 1:
+                        glo *= 0.5
+                    side = 1
                 else:
                     lo = mid
+                    glo = gm
+                    if side == -1:
+                        ghi *= 0.5
+                    side = -1
+                if gm == 0.0 or hi - lo <= 4.0 * 2.220446049250313e-16:
+                    break
             if method == METHOD_RK45:
                 _dense_rk45(y, h, Q, hi, dense)
             else:
