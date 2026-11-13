@@ -3,8 +3,10 @@
 Status: **DRAFT, not sealed.** Nothing in this document has been run. It implements section 3 of the rigor plan of 2026-10-30
 (`CR3BP_Rigor_and_Bug_Plan.md`, kept outside the repository). Before the seal: build the missing pieces listed in section 7, run the dry
 run on the selection set, write the expectations into section 5, and commit the tree. **Register this document on OSF (or an equivalent public
-registry with a server timestamp) before the dry run**, and push the sealed commit to a public remote: the seals of Studies A–D are local and
-their timestamps cannot be verified by a third party (`DEFENSE_PLAN.md`, P0-8). The seal (`freeze_e.py`, to be written on the model of
+registry with a server timestamp) before the dry run**: the seals of Studies A–D are local and their timestamps cannot be verified by a third party
+(`DEFENSE_PLAN.md`, P0-8). Decided 2026-11-13: OSF only, no public git remote. So that the sealed code is covered by a server timestamp too,
+the seal record (`FREEZE_E.json`, which holds the commit hash and the SHA-256 of every source and frozen file) and a `git bundle` of the
+sealed commit are uploaded to the OSF project right after the seal and before any confirmatory run; the OSF links go into the record. The seal (`freeze_e.py`, to be written on the model of
 `freeze_d.py`) must refuse to run on a dirty git tree (Study D's seal recorded the dirty-file list instead). After the seal everything above
 "## Deviations" is frozen and later changes are dated entries there.
 
@@ -158,7 +160,8 @@ Not included: hybrid fixed/adaptive switching (excluded by the plan); new featur
 
 ## 7. To build before the dry run (none of this exists yet)
 
-0. OSF registration of this document and a public remote for the repository (see the header).
+0. OSF registration of this document before the dry run, and the upload of `FREEZE_E.json` plus a `git bundle` of the sealed commit to the
+   OSF project after the seal (see the header; no public git remote).
 1. `freeze_e.py` (clean-tree seal) and `run_confirm_e_3d.py` (once-only runner with a log), modelled on Study D's.
 2. E2 relabelling at 10 km and 1,000 km (label search at the other tolerance; `generate_3d_data.py --tol_km`).
 3. E3 path-error labels and certificate: dense-reference checkpoints and a `run_rows` variant that returns the maximum checkpoint error.

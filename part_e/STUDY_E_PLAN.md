@@ -10,7 +10,7 @@ What already exists and can be reused (checked 2026-11-13):
 
 | Draft §7 item | What exists | What is missing |
 |---|---|---|
-| 0. OSF + public remote | nothing (`git remote -v` is empty) | everything; this one is yours (account, registration, choosing to make the repo public) |
+| 0. OSF | nothing | everything; this one is yours (account, registration, uploads); no public remote (D5) |
 | 1. `freeze_e.py`, `run_confirm_e_3d.py` | `freeze_d.py`, `run_confirm_d_3d.py` as models | both scripts; the clean-tree check (`git status --porcelain` must be empty) |
 | 2. Relabel at 10 km / 1,000 km | `generate_3d_data.py --tol_km` already exists | a check that the same seed gives the same initial states at every tolerance; nothing else |
 | 3. Path-error certificate | `endpoint_audit_3d.checkpoint_errors` (Study C, 50 checkpoints) | a K = 20 checkpoint variant inside the runner, path-certified scale calibration |
@@ -57,6 +57,8 @@ the second architecture from E6 before the seal rather than as a deviation after
 
 **D5. Committing and going public.** A clean-tree seal means the whole tree has to be committed first, including or ignoring the untracked
 poster files (`CR3BP_Poster.af`, `poster/`, `affinity_bridge/`, `cr3bp_poster_48x36.js`). Pushing to a public remote is your call.
+**Decided 2026-11-13: poster files git-ignored (`a4b1264`), tree committed (`bad4028`); OSF only, no public remote.** To give the sealed code an
+outside timestamp anyway, `FREEZE_E.json` and a `git bundle` of the sealed commit go to the OSF project right after the seal.
 
 ## Step 1: exploratory pilots on Study D data (no Study E data touched)
 
@@ -86,7 +88,7 @@ Suggested order (dependencies first):
 7. **Item 6**: timing script with the load gate and two-session log.
 8. **E7 policy** (item 9 of the draft): training script, selection on E_select, compiled kernel, frozen model with pinned overhead.
 9. **Item 1**: `run_confirm_e_3d.py` (once-only, log file, `freeze_e.py check` before every step) and `freeze_e.py` (clean tree required,
-   records HEAD, remote URL and OSF URL). Write these last so they wrap the finished code.
+   records HEAD and the OSF registration URL; prints the `git bundle` command for the OSF upload). Write these last so they wrap the finished code.
 
 Run the full test suite after each item; the existing 7 suites must still pass (sealed numbers unchanged).
 
@@ -104,9 +106,10 @@ Run the full test suite after each item; the existing 7 suites must still pass (
 
 1. Check that no "proposed" item is left in the draft; remove the "DRAFT" header line; keep "## Deviations" empty.
 2. Commit the tree (clean). **Register `PREREGISTRATION_E.md` on OSF** and put the OSF link in the document (you do this; I cannot create
-   accounts). Push the commit to a public remote if you chose to.
+   accounts). (No public remote, D5.)
 3. Generate seeds 61–66 (and the 10 km / 1,000 km relabels of 63), hash them into `part_e/FROZEN_FILES.json`, and do not load them.
 4. Run `freeze_e.py seal`; commit `FREEZE_E.json`.
+5. Upload `FREEZE_E.json` and `git bundle create study_e_sealed.bundle HEAD` to the OSF project (you); then start Step 5.
 
 ## Step 5: the confirmatory run (once)
 
