@@ -139,36 +139,37 @@ endpoints.
 ## 5. Expectations (written from the E_select dry run of 2026-11-13, BEFORE the seal)
 
 The dry run (`run_confirm_e_3d.py run <step> --target dry`, then `tests --target dry`; `out_e/dry/`) used E_select (seed 60: 10,000
-candidates, 8,081 usable) split 50 / 50 into calibration and evaluation rows, the Study D dry JPL sample for E5, and a **provisional overhead**
-of 15.04 RHS-equivalents for both policies (the machine was not idle; `part_e/frozen/overheads.json` is re-measured on an idle machine before
-the seal). The wall-clock parts (E1b, E7b) were not run yet (idle machine needed). The E7 model was chosen on the same E_select rows, so its dry
-numbers are in-sample and optimistic. Holm over the dry p-values: **only E7 supported**; E1–E5 not supported.
+candidates, 8,081 usable) split into calibration and evaluation rows, the Study D dry JPL sample for E5, and the overheads measured on the
+idle machine (`part_e/frozen/overheads.json`: 16.40 RHS-equivalents for the RK4 pipeline, 16.25 for the E7 pipeline; Study C's sealed value
+was 15.04 on the same kind of machine at load 6.5). The numbers below are from the second dry run (after the two fixes listed at the end of
+this section); the first, with a provisional overhead of 15.04, gave the same verdicts (`out_e/dry_superseded/`). The E7 model was chosen on the
+same E_select rows, so its dry numbers are in-sample and optimistic. Holm over the dry p-values: **only E7 supported**; E1–E5 not supported.
 
 - **E1: expected not supported.** Dry (1–3 TU, 1,494 evaluation rows, scale 0.87, calibration violation rate 1.1 %): ratio of totals 1.28
-  (95 % CI 1.21–1.36) against physical DP5(4)-PI, but **1.00 (0.96–1.05), p = 0.45** against Sundman-time DP5(4)-PI, which binds the
-  intersection–union test. Reported Sundman-time DOP853: 0.78 (0.73–0.84), i.e. it needs less work than the RK4 policy.
+  (95 % CI 1.21–1.35) against physical DP5(4)-PI, but **1.00 (0.96–1.04), p = 0.54** against Sundman-time DP5(4)-PI, which binds the
+  intersection–union test. Reported Sundman-time DOP853: 0.77 (0.72–0.84), i.e. it needs less work than the RK4 policy.
 
 - Priors kept for the record (E1). Priors at 1–3 TU: RHS ratio of totals 1.48 (1.44–1.52) against SciPy RK45 at equal risk (Study D replication set, post hoc);
   compiled throughput 1.61 against DP5(4)-PI (D2, Study D confirmation set, by horizon band). Against the Sundman-time comparators at 1–3 TU
   (P20, SciPy, Study D replication set, post hoc): RK45 1.31, DOP853 **0.85**. DP5(4)-PI in Sundman time was not run; if it behaves like
   Sundman-time RK45, E1 may pass narrowly; the reported Sundman-time DOP853 is expected to need less work than the RK4 policy (below 1).
-- **E2: expected not supported.** Dry (E_select rows up to 8 TU): at 10 km the ratio is 0.79 against physical and 0.61 against Sundman-time
-  DP5(4)-PI (DOP853 in Sundman time 0.40); at 1,000 km 1.29 and 0.97 (0.71). **Dry-run fix, before the seal:** with the sealed scale grid
+- **E2: expected not supported.** Dry (E_select rows up to 8 TU): at 10 km the ratio is 0.79 against physical and 0.60 against Sundman-time
+  DP5(4)-PI (DOP853 in Sundman time 0.40); at 1,000 km 1.28 and 0.97 (0.71). **Dry-run fix, before the seal:** with the sealed scale grid
   (top value 1.0) the policy was capped at 1,000 km (scale 1.0 with 3 of 2,900 calibration violations, against comparators free to loosen);
   the grid is now continued upward to 9.9 (`confirm_e_3d.SCALE_GRID_E`, every Part E certificate), after which the 1,000 km scale is 1.47 at a
   2.5 % calibration violation rate. The capped run is kept (`out_e/dry/e2_capped_grid`).
 - **E3: expected not supported, through its ratio part.** Dry: path-certified scale 0.87, path violation rate on the evaluation rows 3.3 %
   (50 of 1,494; exact binomial p = 0.001 against 5 %), so the rate part is expected to hold; the ratio against Sundman-time DP5(4)-PI at equal
-  path risk is about 1.0 (p = 0.45) and binds. (Study C's endpoint audit had found 2.6 % of runs wrong mid-run.)
+  path risk is about 1.0 (p = 0.54) and binds. (Study C's endpoint audit had found 2.6 % of runs wrong mid-run.)
 - **E4: expected not supported.** Dry (3,594 rows up to 3 TU, usable and doomed): success 98.5 % for the policy against 99.0 % and 99.1 % for
-  the two comparators (differences −0.5 and −0.6 points, inside the 1-point margin but with p = 0.022 and 0.058); ratio of totals 1.31
-  against physical DP5(4)-PI but 0.996 (0.97–1.02) against Sundman-time DP5(4)-PI, which binds.
+  the two comparators (differences −0.5 and −0.6 points, inside the 1-point margin but with p = 0.022 and 0.058); ratio of totals 1.30
+  against physical DP5(4)-PI but 0.99 (0.96–1.02) against Sundman-time DP5(4)-PI, which binds.
 - **E7: expected supported, with a smaller margin than the dry run shows.** Dry (all 4,081 E_select evaluation rows, 1–20 TU; scale 0.87;
   calibration violation rate 2.7 %): ratio of totals 1.11 (1.07–1.15) against Sundman-time DOP853, 1.73 against Sundman-time DP5(4)-PI,
-  2.14 against physical DP5(4)-PI, all p < 0.001; above 1 in every horizon band under per-band equal risk (DOP853 in Sundman time: 1.30,
+  2.14 against physical DP5(4)-PI, all p < 0.001; above 1 in every horizon band under per-band equal risk (DOP853 in Sundman time: 1.28,
   1.15, 1.11). These rows also chose the model (25 trees, quantile 0.1, out of 6 configurations), so they are optimistic; out of sample, the
   P25 pilot found 1.016 (0.994–1.040). The expectation is a ratio between about 1.02 and 1.10 against Sundman-time DOP853, which may or may
-  not clear 1 at the 4,000-resample bootstrap. E7b (wall-clock) not yet run. **Pilots, run 2026-11-13 on Study D data only** (`posthoc/results/rk8s_vs_sundman_20261113T133953Z`,
+  not clear 1 at the 4,000-resample bootstrap. **Pilots, run 2026-11-13 on Study D data only** (`posthoc/results/rk8s_vs_sundman_20261113T133953Z`,
   `posthoc/results/rk8s_learned_20261113T134043Z`). P24: the oracle RK8 step was cheaper than the oracle-tuned Sundman-time DOP853 on 97.3 %
   of the 300 orbits, ratio of totals 1.28 (1.27 with atol = 0.1 · rtol); raising the grid ceiling from 4 to 64 changed no cost (the 33 orbits
   still at the ceiling are run almost entirely by landing steps). P25: the learned RK8 policy (sund model class and size, certified scale 0.80,
@@ -188,6 +189,21 @@ numbers are in-sample and optimistic. Holm over the dry p-values: **only E7 supp
   1,494) on the dry evaluation rows and 4.6 % on all E_select rows up to 3 TU (the pilot's 3.9 % on Study D data was optimistic), so the
   abstention criterion (≤ 5 %, exact binomial) is borderline at best. Almost all in-distribution abstentions are "wide"-branch orbits (23 % of
   them at 1–3 TU abstain).
+
+**Wall-clock (E1b, E7b).** A first timing dry run (before the kernel fix below) gave E1b 0.90 against physical DP5(4)-PI and 1.60 against
+Sundman-time DP5(4)-PI, and E7b 1.40 / 2.50 / 1.42 against Sundman-time DOP853 / Sundman-time DP5(4)-PI / physical DP5(4)-PI; it is
+superseded. The timing after the fix needs a quiet machine and is [pending]: twice the machine stayed above load 1.0 for 15 minutes (the dry
+steps' own load, then macOS maintenance daemons). The expectation before it runs: E1b not supported (the policy is slower in wall-clock than
+physical DP5(4)-PI even where it uses 28 % fewer evaluations, because its Sundman right-hand side costs about twice the physical one in a
+step loop), so E1 fails on both parts.
+
+**Fixes made from the dry run (2026-11-13, before the seal).** (1) The scale grid continued above 1.0 (E2, above). (2) The compiled
+Sundman-time comparators were about twice as slow per evaluation as Study D's physical kernels for implementation reasons (allocations in
+the per-step checkpoint recorder, a bisection event search, generic stage loops), which would have favoured the policy in E1b and E7b; after
+the fix their bookkeeping per evaluation relative to their bare step loop (+52 %) is no larger than that of Study D's physical DP5(4)-PI
+(+64 %), and their evaluation counts still equal SciPy's exactly (`tests/test_study_e.py`). Measured on 150 E_select orbits: Sundman-time
+DP5(4)-PI 65 ns per evaluation, DOP853 59, the policy's own Sundman RK4 kernel 50, physical DP5(4)-PI 35. Evaluation counts, and so every
+RHS-based number above, are unaffected.
 
 ## 6. Exploratory (not in the Holm family; every number labelled exploratory)
 

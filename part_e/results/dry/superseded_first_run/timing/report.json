@@ -1,0 +1,156 @@
+{
+ "step": "timing",
+ "target": "dry",
+ "utc": "2026-11-13T19:03:13.748717+00:00",
+ "wall_seconds": 569.3415570259094,
+ "seal_utc": null,
+ "machine": {
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "cpu": "Apple M5",
+  "cpu_count": 10,
+  "python": "3.11.16",
+  "numba": "0.67.0",
+  "numpy": "2.4.6",
+  "load_average": [
+   0.92626953125,
+   1.23193359375,
+   2.57568359375
+  ]
+ },
+ "E1b": {
+  "DP54PI": {
+   "p": 1.0,
+   "throughput_ratio": 0.9002008355675585,
+   "ci95": [
+    0.8530873664735771,
+    0.9505288574021044
+   ],
+   "share_orbits_policy_faster": 0.7610441767068273,
+   "median_orbit_ratio": 1.1332243308577867,
+   "n": 1494,
+   "mean_ns_policy": 13430.06313008455,
+   "mean_ns_comparator": 12089.754051427171,
+   "per_session_ratio": {
+    "0": 0.9007900115201336,
+    "1": 0.8996139431205237
+   },
+   "n_complete_sessions": 2,
+   "evaluable": true
+  },
+  "DP54PIs": {
+   "p": 0.00024993751562109475,
+   "throughput_ratio": 1.601130003300125,
+   "ci95": [
+    1.5315490389150401,
+    1.680573552938946
+   ],
+   "share_orbits_policy_faster": 0.998661311914324,
+   "median_orbit_ratio": 2.459699435863351,
+   "n": 1494,
+   "mean_ns_policy": 13430.06313008455,
+   "mean_ns_comparator": 21503.27702379316,
+   "per_session_ratio": {
+    "0": 1.6013223671056538,
+    "1": 1.6009383850508492
+   },
+   "n_complete_sessions": 2,
+   "evaluable": true
+  },
+  "sessions": [
+   {
+    "session": 0,
+    "status": "complete",
+    "load_start": 0.92626953125,
+    "load_end": 1.017578125,
+    "seconds": 9.836677074432373,
+    "n_timed": 1494
+   },
+   {
+    "session": 1,
+    "status": "complete",
+    "load_start": 0.9912109375,
+    "load_end": 0.9921875,
+    "seconds": 9.8736891746521,
+    "n_timed": 1494
+   }
+  ]
+ },
+ "E7b": {
+  "DOP853s": {
+   "p": 0.00024993751562109475,
+   "throughput_ratio": 1.4040705211256965,
+   "ci95": [
+    1.3486913736938666,
+    1.4681530609872928
+   ],
+   "share_orbits_policy_faster": 0.9892183288409704,
+   "median_orbit_ratio": 2.516502893955673,
+   "n": 4081,
+   "mean_ns_policy": 29967.02347999059,
+   "mean_ns_comparator": 42075.81427413637,
+   "per_session_ratio": {
+    "0": 1.4027689105692556,
+    "1": 1.4053712780145027
+   },
+   "n_complete_sessions": 2,
+   "evaluable": true
+  },
+  "DP54PIs": {
+   "p": 0.00024993751562109475,
+   "throughput_ratio": 2.5042993566343106,
+   "ci95": [
+    2.4508565046028084,
+    2.564912791216416
+   ],
+   "share_orbits_policy_faster": 1.0,
+   "median_orbit_ratio": 3.5040803325204215,
+   "n": 4081,
+   "mean_ns_policy": 29967.02347999059,
+   "mean_ns_comparator": 75046.39762118572,
+   "per_session_ratio": {
+    "0": 2.498644166691143,
+    "1": 2.509950837593559
+   },
+   "n_complete_sessions": 2,
+   "evaluable": true
+  },
+  "DP54PI": {
+   "p": 0.00024993751562109475,
+   "throughput_ratio": 1.4235476387509747,
+   "ci95": [
+    1.3843029786664929,
+    1.4659493283137066
+   ],
+   "share_orbits_policy_faster": 0.9906885567262925,
+   "median_orbit_ratio": 1.8227137139184295,
+   "n": 4081,
+   "mean_ns_policy": 29967.02347999059,
+   "mean_ns_comparator": 42659.485515335626,
+   "per_session_ratio": {
+    "0": 1.4228430205755414,
+    "1": 1.4242517947991395
+   },
+   "n_complete_sessions": 2,
+   "evaluable": true
+  },
+  "sessions": [
+   {
+    "session": 0,
+    "status": "complete",
+    "load_start": 0.9921875,
+    "load_end": 1.474609375,
+    "seconds": 40.557188987731934,
+    "n_timed": 4081
+   },
+   {
+    "session": 1,
+    "status": "complete",
+    "load_start": 0.92822265625,
+    "load_end": 0.96142578125,
+    "seconds": 40.568374156951904,
+    "n_timed": 4081
+   }
+  ]
+ }
+}

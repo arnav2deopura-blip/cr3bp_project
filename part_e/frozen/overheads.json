@@ -1,6 +1,79 @@
 {
- "provisional": true,
- "note": "2026-11-13: the machine was not idle (load ~2 from other programs), so the dry run uses the sealed Study C overhead for both pipelines (E7's chosen model has the same 25 features and 25 trees of depth 3). Replaced by `run_part_e_3d.py overheads` on an idle machine before the seal.",
- "rk4s": 15.036794812388587,
- "rk8s": 15.036794812388587
+ "rk4s": 16.395041961484182,
+ "rk8s": 16.24807487988815,
+ "rk4s_sealed_study_c": 15.036794812388587,
+ "measurements": {
+  "rk4s": {
+   "policy_ns_per_call": 578.81125,
+   "policy_ns_range": [
+    577.77333,
+    579.76416
+   ],
+   "rhs_ns_per_call": 35.304042,
+   "rhs_ns_range": [
+    35.199291,
+    35.839458
+   ],
+   "features_ns_per_call": 136.17334,
+   "features_ns_range": [
+    135.96834,
+    136.62583
+   ],
+   "rhs_equiv": 16.395041961484182,
+   "rhs_equiv_range": [
+    16.121151441520126,
+    16.47090448497954
+   ],
+   "features_rhs_equiv": 3.8571600385021063,
+   "python_dispatch_ns_policy": 4166.0,
+   "python_dispatch_ns_rhs": 709.0,
+   "python_dispatch_rhs_equiv": 5.875881523272215,
+   "repeats": 9,
+   "n_policy_calls": 100000,
+   "n_rhs_calls": 1000000
+  },
+  "rk8s": {
+   "policy_ns_per_call": 584.69375,
+   "policy_ns_range": [
+    584.12291,
+    585.09458
+   ],
+   "rhs_ns_per_call": 35.985417,
+   "rhs_ns_range": [
+    35.89775,
+    36.044209
+   ],
+   "features_ns_per_call": 135.45917,
+   "features_ns_range": [
+    135.27458,
+    135.76334
+   ],
+   "rhs_equiv": 16.24807487988815,
+   "rhs_equiv_range": [
+    16.20573529578635,
+    16.29892068444401
+   ],
+   "features_rhs_equiv": 3.7642795691376874,
+   "python_dispatch_ns_policy": 4292.0,
+   "python_dispatch_ns_rhs": 666.0,
+   "python_dispatch_rhs_equiv": 6.444444444444445,
+   "repeats": 9,
+   "n_policy_calls": 100000,
+   "n_rhs_calls": 1000000
+  }
+ },
+ "machine": {
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "cpu": "Apple M5",
+  "cpu_count": 10,
+  "python": "3.11.16",
+  "numba": "0.67.0",
+  "numpy": "2.4.6",
+  "load_average": [
+   0.91845703125,
+   1.47412109375,
+   3.16845703125
+  ]
+ }
 }

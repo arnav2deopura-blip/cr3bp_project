@@ -1,8 +1,8 @@
 {
  "step": "e4",
  "target": "dry",
- "utc": "2026-11-13T18:24:44.331476+00:00",
- "wall_seconds": 36.06134486198425,
+ "utc": "2026-11-13T19:09:42.214555+00:00",
+ "wall_seconds": 14.336980104446411,
  "seal_utc": null,
  "population_counts": {
   "ok": 2988,

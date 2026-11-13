@@ -1,0 +1,20 @@
+{
+ "step": "e4",
+ "target": "dry",
+ "utc": "2026-11-13T18:24:44.331476+00:00",
+ "wall_seconds": 36.06134486198425,
+ "seal_utc": null,
+ "population_counts": {
+  "ok": 2988,
+  "secondary_collision": 489,
+  "primary_collision": 117
+ },
+ "n_run": 3594,
+ "n_usable": 2988,
+ "n_doomed": 606,
+ "scale": 0.8724061861322062,
+ "rtols": {
+  "DP54PI": 1.4269598863094747e-06,
+  "DP54PIs": 3.299000284067299e-06
+ }
+}
