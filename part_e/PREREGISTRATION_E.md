@@ -181,7 +181,7 @@ endpoints.
 
 Not included: hybrid fixed/adaptive switching (excluded by the plan); new feature families unless the dry run justifies them.
 
-## 7. To build before the dry run (none of this exists yet)
+## 7. To build before the dry run (items 1–9 built and unit-tested on 2026-11-13, see section 4.1; item 0 and item 10's runs remain)
 
 0. OSF registration of this document before the dry run, and the upload of `FREEZE_E.json` plus a `git bundle` of the sealed commit to the
    OSF project after the seal (see the header; no public git remote).
