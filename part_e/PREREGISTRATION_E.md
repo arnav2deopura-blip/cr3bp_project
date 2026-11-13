@@ -116,11 +116,20 @@ endpoints.
 - E2: expected to shrink at 10 km (the policy's certified scale shrinks and the landing steps weigh more): [dry run].
 - E3: [dry run]; the endpoint audit of Study C found 2.6 % of runs wrong mid-run.
 - E4: [dry run]; the policy matched the event type on 99.9 % of doomed orbits but the strict event time on 46.7 %, so E4 may fail on success.
-- E7: [P24–P25 pilots and dry run]. Priors: the oracle 8th-order step needed a median 0.27 dex (≈ 1.9×) fewer evaluations than the oracle
+- E7: [dry run]. **Pilots, run 2026-11-13 on Study D data only** (`posthoc/results/rk8s_vs_sundman_20261113T133953Z`,
+  `posthoc/results/rk8s_learned_20261113T134043Z`). P24: the oracle RK8 step was cheaper than the oracle-tuned Sundman-time DOP853 on 97.3 %
+  of the 300 orbits, ratio of totals 1.28 (1.27 with atol = 0.1 · rtol); raising the grid ceiling from 4 to 64 changed no cost (the 33 orbits
+  still at the ceiling are run almost entirely by landing steps). P25: the learned RK8 policy (sund model class and size, certified scale 0.80,
+  calibration violation rate 3.85 %, evaluation 3.50 %) needed 1/2.57 of the RK4 policy's total. Ratio of totals at equal risk on the 12,253
+  evaluation rows: physical RK45 1.95, physical DOP853 1.63, Sundman RK45 1.74, **Sundman DOP853 1.016 (95 % CI 0.994–1.040)**; share cheaper
+  against Sundman DOP853 88.9 %. So E7a against Sundman-time DOP853 is expected to be close to a tie and could fail. **The risk is not equal
+  within horizon bands**: at 1–3 TU the policy violated 3.8 % and the equal-risk comparators about 0.1 %; at 8–20 TU 4.9 % against about 10.6 %.
+  By-band ratios (Sundman DOP853: 1.51 at 1–3 TU, 1.11 at 3–8, 0.91 at 8–20) are therefore not equal-risk comparisons. Whether to
+  calibrate per horizon band must be decided before the seal (plan, decision D6). Earlier priors, kept for the record: the oracle 8th-order step needed a median 0.27 dex (≈ 1.9×) fewer evaluations than the oracle
   RK4 step (P23); the RK4 policy's total was 2.4× that of Sundman-time DOP853 (P20, ratio 0.41). The gain grows with the horizon (median
   0.12 dex at 1–3 TU, 0.30 at 3–8 TU, 0.42 at 8–20 TU, i.e. 1.3×, 2.0× and 2.6×), and the long horizons carry most of the total, so against
   Sundman-time DOP853 the outcome is close and E7 may fail. A learned step also loses some of the oracle margin to prediction error and the safety
-  scale. The pilot P25 measures this before the seal.
+  scale. P25 has since measured it (above).
 - E5: risk that periodic orbits lie inside the feature distribution (they are a measure-zero subset of it), so a feature-distance gate may not
   fire on them; expected outcome [dry run].
 

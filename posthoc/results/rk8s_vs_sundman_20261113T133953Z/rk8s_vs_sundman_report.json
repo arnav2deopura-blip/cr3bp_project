@@ -1,0 +1,187 @@
+{
+ "label": "POST HOC, EXPLORATORY (posthoc/README.md P24)",
+ "sealed_run": "out_d/confirm/d3/sund/apply_policy_20261028T230253Z",
+ "n_orbits": 300,
+ "rk8_censored_at_64": 33,
+ "rk8_no_label": 0,
+ "overall": {
+  "RK45_spec": {
+   "n": 300,
+   "n_missing": 0,
+   "share_first_cheaper": 0.99,
+   "ratio_of_totals_second_over_first": 2.52973850623825,
+   "median_log10_second_over_first": 0.23526353282767173
+  },
+  "DOP853_spec": {
+   "n": 300,
+   "n_missing": 0,
+   "share_first_cheaper": 0.98,
+   "ratio_of_totals_second_over_first": 2.067338916424543,
+   "median_log10_second_over_first": 0.2122290706235213
+  },
+  "RK45s_spec": {
+   "n": 300,
+   "n_missing": 0,
+   "share_first_cheaper": 0.9966666666666667,
+   "ratio_of_totals_second_over_first": 2.4770979319774398,
+   "median_log10_second_over_first": 0.3070203593531686
+  },
+  "DOP853s_spec": {
+   "n": 300,
+   "n_missing": 0,
+   "share_first_cheaper": 0.9733333333333334,
+   "ratio_of_totals_second_over_first": 1.282686720218766,
+   "median_log10_second_over_first": 0.23957751657678797
+  },
+  "RK45s_atol01_spec": {
+   "n": 300,
+   "n_missing": 0,
+   "share_first_cheaper": 0.9966666666666667,
+   "ratio_of_totals_second_over_first": 2.2657665356349344,
+   "median_log10_second_over_first": 0.2436327033078055
+  },
+  "DOP853s_atol01_spec": {
+   "n": 300,
+   "n_missing": 0,
+   "share_first_cheaper": 0.9533333333333334,
+   "ratio_of_totals_second_over_first": 1.2732011621944967,
+   "median_log10_second_over_first": 0.14659779719716395
+  }
+ },
+ "by_h_band": {
+  "1-3": {
+   "RK45_spec": {
+    "n": 126,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9761904761904762,
+    "ratio_of_totals_second_over_first": 2.1472513089005236,
+    "median_log10_second_over_first": 0.2218487496163564
+   },
+   "DOP853_spec": {
+    "n": 126,
+    "n_missing": 0,
+    "share_first_cheaper": 1.0,
+    "ratio_of_totals_second_over_first": 1.962041884816754,
+    "median_log10_second_over_first": 0.30585006610352494
+   },
+   "RK45s_spec": {
+    "n": 126,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9920634920634921,
+    "ratio_of_totals_second_over_first": 1.817408376963351,
+    "median_log10_second_over_first": 0.31145702864029823
+   },
+   "DOP853s_spec": {
+    "n": 126,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9841269841269841,
+    "ratio_of_totals_second_over_first": 1.6210732984293195,
+    "median_log10_second_over_first": 0.3440646278891831
+   },
+   "RK45s_atol01_spec": {
+    "n": 126,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9920634920634921,
+    "ratio_of_totals_second_over_first": 1.6714659685863875,
+    "median_log10_second_over_first": 0.22543804192991806
+   },
+   "DOP853s_atol01_spec": {
+    "n": 126,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9761904761904762,
+    "ratio_of_totals_second_over_first": 1.350130890052356,
+    "median_log10_second_over_first": 0.23257261500812945
+   }
+  },
+  "3-8": {
+   "RK45_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 1.0,
+    "ratio_of_totals_second_over_first": 2.4463869463869465,
+    "median_log10_second_over_first": 0.23608918873096663
+   },
+   "DOP853_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9655172413793104,
+    "ratio_of_totals_second_over_first": 2.123043623043623,
+    "median_log10_second_over_first": 0.18677453807464753
+   },
+   "RK45s_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 1.0,
+    "ratio_of_totals_second_over_first": 2.0584415584415585,
+    "median_log10_second_over_first": 0.28254658996996806
+   },
+   "DOP853s_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9540229885057471,
+    "ratio_of_totals_second_over_first": 1.2778055278055278,
+    "median_log10_second_over_first": 0.2566108558755683
+   },
+   "RK45s_atol01_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 1.0,
+    "ratio_of_totals_second_over_first": 1.9297369297369298,
+    "median_log10_second_over_first": 0.23849792747310114
+   },
+   "DOP853s_atol01_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9310344827586207,
+    "ratio_of_totals_second_over_first": 1.2954545454545454,
+    "median_log10_second_over_first": 0.1469888773513741
+   }
+  },
+  "8-20": {
+   "RK45_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 1.0,
+    "ratio_of_totals_second_over_first": 2.598109640831758,
+    "median_log10_second_over_first": 0.25927524755698
+   },
+   "DOP853_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9655172413793104,
+    "ratio_of_totals_second_over_first": 2.0563957151858854,
+    "median_log10_second_over_first": 0.15373292971889155
+   },
+   "RK45s_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 1.0,
+    "ratio_of_totals_second_over_first": 2.699054820415879,
+    "median_log10_second_over_first": 0.30939355914878325
+   },
+   "DOP853s_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9770114942528736,
+    "ratio_of_totals_second_over_first": 1.2519533711405166,
+    "median_log10_second_over_first": 0.12617077851799152
+   },
+   "RK45s_atol01_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 1.0,
+    "ratio_of_totals_second_over_first": 2.450157529930687,
+    "median_log10_second_over_first": 0.2547448082195448
+   },
+   "DOP853s_atol01_spec": {
+    "n": 87,
+    "n_missing": 0,
+    "share_first_cheaper": 0.9425287356321839,
+    "ratio_of_totals_second_over_first": 1.2573724007561438,
+    "median_log10_second_over_first": 0.0800420877207609
+   }
+  }
+ },
+ "note": "first = oracle RK8 Sundman-time fixed step; second = the comparator; *s_spec = oracle-tuned in Sundman time (atol 1e-3 rtol, or 0.1 rtol for _atol01); RK45_spec / DOP853_spec = the sealed physical-time oracle-tuned columns",
+ "wall_seconds": 48.247533082962036
+}

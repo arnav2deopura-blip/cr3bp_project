@@ -40,6 +40,11 @@ DOP853, and (c) censored on 40 of 300 orbits.
   result against the strongest comparator. It adds a training and selection phase (Step 1b and Step 3) before the seal.
 - Option C: a minimal Study E (E1 + E4 only) if time is short.
 
+**D6 (new, from the P25 pilot). Equal risk overall or per horizon band?** In P25 the learned RK8 policy and its equal-risk comparators had
+the same overall violation rate (3.5 % vs 3.6–3.9 %), but the policy put its violations at short horizons (3.8 % at 1–3 TU vs ~0.1 %) and the
+comparators at long ones (~10.6 % at 8–20 TU vs 4.9 %). Overall equal risk is the sealed rule and keeps E7 comparable with Studies C–D;
+per-band calibration (as D4's per-stratum certificate) is fairer per band but costs power. Decide before the seal; report the other as secondary.
+
 **D2. Which comparators enter E1?** The draft lists Sundman-time solvers as "proposed, decide before the seal". The McGreivy–Hakim standard
 that the earlier parts followed says include the strongest baseline. My recommendation: include compiled DP5(4)-PI in physical **and** Sundman
 time in the intersection–union test, and report Sundman-time DOP853 for every test, with the 0.85 prior written into the expectations.
@@ -60,7 +65,10 @@ Study D data are not Study E test data, so looking at them is allowed. Everythin
   P23), and widen the step grid so none of the 40 orbits is censored.
 - **1b (only if D1 = B).** Train a learned RK8 step on the Study C training set, evaluate on the Study D replication set with the safety scale
   and overhead included. If it does not beat Sundman-time DOP853 in total there, it will not in Study E; drop E7.
-- Both are now defined as P24/P25 in `posthoc/README.md`. Commit the definitions before running them, as before.
+- Both are defined as P24/P25 in `posthoc/README.md` (committed `dcfa44a`) and were **run on 2026-11-13** (code `6144fe7`; results in
+  `posthoc/results/rk8s_vs_sundman_*` and `rk8s_learned_*`). Headline: the learned RK8 policy is 2.57× cheaper in total than the RK4 policy
+  and beats every adaptive comparator at equal risk except Sundman-time DOP853, which it ties (ratio of totals 1.016, 95 % CI 0.994–1.040).
+  E7 stays in; its expectation is "close to a tie" (draft §5). See D6.
 - To build for the pilots: an RK8 step function for the monotone label search (`search_3d`), `run_posthoc.py` commands `rk8s_vs_sundman` (P24)
   and `rk8s_learned` (P25). RK8 labelling of the ~100,000 Study C training orbits should take minutes (P23 labelled 300 orbits, both kernels,
   in 3 seconds).

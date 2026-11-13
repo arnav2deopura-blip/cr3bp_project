@@ -1,0 +1,67 @@
+training labels: 94611 rows, success 1.0000, censored at 64 0.1117 (1740s)
+certified scale 0.8000, calibration violation rate 0.0385 (RK4 policy: 0.0283) (1747s)
+/Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/run_posthoc.py:1321: PerformanceWarning: DataFrame is highly fragmented.  This is usually the result of calling `frame.insert` many times, which has poor performance.  Consider joining all columns at once using pd.concat(axis=1) instead. To get a de-fragmented frame, use `newframe = frame.copy()`
+  led = led.set_index("row_id").loc[ev_ids].reset_index()
+  physical RK45 rtol 1.000e-03: 3435 violations (1934s)
+  physical RK45 rtol 2.955e-04: 2875 violations (1948s)
+  physical RK45 rtol 8.733e-05: 2299 violations (1951s)
+  physical RK45 rtol 2.581e-05: 1698 violations (1953s)
+  physical RK45 rtol 7.627e-06: 977 violations (1956s)
+  physical RK45 rtol 2.254e-06: 462 violations (1960s)
+  physical RK45 rtol 6.661e-07: 183 violations (1964s)
+  physical RK45 rtol 1.968e-07: 49 violations (1970s)
+  physical RK45 rtol 3.621e-07: 98 violations (1975s)
+  physical RK45 rtol 4.911e-07: 144 violations (1980s)
+  physical RK45 rtol 5.719e-07: 163 violations (1985s)
+  physical RK45 rtol 5.300e-07: 150 violations (1989s)
+  physical DOP853 rtol 1.000e-03: 2115 violations (2008s)
+  physical DOP853 rtol 2.955e-04: 1460 violations (2010s)
+  physical DOP853 rtol 8.733e-05: 1082 violations (2012s)
+  physical DOP853 rtol 2.581e-05: 737 violations (2014s)
+  physical DOP853 rtol 7.627e-06: 488 violations (2016s)
+  physical DOP853 rtol 2.254e-06: 314 violations (2019s)
+  physical DOP853 rtol 6.661e-07: 172 violations (2022s)
+  physical DOP853 rtol 1.968e-07: 74 violations (2026s)
+  physical DOP853 rtol 3.621e-07: 125 violations (2030s)
+  physical DOP853 rtol 4.911e-07: 151 violations (2033s)
+  physical DOP853 rtol 5.719e-07: 159 violations (2036s)
+  physical DOP853 rtol 5.300e-07: 156 violations (2040s)
+  sundman RK45 rtol 1.000e-03: 3639 violations (2060s)
+  sundman RK45 rtol 2.955e-04: 3158 violations (2076s)
+  sundman RK45 rtol 8.733e-05: 2615 violations (2078s)
+  sundman RK45 rtol 2.581e-05: 1995 violations (2081s)
+  sundman RK45 rtol 7.627e-06: 1139 violations (2084s)
+  sundman RK45 rtol 2.254e-06: 467 violations (2088s)
+  sundman RK45 rtol 6.661e-07: 151 violations (2093s)
+  sundman RK45 rtol 1.225e-06: 273 violations (2098s)
+  sundman RK45 rtol 9.034e-07: 215 violations (2103s)
+  sundman RK45 rtol 7.757e-07: 185 violations (2107s)
+  sundman RK45 rtol 7.188e-07: 171 violations (2112s)
+  sundman DOP853 rtol 1.000e-03: 2788 violations (2131s)
+  sundman DOP853 rtol 2.955e-04: 2211 violations (2132s)
+  sundman DOP853 rtol 8.733e-05: 1646 violations (2134s)
+  sundman DOP853 rtol 2.581e-05: 1132 violations (2135s)
+  sundman DOP853 rtol 7.627e-06: 674 violations (2137s)
+  sundman DOP853 rtol 2.254e-06: 395 violations (2139s)
+  sundman DOP853 rtol 6.661e-07: 207 violations (2141s)
+  sundman DOP853 rtol 1.968e-07: 83 violations (2144s)
+  sundman DOP853 rtol 3.621e-07: 147 violations (2146s)
+  sundman DOP853 rtol 4.911e-07: 176 violations (2148s)
+  sundman DOP853 rtol 4.217e-07: 160 violations (2151s)
+  sundman DOP853 rtol 3.908e-07: 153 violations (2153s)
+                                          comparison  comparator_violation_rate  policy_violation_rate   share  aggregate_ratio  aggregate_ratio_ci95_lo  aggregate_ratio_ci95_hi  mcnemar_p
+0                    RK8 policy vs physical:RK45_eqr                     0.0388                 0.0350  0.9650           1.9511                   1.9177                   1.9844     0.1049
+4                  RK8 policy vs physical:DOP853_eqr                     0.0356                 0.0350  0.9468           1.6339                   1.6056                   1.6625     0.8302
+8                     RK8 policy vs sundman:RK45_eqr                     0.0357                 0.0350  0.9649           1.7433                   1.7209                   1.7655     0.7996
+12                  RK8 policy vs sundman:DOP853_eqr                     0.0377                 0.0350  0.8889           1.0161                   0.9936                   1.0397     0.2570
+16           RK8 policy vs physical:RK45_calsym (P7)                     0.0410                 0.0350  0.9650           1.9302                   1.8972                   1.9632     0.0125
+17    sealed RK4 policy vs physical:RK45_calsym (P7)                     0.0410                 0.0269  0.6736           0.7514                   0.7307                   0.7723     0.0000
+24           RK8 policy vs sundman:RK45_calsym (P20)                     0.0404                 0.0350  0.9648           1.7033                   1.6816                   1.7250     0.0220
+25    sealed RK4 policy vs sundman:RK45_calsym (P20)                     0.0404                 0.0269  0.6217           0.6630                   0.6480                   0.6777     0.0000
+32         RK8 policy vs physical:DOP853_calsym (P7)                     0.0482                 0.0350  0.9409           1.5637                   1.5370                   1.5908     0.0000
+33  sealed RK4 policy vs physical:DOP853_calsym (P7)                     0.0482                 0.0269  0.4492           0.6087                   0.5919                   0.6259     0.0000
+40         RK8 policy vs sundman:DOP853_calsym (P20)                     0.0393                 0.0350  0.8866           1.0076                   0.9854                   1.0310     0.0698
+41  sealed RK4 policy vs sundman:DOP853_calsym (P20)                     0.0393                 0.0269  0.4348           0.3922                   0.3798                   0.4053     0.0000
+{'ratio_of_totals_rk4_over_rk8': 2.5688654850117394, 'by_band': {'1-3': 1.850537960211068, '3-8': 2.3072139243386625, '8-20': 2.7707099951015017}, 'rk4_eval_violation_rate': 0.026932179874316495}
+wrote /Users/arnavdeopura/School/Everything Portfolio/Research/extended-orbit-ML-2/posthoc/results/rk8s_learned_20261113T134043Z
+P25 rc=0

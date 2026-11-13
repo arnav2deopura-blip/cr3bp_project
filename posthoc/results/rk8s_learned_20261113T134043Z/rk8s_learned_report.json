@@ -1,0 +1,588 @@
+{
+ "label": "POST HOC, EXPLORATORY (posthoc/README.md P25)",
+ "n_train_usable": 94611,
+ "n_train_sealed_sund": 94611,
+ "train_success_rate": 0.9999894304044984,
+ "train_censored_rate": 0.1116889156651975,
+ "train_label_median_log10_ds": 0.18276821165313173,
+ "sealed_run": "out_d/confirm/d3/sund/apply_policy_20261028T230253Z",
+ "overhead_rhs": 15.036794812388587,
+ "certificate": {
+  "rule": "fixed_sequence",
+  "chosen_scale": 0.8,
+  "p_threshold": 0.1,
+  "alpha": 0.05,
+  "delta": 0.1,
+  "chain": [
+   {
+    "scale": 0.1,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.10905077326652578,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.11892071150027211,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.12968395546510098,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.14142135623730953,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.15422108254079409,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.16817928305074292,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.18340080864093425,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.2,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.21810154653305155,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.23784142300054423,
+    "n": 4000,
+    "violations": 0,
+    "violation_rate": 0.0,
+    "p_value": 7.841897391173927e-90,
+    "certified": true
+   },
+   {
+    "scale": 0.25936791093020195,
+    "n": 4000,
+    "violations": 1,
+    "violation_rate": 0.00025,
+    "p_value": 1.6587676639538309e-87,
+    "certified": true
+   },
+   {
+    "scale": 0.28284271247461906,
+    "n": 4000,
+    "violations": 4,
+    "violation_rate": 0.001,
+    "p_value": 6.532519700733859e-82,
+    "certified": true
+   },
+   {
+    "scale": 0.30844216508158817,
+    "n": 4000,
+    "violations": 5,
+    "violation_rate": 0.00125,
+    "p_value": 2.761113084465515e-80,
+    "certified": true
+   },
+   {
+    "scale": 0.33635856610148585,
+    "n": 4000,
+    "violations": 6,
+    "violation_rate": 0.0015,
+    "p_value": 9.723192545635513e-79,
+    "certified": true
+   },
+   {
+    "scale": 0.3668016172818685,
+    "n": 4000,
+    "violations": 6,
+    "violation_rate": 0.0015,
+    "p_value": 9.723192545635513e-79,
+    "certified": true
+   },
+   {
+    "scale": 0.4,
+    "n": 4000,
+    "violations": 7,
+    "violation_rate": 0.00175,
+    "p_value": 2.9341975240528e-77,
+    "certified": true
+   },
+   {
+    "scale": 0.4362030930661031,
+    "n": 4000,
+    "violations": 11,
+    "violation_rate": 0.00275,
+    "p_value": 7.360469486238334e-72,
+    "certified": true
+   },
+   {
+    "scale": 0.47568284600108846,
+    "n": 4000,
+    "violations": 16,
+    "violation_rate": 0.004,
+    "p_value": 5.860529902954785e-66,
+    "certified": true
+   },
+   {
+    "scale": 0.5187358218604039,
+    "n": 4000,
+    "violations": 21,
+    "violation_rate": 0.00525,
+    "p_value": 9.96083477948702e-61,
+    "certified": true
+   },
+   {
+    "scale": 0.5656854249492381,
+    "n": 4000,
+    "violations": 34,
+    "violation_rate": 0.0085,
+    "p_value": 2.7058650435701466e-49,
+    "certified": true
+   },
+   {
+    "scale": 0.6168843301631763,
+    "n": 4000,
+    "violations": 50,
+    "violation_rate": 0.0125,
+    "p_value": 3.644905953141485e-38,
+    "certified": true
+   },
+   {
+    "scale": 0.6727171322029717,
+    "n": 4000,
+    "violations": 70,
+    "violation_rate": 0.0175,
+    "p_value": 2.29867325757114e-27,
+    "certified": true
+   },
+   {
+    "scale": 0.733603234563737,
+    "n": 4000,
+    "violations": 109,
+    "violation_rate": 0.02725,
+    "p_value": 4.520555080652133e-13,
+    "certified": true
+   },
+   {
+    "scale": 0.8,
+    "n": 4000,
+    "violations": 154,
+    "violation_rate": 0.0385,
+    "p_value": 0.0003117628192654797,
+    "certified": true
+   },
+   {
+    "scale": 0.8724061861322062,
+    "n": 4000,
+    "violations": 250,
+    "violation_rate": 0.0625,
+    "p_value": 0.9998012350953545,
+    "certified": false
+   }
+  ]
+ },
+ "violations_by_scale": {
+  "0.1": 0,
+  "0.10905077326652578": 0,
+  "0.11892071150027211": 0,
+  "0.12968395546510098": 0,
+  "0.14142135623730953": 0,
+  "0.15422108254079409": 0,
+  "0.16817928305074292": 0,
+  "0.18340080864093425": 0,
+  "0.2": 0,
+  "0.21810154653305155": 0,
+  "0.23784142300054423": 0,
+  "0.25936791093020195": 1,
+  "0.28284271247461906": 4,
+  "0.30844216508158817": 5,
+  "0.33635856610148585": 6,
+  "0.3668016172818685": 6,
+  "0.4": 7,
+  "0.4362030930661031": 11,
+  "0.47568284600108846": 16,
+  "0.5187358218604039": 21,
+  "0.5656854249492381": 34,
+  "0.6168843301631763": 50,
+  "0.6727171322029717": 70,
+  "0.733603234563737": 109,
+  "0.8": 154,
+  "0.8724061861322062": 250
+ },
+ "scale": 0.8,
+ "target_cal_violation_rate": 0.0385,
+ "policy_eval_violation_rate": 0.03501183383661144,
+ "equal_risk": {
+  "physical:RK45": {
+   "rtol": 5.299863763069261e-07,
+   "chain": [
+    {
+     "rtol": 0.001,
+     "n": 4000,
+     "violations": 3435,
+     "violation_rate": 0.85875
+    },
+    {
+     "rtol": 0.0002955209235202888,
+     "n": 4000,
+     "violations": 2875,
+     "violation_rate": 0.71875
+    },
+    {
+     "rtol": 8.733261623828437e-05,
+     "n": 4000,
+     "violations": 2299,
+     "violation_rate": 0.57475
+    },
+    {
+     "rtol": 2.5808615404180768e-05,
+     "n": 4000,
+     "violations": 1698,
+     "violation_rate": 0.4245
+    },
+    {
+     "rtol": 7.626985859023451e-06,
+     "n": 4000,
+     "violations": 977,
+     "violation_rate": 0.24425
+    },
+    {
+     "rtol": 2.2539339047347933e-06,
+     "n": 4000,
+     "violations": 462,
+     "violation_rate": 0.1155
+    },
+    {
+     "rtol": 6.660846290809154e-07,
+     "n": 4000,
+     "violations": 183,
+     "violation_rate": 0.04575
+    },
+    {
+     "rtol": 1.9684194472866112e-07,
+     "n": 4000,
+     "violations": 49,
+     "violation_rate": 0.01225
+    },
+    {
+     "rtol": 3.6209583502459167e-07,
+     "n": 4000,
+     "violations": 98,
+     "violation_rate": 0.0245,
+     "refine": true
+    },
+    {
+     "rtol": 4.911073914777704e-07,
+     "n": 4000,
+     "violations": 144,
+     "violation_rate": 0.036,
+     "refine": true
+    },
+    {
+     "rtol": 5.719432530342213e-07,
+     "n": 4000,
+     "violations": 163,
+     "violation_rate": 0.04075,
+     "refine": true
+    },
+    {
+     "rtol": 5.299863763069261e-07,
+     "n": 4000,
+     "violations": 150,
+     "violation_rate": 0.0375,
+     "refine": true
+    }
+   ]
+  },
+  "physical:DOP853": {
+   "rtol": 4.911073914777704e-07,
+   "chain": [
+    {
+     "rtol": 0.001,
+     "n": 4000,
+     "violations": 2115,
+     "violation_rate": 0.52875
+    },
+    {
+     "rtol": 0.0002955209235202888,
+     "n": 4000,
+     "violations": 1460,
+     "violation_rate": 0.365
+    },
+    {
+     "rtol": 8.733261623828437e-05,
+     "n": 4000,
+     "violations": 1082,
+     "violation_rate": 0.2705
+    },
+    {
+     "rtol": 2.5808615404180768e-05,
+     "n": 4000,
+     "violations": 737,
+     "violation_rate": 0.18425
+    },
+    {
+     "rtol": 7.626985859023451e-06,
+     "n": 4000,
+     "violations": 488,
+     "violation_rate": 0.122
+    },
+    {
+     "rtol": 2.2539339047347933e-06,
+     "n": 4000,
+     "violations": 314,
+     "violation_rate": 0.0785
+    },
+    {
+     "rtol": 6.660846290809154e-07,
+     "n": 4000,
+     "violations": 172,
+     "violation_rate": 0.043
+    },
+    {
+     "rtol": 1.9684194472866112e-07,
+     "n": 4000,
+     "violations": 74,
+     "violation_rate": 0.0185
+    },
+    {
+     "rtol": 3.6209583502459167e-07,
+     "n": 4000,
+     "violations": 125,
+     "violation_rate": 0.03125,
+     "refine": true
+    },
+    {
+     "rtol": 4.911073914777704e-07,
+     "n": 4000,
+     "violations": 151,
+     "violation_rate": 0.03775,
+     "refine": true
+    },
+    {
+     "rtol": 5.719432530342213e-07,
+     "n": 4000,
+     "violations": 159,
+     "violation_rate": 0.03975,
+     "refine": true
+    },
+    {
+     "rtol": 5.299863763069261e-07,
+     "n": 4000,
+     "violations": 156,
+     "violation_rate": 0.039,
+     "refine": true
+    }
+   ]
+  },
+  "sundman:RK45": {
+   "rtol": 6.660846290809154e-07,
+   "chain": [
+    {
+     "rtol": 0.001,
+     "n": 4000,
+     "violations": 3639,
+     "violation_rate": 0.90975
+    },
+    {
+     "rtol": 0.0002955209235202888,
+     "n": 4000,
+     "violations": 3158,
+     "violation_rate": 0.7895
+    },
+    {
+     "rtol": 8.733261623828437e-05,
+     "n": 4000,
+     "violations": 2615,
+     "violation_rate": 0.65375
+    },
+    {
+     "rtol": 2.5808615404180768e-05,
+     "n": 4000,
+     "violations": 1995,
+     "violation_rate": 0.49875
+    },
+    {
+     "rtol": 7.626985859023451e-06,
+     "n": 4000,
+     "violations": 1139,
+     "violation_rate": 0.28475
+    },
+    {
+     "rtol": 2.2539339047347933e-06,
+     "n": 4000,
+     "violations": 467,
+     "violation_rate": 0.11675
+    },
+    {
+     "rtol": 6.660846290809154e-07,
+     "n": 4000,
+     "violations": 151,
+     "violation_rate": 0.03775
+    },
+    {
+     "rtol": 1.2252798573828638e-06,
+     "n": 4000,
+     "violations": 273,
+     "violation_rate": 0.06825,
+     "refine": true
+    },
+    {
+     "rtol": 9.03404715133356e-07,
+     "n": 4000,
+     "violations": 215,
+     "violation_rate": 0.05375,
+     "refine": true
+    },
+    {
+     "rtol": 7.757215960572132e-07,
+     "n": 4000,
+     "violations": 185,
+     "violation_rate": 0.04625,
+     "refine": true
+    },
+    {
+     "rtol": 7.188158537343368e-07,
+     "n": 4000,
+     "violations": 171,
+     "violation_rate": 0.04275,
+     "refine": true
+    }
+   ]
+  },
+  "sundman:DOP853": {
+   "rtol": 3.907614969977506e-07,
+   "chain": [
+    {
+     "rtol": 0.001,
+     "n": 4000,
+     "violations": 2788,
+     "violation_rate": 0.697
+    },
+    {
+     "rtol": 0.0002955209235202888,
+     "n": 4000,
+     "violations": 2211,
+     "violation_rate": 0.55275
+    },
+    {
+     "rtol": 8.733261623828437e-05,
+     "n": 4000,
+     "violations": 1646,
+     "violation_rate": 0.4115
+    },
+    {
+     "rtol": 2.5808615404180768e-05,
+     "n": 4000,
+     "violations": 1132,
+     "violation_rate": 0.283
+    },
+    {
+     "rtol": 7.626985859023451e-06,
+     "n": 4000,
+     "violations": 674,
+     "violation_rate": 0.1685
+    },
+    {
+     "rtol": 2.2539339047347933e-06,
+     "n": 4000,
+     "violations": 395,
+     "violation_rate": 0.09875
+    },
+    {
+     "rtol": 6.660846290809154e-07,
+     "n": 4000,
+     "violations": 207,
+     "violation_rate": 0.05175
+    },
+    {
+     "rtol": 1.9684194472866112e-07,
+     "n": 4000,
+     "violations": 83,
+     "violation_rate": 0.02075
+    },
+    {
+     "rtol": 3.6209583502459167e-07,
+     "n": 4000,
+     "violations": 147,
+     "violation_rate": 0.03675,
+     "refine": true
+    },
+    {
+     "rtol": 4.911073914777704e-07,
+     "n": 4000,
+     "violations": 176,
+     "violation_rate": 0.044,
+     "refine": true
+    },
+    {
+     "rtol": 4.2169650342858225e-07,
+     "n": 4000,
+     "violations": 160,
+     "violation_rate": 0.04,
+     "refine": true
+    },
+    {
+     "rtol": 3.907614969977506e-07,
+     "n": 4000,
+     "violations": 153,
+     "violation_rate": 0.03825,
+     "refine": true
+    }
+   ]
+  }
+ },
+ "rk8_vs_rk4_policy": {
+  "ratio_of_totals_rk4_over_rk8": 2.5688654850117394,
+  "by_band": {
+   "1-3": 1.850537960211068,
+   "3-8": 2.3072139243386625,
+   "8-20": 2.7707099951015017
+  },
+  "rk4_eval_violation_rate": 0.026932179874316495
+ },
+ "wall_seconds": 2182.0839669704437
+}
