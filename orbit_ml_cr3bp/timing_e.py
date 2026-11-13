@@ -5,7 +5,8 @@ Study E, draft section 7 item 6: the wall-clock protocol E6 for E1b and E7b. Not
   machine_info      platform, CPU, core count, Python / numba / numpy versions, load average
   time_sessions     two sessions (by default) over the same orbits; in each session every orbit is timed for every arm, the arm order shuffled
                     per orbit (seeded), with compiled_solvers_d.time_per_orbit (minimum over 3 repeats of elapsed / reps). The idle check runs
-                    again before each session and every 1,000 orbits; a session that finds the machine busy stops and is reported as such.
+                    again before each session (load <= 1.0) and every 1,000 orbits (load <= 1.0 + 1.0 for the timing thread itself); a session
+                    that finds the machine busy stops and is reported as such.
   throughput        the E1b / E7b statistic from the per-orbit times: Σ comparator time / Σ policy time, from the mean of the sessions' per-orbit
                     times (each session's own ratio is reported too), with the D2 orbit bootstrap (confirm_d_3d.d2_throughput)
 
@@ -24,6 +25,7 @@ import numpy as np
 __all__ = ["MAX_LOAD", "require_idle", "machine_info", "time_sessions", "throughput"]
 
 MAX_LOAD = 1.0
+OWN_LOAD = 1.0      # during a session the timing thread itself adds about 1 to the load average; the mid-session check allows it
 
 
 class BusyMachine(RuntimeError):
@@ -63,7 +65,7 @@ def time_sessions(arms, n_orbits, sessions=2, seed=0, log_path=None, max_load=MA
         T = {nm: np.full(n_orbits, np.nan) for nm in names}
         status, t0 = "complete", time.time()
         for i in range(n_orbits):
-            if i and i % check_every == 0 and os.getloadavg()[0] > max_load:
+            if i and i % check_every == 0 and os.getloadavg()[0] > max_load + OWN_LOAD:
                 status = f"busy at orbit {i}"
                 break
             for nm in rng.permutation(names):
