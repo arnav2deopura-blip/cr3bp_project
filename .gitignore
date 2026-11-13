@@ -31,3 +31,10 @@ manuscript/*.fdb_latexmk
 manuscript/*.fls
 manuscript/*.log
 manuscript/*.out
+
+# Poster working files (Affinity documents, poster scripts and figures): kept out of git so the Study E seal can require a clean tree
+CR3BP_Poster.af
+*.af~lock~
+poster/
+affinity_bridge/
+cr3bp_poster_48x36.js
