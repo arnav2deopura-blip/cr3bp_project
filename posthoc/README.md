@@ -238,6 +238,32 @@ the sealed RK4 kernel. Oracle step of each: on the grid ds = 4 · 2^(−k/4) dow
 finer neighbours (the two-octave rule without the refinement points). Cost at the oracle step = stages × steps (12 or 4). Reported: share of orbits
 on which each oracle fixed step is cheaper than oracle-tuned RK45 and DOP853, and the median log ratio of the RK8 to the RK4 oracle cost.
 
+### Study E pilots (2026-11-13; P24–P25; exploratory, Study D data only)
+
+These two runs inform the design of arm E7 of the Study E draft (`part_e/PREREGISTRATION_E.md`) before its seal. They use no Study E data. Same
+conventions as P20–P23.
+
+### P24. The oracle 8th-order step against Sundman-time adaptive solvers (plan: Study E pilot 1a)
+
+The 300 orbits of P23 (seed 0 draw from the Study D replication evaluation rows). (i) The oracle RK8 step of P23 on the widened grid
+ds = 64 · 2^(−k/4) down to 1e-4 (same two-octave rule); censoring at 64 reported. (ii) Oracle-tuned Sundman-time RK45 and DOP853: the rtol search
+of `fair_baseline_3d.scipy_matched_accuracy` (the rule that produced `RK45_spec` and `DOP853_spec`) applied to P20's kernel
+(`defense_runs.run_sundman_adaptive`, atol = 1e-3 · rtol as in P20; atol = 0.1 · rtol also reported). Reported: share of orbits on which the
+oracle RK8 step is cheaper than each oracle-tuned Sundman-time solver, the ratio of totals, the median log ratio, all by horizon band, next to the
+P23 numbers against the physical-time solvers.
+
+### P25. A learned 8th-order step (plan: Study E pilot 1b)
+
+Label: log10 of the largest fictitious step of the RK8 Sundman-time kernel that meets 100 km, by the sealed monotone search
+(`find_dt_for_integrator_accuracy_monotone_3d`) with an RK8 step function, ds in [1e-4, 64]. Training rows: the usable rows of the Study C
+D_train (seed 41) and D_train_enriched (seed 141, Study C weights). Model: the `sund` policy's class and size (histogram gradient boosting, 25
+trees, depth 3, learning rate 0.2, pinball loss at quantile 0.2, seed 42), the same 25 features; no other model is fitted. Scale: the sealed
+fixed-sequence rule (α = 0.05, δ = 0.1) on the Study D replication calibration rows (4,000). Overhead: the sealed 15.04 RHS-equivalents.
+Comparators, on the same calibration rows: SciPy RK45 and DOP853 in physical time and in Sundman time (P20's kernel), each set to equal risk with
+the new policy's calibration violation rate by the sealed rule (scan and four bisections), and certified by P7's symmetric rule. Evaluation: the
+12,253 replication evaluation rows; realized violation rate, share cheaper, ratio of totals with 95 % bootstrap interval, by horizon band, next to
+the same statistics for the sealed RK4 policy. Not tuned: if the result is poor, E7 is dropped or redesigned on E_select, not on these rows.
+
 ## Deviations
 
 - 2026-10-30, after P1 had run: P2-P8 commands were added to `run_posthoc.py` in the order of this file; the definitions above were not changed.
