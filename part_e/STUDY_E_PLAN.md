@@ -49,7 +49,7 @@ per-band calibration (as D4's per-stratum certificate) is fairer per band but co
 that the earlier parts followed says include the strongest baseline. My recommendation: include compiled DP5(4)-PI in physical **and** Sundman
 time in the intersection–union test, and report Sundman-time DOP853 for every test, with the 0.85 prior written into the expectations.
 
-**D3. Deadline.** If there is a competition or submission date, Study E must fit before it, or it becomes "future work, preregistered" in the
+**D3. Deadline.** **Decided 2026-11-13: no fixed deadline**; Study E is run in full (E1–E7) when it is ready, with no step cut for time. If there is a competition or submission date, Study E must fit before it, or it becomes "future work, preregistered" in the
 manuscript. That is a legitimate outcome: a sealed, OSF-registered Study E that has not yet been run is still worth stating.
 
 **D4. Second CPU architecture (E6).** **Decided 2026-11-13: dropped** (no x86-64 machine); E6 runs on this Mac only and the draft states the one-machine limitation. Do you have access to an x86-64 Linux machine (school cluster, a cloud VM, a friend's PC)? If not, drop
