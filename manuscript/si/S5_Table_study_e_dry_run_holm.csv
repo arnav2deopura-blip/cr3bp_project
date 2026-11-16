@@ -1,0 +1,7 @@
+analysis,test,p,p_adj,reject
+Holm over the dry-run p-values (illustration of the decision rule; NOT a confirmatory result),E7,0,0,True
+Holm over the dry-run p-values (illustration of the decision rule; NOT a confirmatory result),E1,0.53625,1,False
+Holm over the dry-run p-values (illustration of the decision rule; NOT a confirmatory result),E3,0.53625,1,False
+Holm over the dry-run p-values (illustration of the decision rule; NOT a confirmatory result),E4,0.75925,1,False
+Holm over the dry-run p-values (illustration of the decision rule; NOT a confirmatory result),E2,1,1,False
+Holm over the dry-run p-values (illustration of the decision rule; NOT a confirmatory result),E5,1,1,False

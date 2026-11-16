@@ -1,0 +1,7 @@
+analysis,n_trees,quantile,scale,cal_violation_rate,comparator_rtol,ratio_of_totals,share,eval_violation_rate,comparator_eval_violation_rate
+E7 model selection on E_select (before the seal),25,0.1,0.872406,0.0272277,2.4739e-07,1.10642,0.951992,0.0254887,0.0264786
+E7 model selection on E_select (before the seal),25,0.2,0.8,0.0376238,4.21697e-07,1.03748,0.920317,0.0358822,0.0381094
+E7 model selection on E_select (before the seal),25,0.3,0.672717,0.0311881,3.10919e-07,0.984376,0.885424,0.0361297,0.0314279
+E7 model selection on E_select (before the seal),50,0.1,0.872406,0.030198,2.8811e-07,1.10075,0.944568,0.0292007,0.0289532
+E7 model selection on E_select (before the seal),50,0.2,0.8,0.0361386,3.90761e-07,1.04634,0.923286,0.0361297,0.0366246
+E7 model selection on E_select (before the seal),50,0.3,0.733603,0.0450495,5.71943e-07,0.973826,0.894828,0.0482554,0.0460282

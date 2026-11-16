@@ -44,3 +44,7 @@ data_e/
 out_e/
 # the E5 gate's 18 MB nearest-neighbour index: rebuilt exactly by run_part_e_3d.py gate; hashed by the seal like the datasets
 part_e/frozen/gate/gate.joblib
+
+# Manuscript build products (rebuilt by manuscript/build.sh; see manuscript/README.md)
+manuscript/build/
+manuscript/si/*.zip

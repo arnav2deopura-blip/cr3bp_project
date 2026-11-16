@@ -1,18 +1,16 @@
 # Figures for the PLOS ONE manuscript
 
-- `Fig1.tif` ... `Fig10.tif`: the files to upload. RGB, 8 bit, LZW, 600 dpi, no alpha, 6.2-7.4 in wide, Arial at 8-12 pt (MANUSCRIPT_PLAN.md section 8). Run each main figure through PLOS NAAS before submission.
-- `data/`: the values behind every panel, one or more CSV files per figure (S1 Data).
-- `draft/`: low-resolution PNG copies, used only by the draft build of `main.tex`.
+- `Fig1.tif` … `Fig11.tif`: the files to upload. RGB, 8 bit, LZW, 600 dpi, no alpha, 6.2–7.4 in wide, Arial at 8–12 pt
+  (`scripts/style.py`). Run each through the PLOS figure checker (NAAS) before submission.
+- `data/`: the values behind every panel, one or more CSV files per figure (packed into `si/S1_Data.zip` as S1 Data).
+- `draft/`: low-resolution PNG copies, used only by the draft build of `main.tex` (`main_draft.pdf`).
 
-Rebuild (each script reads the sealed result files and ledgers; `out_c/` and `out_d/` must be present):
-
-```bash
-cd manuscript/scripts && for f in fig01 fig02 fig03 fig04 fig05 fig06 fig07 fig08 fig09 fig10; do /Users/arnavdeopura/miniforge3/envs/orbit-ml/bin/python $f.py; done
-```
-
-Build the submission PDF (no graphics) and a draft PDF with the figures shown:
+Everything in this folder is generated. Rebuild from the manuscript folder:
 
 ```bash
-cd manuscript && latexmk -pdf main.tex
-latexmk -pdf -jobname=main_draft -pdflatex='pdflatex %O "\def\drafton{}\input{%S}"' main.tex
+./build.sh figures
 ```
+
+Each script `scripts/figNN.py` reads the sealed result files and ledgers (`out_c/` and `out_d/` must be present for Figs 1–10; Fig 11
+reads the tracked pilot summary in `posthoc/results/rk8s_learned_*`). The scripts are deterministic: a rebuild from the same inputs
+rewrites identical files. See `../README.md` for the PDFs.
