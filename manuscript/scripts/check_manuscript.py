@@ -154,7 +154,7 @@ lines.append(f"  note  entries without a DOI (books, reports, software, pre-DOI 
 lines.append("Supporting information")
 si_labels = re.findall(r"\\paragraph\*\{(S\d+ [A-Za-z]+)\.\}\s*\\label\{([^}]+)\}", body)
 files = {"S1 Appendix": ["si/S1_Appendix.pdf"], "S1 Table": ["si/S1_Table.zip"], "S2 Table": ["si/S2_Table.zip"], "S3 Table": ["si/S3_Table.zip"],
-         "S4 Table": ["si/S4_Table.zip"], "S5 Table": ["si/S5_Table.zip"], "S1 File": ["si/S1_File.zip"], "S1 Data": ["si/S1_Data.zip"]}
+         "S4 Table": ["si/S4_Table.zip"], "S1 File": ["si/S1_File.zip"], "S1 Data": ["si/S1_Data.zip"]}
 for name, lab in si_labels:
     pats = files.get(name)
     found = sum(len(glob.glob(os.path.join(MAN, p))) for p in pats) if pats else 0

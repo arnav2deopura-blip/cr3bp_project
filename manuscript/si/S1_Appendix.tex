@@ -1,8 +1,7 @@
 % S1 Appendix of the manuscript (manuscript/main.tex). Build: pdflatex S1_Appendix.tex (twice). Every number is read from the sealed reports
 % (archive/study_a/RESULTS_REPORT.md via STUDY_A_SUMMARY.md, part_b/RESULTS_PART_B.md, part_b/RESULTS_E3C_MU_DIAL.md, part_c/RESULTS_PART_C.md,
 % part_c/PART_C_LOG.md, part_d/RESULTS_PART_D.md, part_d/PART_D_LOG.md), the preregistrations and their Deviations sections, the seal manifests
-% (FREEZE*.json) and, for the numbers labelled post hoc, posthoc/results (definitions in posthoc/README.md). Section "Study E" is written from
-% part_e/PREREGISTRATION_E.md (unsealed draft), part_e/STUDY_E_PLAN.md, part_e/results/dry and the git log of 2026-11-13.
+% (FREEZE*.json) and, for the numbers labelled post hoc, posthoc/results (definitions in posthoc/README.md).
 % Build: ../build.sh si  (or pdflatex twice in this folder).
 \documentclass[10pt,letterpaper]{article}
 \usepackage[margin=1in]{geometry}
@@ -248,7 +247,7 @@ escapes, 99.8\% of 600 collisions with the Earth, all of 2,971 collisions with t
 reference's within $\tol/|\boldsymbol v|$ (the strict rule of the plan) on only 46.7\% (Moon collisions 56.7\%, Earth 15.2\%, escapes 0.4\%), and the
 reference event lay inside the detecting step on 96.8\%. The physical-time policy's abstention rule sent 85.4\% of these trajectories to RK45; of the
 555 it ran, the event type matched on 93.3\%, but only on 25.5\% of the 47 Moon collisions (51\% were never detected). The certificate of the
-manuscript is therefore conditional on survival to $T$; the full-population question is Study E's E4.
+manuscript is therefore conditional on survival to $T$.
 
 \section{Endpoint-only audit}
 \label{sec:audit}
@@ -316,48 +315,6 @@ The literature overview (\texttt{LITERATURE\_REVIEW.md}) was compiled on 2026-10
 unverified against the publisher's page. The databases and queries were not recorded, so the search cannot be reproduced exactly; the statement in
 the manuscript that we are not aware of an earlier study of this question rests on that search and on the sources cited there.
 
-\section{Study E: pilots, build and rehearsal}
-\label{sec:e}
-Study E is a draft: \texttt{part\_e/PREREGISTRATION\_E.md} has not been registered or sealed, and no confirmation data exist. This section records
-what was done up to 2026-11-15, so that the pilot and rehearsal numbers in the manuscript can be placed in time. All dates are those of the git
-commits (author's machine, not independently verifiable; Section~1).
-
-\textbf{Decisions taken before any Study E data (2026-11-13).} (1) Arm E7, a learned eighth-order fixed step in Sundman time, was added to the
-draft after the oracle comparison P23, and the pilots P24 and P25 were defined in \texttt{posthoc/README.md} before they ran. (2) E1 is tested against
-compiled DP5(4)-PI in physical and in Sundman time (intersection--union), and compiled DOP853 in Sundman time is reported with every test. (3) A
-second processor architecture was dropped from the timing protocol because no x86-64 machine was available, so wall-clock results will hold for one
-machine. (4) Equal risk is set over all horizons for the tests, and within horizon bands as a declared secondary analysis; this was decided after
-P25 showed that risk matched overall is not matched within bands. (5) The registration will be on the Open Science Framework, without a public git
-remote; the seal record and a git bundle of the sealed commit are uploaded there after the seal and before any confirmatory run. (6) No deadline
-constrains the study, and all of E1--E7 are kept.
-
-\textbf{Pilots (exploratory, Study D data only).} P24 and P25 are reported in the manuscript and in S5 Table. P25 fitted one model (the class, size
-and quantile of the Study C policy) and nothing was tuned on its evaluation rows. One rule of the draft was amended from the P25 labels before any
-Study E data: the earlier rule ``at most 1\% of labels at the ceiling of the step grid'' was replaced, because each of the 10,567 training labels
-at the ceiling (11.2\%) is a run of a single landing step (12 evaluations), which no larger step can make cheaper. The rule now counts only labels
-at the ceiling whose run takes more than one step (none among the 94,611 training labels, none among the 8,081 selection labels).
-
-\textbf{Build.} The following were written and unit-tested (18 tests in \texttt{tests/test\_study\_e.py}) before the rehearsal: the seal script
-(clean git tree, registry link, hashes of every frozen file) and the once-only runner; relabelling at other tolerances; path-error checkpoints
-($K = 20$, quintic Hermite interpolation, with the extra right-hand side evaluations used only for the audit and not charged); kernels for every
-method that keep the event (collision or escape) and locate its time by Hermite interpolation; the between-node collision test; compiled RK45,
-DP5(4)-PI and DOP853 in Sundman time, whose evaluation counts equal those of the SciPy runs of P20; the nearest-neighbour gate with a
-split-conformal threshold; the timing protocol; and the eighth-order policy (label search, fit, selection rule, compiled pipeline).
-
-\textbf{Rehearsal on the selection set (2026-11-13).} A first pass used a provisional overhead (the Study C value, 15.04) and found two problems.
-(a) At the 1,000 km tolerance the policy sat at the top of the scale grid (scale 1.0, with 3 violations among 2,900 calibration trajectories) while
-the comparators could loosen their tolerance; the grid was continued upward to 9.9 for every Study E certificate. The capped run is kept
-(\texttt{part\_e/results/dry/e2\_capped\_grid}). (b) The compiled Sundman-time comparators were about twice as slow per evaluation as the
-physical-time kernels of Study D (allocations in the checkpoint recorder, a bisection event search, generic stage loops), an implementation handicap
-of the comparators. After the correction their bookkeeping per evaluation relative to a bare step loop (+52\%) is no larger than that of Study D's
-physical-time DP5(4)-PI (+64\%). The second pass, with overheads measured on the idle machine (16.40 and 16.25 right-hand side equivalents), gave
-the values in Table~4 of the manuscript; the verdicts of the first pass were the same, and its outputs are kept
-(\texttt{part\_e/results/dry/superseded\_first\_run}). Holm's procedure over the rehearsal p-values would reject only E7; this
-illustrates the decision rule and is not a test.
-
-\textbf{Not done.} The wall-clock rehearsal with the corrected kernels (the machine did not stay at or below a load of 1.0 for the required time);
-the registration; the confirmation data; the seal; every confirmatory step.
-
 \section{Index of the post hoc analyses}
 \label{sec:posthoc}
 \begin{tabular}{|l|L{5.4in}|}
@@ -379,8 +336,6 @@ P18 & agreement of the two references \\ \hline
 P19 & distance of periodic orbits and section grids to the training set \\ \hline
 P20--P23 & exploratory comparators: adaptive solvers in Sundman time, an adaptive solver with a learned tolerance, LSODA, and a fixed-step
 eighth-order method in Sundman time \\ \hline
-P24, P25 & pilots for Study E (Section~\ref{sec:e}): the oracle eighth-order step against oracle-tuned adaptive solvers in Sundman time; a learned
-eighth-order step at equal risk \\ \hline
 \end{tabular}
 
 \end{document}

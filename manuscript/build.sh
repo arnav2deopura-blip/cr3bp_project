@@ -2,8 +2,8 @@
 # Rebuild everything in manuscript/ that is not a source file. Sources: main.tex, references.bib, plos2025.bst, si/S1_Appendix.tex,
 # scripts/*.py, submission/SUBMISSION_STATEMENTS.md. Everything else here is written by one of the targets below (README.md has the table).
 #
-#   ./build.sh figures      Fig 1-11: figures/FigN.tif (the files to upload), figures/draft/FigN.png, figures/data/*.csv
-#   ./build.sh si           S1, S2, S4, S5 Tables (CSV), S1 Appendix (PDF), S1 File and S1 Data (zip)
+#   ./build.sh figures      Fig 1-10: figures/FigN.tif (the files to upload), figures/draft/FigN.png, figures/data/*.csv
+#   ./build.sh si           S1, S2, S4 Tables (CSV), S1 Appendix (PDF), S1 File and S1 Data (zip)
 #   ./build.sh si-full      the same plus S3 Table, whose bootstrap intervals take 100 refits (about 40 minutes)
 #   ./build.sh pdf          main.pdf, the submission PDF (no graphics, as PLOS asks of LaTeX submissions)
 #   ./build.sh draft        main_draft.pdf, the same text with the figures shown under their captions
@@ -12,7 +12,7 @@
 #   ./build.sh all          figures, si, pdf, draft, submission, check, in that order
 #   ./build.sh clean        delete build/ (intermediate LaTeX files, the submission copy, the check report)
 #
-# figures and si read the result files of the studies, including the git-ignored run folders out_c/, out_d/ and out_e/ (deposited with the
+# figures and si read the result files of the studies, including the git-ignored run folders out_c/ and out_d/ (deposited with the
 # datasets); pdf, draft, submission and check need only this folder and a TeX distribution with latexmk.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -20,7 +20,7 @@ PY=${PY:-/Users/arnavdeopura/miniforge3/envs/orbit-ml/bin/python}
 LATEXMK=(latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=build)
 
 figures() {
-  (cd scripts && for f in fig01 fig02 fig03 fig04 fig05 fig06 fig07 fig08 fig09 fig10 fig11; do $PY $f.py; done)
+  (cd scripts && for f in fig01 fig02 fig03 fig04 fig05 fig06 fig07 fig08 fig09 fig10; do $PY $f.py; done)
 }
 appendix() {
   mkdir -p build/si
@@ -30,7 +30,6 @@ appendix() {
 }
 si() {
   $PY scripts/si_tables.py --only "$@"
-  $PY scripts/study_e_tables.py
   $PY scripts/si_archives.py
   appendix
 }

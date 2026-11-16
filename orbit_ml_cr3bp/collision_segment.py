@@ -5,7 +5,7 @@ sphere: the closest point of the segment p0 -> p1 to the centre c is p0 + t (p1 
 It costs no RHS evaluation. The chord is an approximation of the curved path inside one step; it is exact for the question "did the step's
 endpoints straddle the body", which is the failure mode the endpoint check misses.
 
-Not wired into any sealed kernel (that would change sealed results); Study E uses it in the violation definition of physical-time arms.
+Not wired into any sealed kernel (that would change sealed results).
 """
 from __future__ import annotations
 

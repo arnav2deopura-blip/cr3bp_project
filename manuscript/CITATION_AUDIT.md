@@ -38,10 +38,10 @@ journal abbreviation style.
 - The AI-use paragraph names "Claude Sonnet 5.5" for the analysis code and "Claude Opus 5.5" for the text. The author should confirm the
   model names from their own records, and check the current ISEF/NCSEF disclosure rules, which were not checked here.
 
-## Update of 2026-11-15 (first complete draft, Study E material)
+## Update of 2026-11-15 (first complete draft)
 
-`main.tex` now cites 50 keys and `references.bib` has 50 entries (`scripts/check_manuscript.py` checks that every cited key exists and
-that no entry is unused). Seven entries were added:
+`main.tex` now cites 49 keys and `references.bib` has 49 entries (`scripts/check_manuscript.py` checks that every cited key exists and
+that no entry is unused). Six entries were added:
 
 | Key | Cited for | Record checked on 2026-11-15 | Result |
 |---|---|---|---|
@@ -50,7 +50,6 @@ that no entry is unused). Seven entries were added:
 | `petzold1983` | LSODA | Crossref, doi 10.1137/0904010: SIAM J Sci Stat Comput 4(1):136–148 (1983) | matches |
 | `mcnemar1947` | McNemar test | Crossref, doi 10.1007/BF02295996: Psychometrika 12(2):153–157 (1947) | matches |
 | `berger1982` | intersection–union tests | Crossref, doi 10.1080/00401706.1982.10487790: Technometrics 24(4):295–300 (1982) | matches |
-| `vovk2005` | split-conformal threshold of the E5 gate | Crossref, doi 10.1007/b106715: "Algorithmic Learning in a Random World", Springer 2005 | title, year and publisher match; Crossref lists no authors, so the three authors are from the title page and should be confirmed once |
 | `anthropicclaude` | the AI tools disclosed in "Use of AI tools" | vendor product page (no DOI) | the author should confirm the URL and the access date |
 
 Still open from the audit above: the 39 standard entries were not re-resolved one by one. One caution on wording: the 12-stage

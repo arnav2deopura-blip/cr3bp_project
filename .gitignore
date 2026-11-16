@@ -32,18 +32,13 @@ manuscript/*.fls
 manuscript/*.log
 manuscript/*.out
 
-# Poster working files (Affinity documents, poster scripts and figures): kept out of git so the Study E seal can require a clean tree
+# Poster working files (Affinity documents, poster scripts and figures): kept out of git
 CR3BP_Poster.af
 *.af~lock~
 poster/
 affinity_bridge/
 cr3bp_poster_48x36.js
 
-# Part E working data and run folders (results worth keeping are copied to part_e/results)
-data_e/
-out_e/
-# the E5 gate's 18 MB nearest-neighbour index: rebuilt exactly by run_part_e_3d.py gate; hashed by the seal like the datasets
-part_e/frozen/gate/gate.joblib
 
 # Manuscript build products (rebuilt by manuscript/build.sh; see manuscript/README.md)
 manuscript/build/

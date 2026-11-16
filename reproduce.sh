@@ -8,8 +8,7 @@
 #   ./reproduce.sh b|c|d        the figures of Study B, C or D
 #   ./reproduce.sh manuscript   everything in manuscript/ that is generated (manuscript/build.sh all): Fig 1-11, the SI tables and archives,
 #                               main.pdf, main_draft.pdf, the single-file submission copy and the PLOS ONE checks
-#   ./reproduce.sh posthoc      the post hoc analyses of posthoc/README.md (P1-P8 and P10-P25; P7 and P6 take about an hour each on 10 cores,
-#                               the Study E pilot P25 about 40 minutes)
+#   ./reproduce.sh posthoc      the post hoc analyses of posthoc/README.md (P1-P8 and P10-P23; P7 and P6 take about an hour each on 10 cores)
 #   ./reproduce.sh check        the seal checks of Studies B, C and D (they list every file changed since each seal)
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -21,7 +20,7 @@ case "${1:-}" in
   env)
     conda create -y -p "${2:-./.env-orbit-ml}" --file environment.lock.txt ;;
   tests)
-    for t in tests/test_phase0.py tests/test_failure_study.py tests/test_part_c.py tests/test_part_d.py tests/test_posthoc.py tests/test_hardening.py tests/test_defense.py tests/test_study_e.py; do
+    for t in tests/test_phase0.py tests/test_failure_study.py tests/test_part_c.py tests/test_part_d.py tests/test_posthoc.py tests/test_hardening.py tests/test_defense.py; do
       echo "== $t"; $PY $t
     done ;;
   b)
@@ -50,9 +49,7 @@ case "${1:-}" in
     for c in risk waterfall overhead concentration timescale mixture_curve multiplicity bca refs ood sundman_adaptive learned_rtol multistep rk8s; do
       $PY run_posthoc.py $c
     done
-    # Study E pilots (posthoc/README.md P24-P25; exploratory, Study D data only)
-    $PY run_posthoc.py rk8s_vs_sundman
-    $PY run_posthoc.py rk8s_learned ;;
+    ;;
   check)
     $PY freeze_b.py check || true
     $PY freeze_c.py check || true

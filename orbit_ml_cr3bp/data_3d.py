@@ -5,7 +5,6 @@ from functools import partial
 from itertools import product
 from multiprocessing import Pool
 
-import math
 import numpy as np
 import pandas as pd
 
@@ -63,7 +62,7 @@ from .diagnostics_3d import (
 LABEL_PIPELINE_VERSION = 3
 LABEL_PIPELINE_VERSION_V4 = 4
 LABEL_PIPELINE_VERSION_V5 = 5          # Part C: v4 + Sundman-time RK4 labels + periapsis feature columns + optional sampling weights
-LABEL_PIPELINE_VERSION_V6 = 6          # Study E: v5 without the FTLE (ftle_3d = NaN, ftle_status = FTLE_STATUS_NOT_COMPUTED); labels identical to v5
+LABEL_PIPELINE_VERSION_V6 = 6          # v5 without the FTLE (ftle_3d = NaN, ftle_status = FTLE_STATUS_NOT_COMPUTED); labels identical to v5
 FTLE_STATUS_NOT_COMPUTED = -99
 ACCURACY_LABEL_MODES = ("accuracy", "accuracy_monotone")
 PIPELINES = ("legacy", "v4", "v5", "v6")
@@ -259,11 +258,9 @@ def _sample_orbit_for_generation(mu, label_mode, weights=None):
 
 
 def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jacobi", tol_km=None, pipeline="legacy", tau_c=None,
-                                   sampling_weights=None, sim_time_range=None):
+                                   sampling_weights=None):
     """pipeline="legacy": label_pipeline_version 3 behaviour exactly. pipeline="v4" (Part B): physical step ceiling, per-orbit
-    physics diagnostics, success = the search's own reason code (Issue 15) instead of dt > dt_min.
-    sim_time_range = (lo, hi) in TU (Study E): the horizon is log-uniform on [lo, hi] instead of the default range; the same single
-    random draw is used, so the sampled states are unchanged and None reproduces every earlier dataset exactly."""
+    physics diagnostics, success = the search's own reason code (Issue 15) instead of dt > dt_min."""
     v4 = pipeline in ("v4", "v5", "v6")
     v5 = pipeline in ("v5", "v6")
     v6 = pipeline == "v6"
@@ -273,9 +270,7 @@ def generate_one_3d_training_orbit(idx, mu=MU, base_seed=12345, label_mode="jaco
 
     state, orbit_label = _sample_orbit_for_generation(mu, label_mode, sampling_weights)
 
-    if sim_time_range is not None:
-        log_time = random.uniform(math.log10(sim_time_range[0]), math.log10(sim_time_range[1]))
-    elif label_mode in ACCURACY_LABEL_MODES:
+    if label_mode in ACCURACY_LABEL_MODES:
         log_time = random.uniform(ACCURACY_SIM_TIME_LOG_MIN, ACCURACY_SIM_TIME_LOG_MAX)
     else:
         log_time = random.uniform(SIM_TIME_LOG_MIN, SIM_TIME_LOG_MAX)
@@ -341,7 +336,6 @@ def generate_3d_training_dataset(
     pipeline: str = "legacy",
     tau_c: float | None = None,
     sampling_weights: dict | None = None,
-    sim_time_range: tuple | None = None,
 ) -> tuple[pd.DataFrame, dict, dict]:
     """
     label_mode="jacobi" (default): unchanged original behavior --
@@ -399,8 +393,7 @@ def generate_3d_training_dataset(
     usable_count = 0
     combo_counts = {combo: 0 for combo in product([0, 1], repeat=3)}
     worker_func = partial(generate_one_3d_training_orbit, mu=mu, label_mode=label_mode, tol_km=tol_km,
-                          base_seed=base_seed, pipeline=pipeline, tau_c=tau_c, sampling_weights=sampling_weights,
-                          sim_time_range=sim_time_range)
+                          base_seed=base_seed, pipeline=pipeline, tau_c=tau_c, sampling_weights=sampling_weights)
 
     with Pool(processes=n_workers) as pool:
         results = pool.imap_unordered(worker_func, range(num_orbits), chunksize=chunk_size)
@@ -477,7 +470,6 @@ def generate_3d_training_dataset(
         "label_mode": label_mode,
         "num_orbits": num_orbits,
         "base_seed": base_seed,
-        "sim_time_range_tu": None if sim_time_range is None else [float(sim_time_range[0]), float(sim_time_range[1])],
         "ftle_enabled": FTLE_ENABLED and pipeline != "v6",
         "ftle_method": FTLE_METHOD,
         "python_version": sys.version,

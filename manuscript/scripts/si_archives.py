@@ -1,9 +1,9 @@
 """Supporting-information archives, built from tracked files only:
 
-  si/S1_File.zip   the preregistration documents of Studies A-D as sealed, their seal manifests, the definitions of the post hoc analyses
-                   and the draft preregistration of Study E (not registered, not sealed), with a MANIFEST.txt of SHA-256 hashes
-  si/S1_Data.zip   the values behind every panel of Figs 1-11 (figures/data/*.csv), with a MANIFEST.txt
-  si/SN_Table.zip  for N = 1..5, the CSV files of that supporting table (si/SN_Table_*.csv) as one file, because PLOS takes one file per
+  si/S1_File.zip   the preregistration documents of Studies A-D as sealed, their seal manifests, and the definitions of the post hoc analyses,
+                   with a MANIFEST.txt of SHA-256 hashes
+  si/S1_Data.zip   the values behind every panel of Figs 1-10 (figures/data/*.csv), with a MANIFEST.txt
+  si/SN_Table.zip  for N = 1..4, the CSV files of that supporting table (si/SN_Table_*.csv) as one file, because PLOS takes one file per
                    supporting item
 
 The archives are deterministic: entries are sorted, carry a fixed timestamp and fixed permissions, and are stored with the same compression
@@ -35,15 +35,12 @@ S1_FILE = [
     ("part_d/PREREGISTRATION_D.md", "study_D/PREREGISTRATION_D.md"),
     ("FREEZE_D.json", "study_D/FREEZE_D.json"),
     ("posthoc/README.md", "post_hoc/README.md"),
-    ("part_e/PREREGISTRATION_E.md", "study_E_DRAFT_not_sealed/PREREGISTRATION_E.md"),
 ]
 S1_FILE_NOTE = """S1 File. Preregistration documents and seal manifests.
 
 study_A .. study_D   the preregistration of each study as sealed (text above "## Deviations" was hashed by the seal; later changes are the
                      dated entries below that heading) and the seal manifest written by the study's freeze script.
-post_hoc             the definitions of the post hoc and exploratory analyses (P1-P25), committed before each computation.
-study_E_DRAFT_not_sealed   the draft preregistration of Study E. It has NOT been registered or sealed, and no confirmatory test of
-                     Study E has been run. Its section 5 holds expectations from a rehearsal on selection data.
+post_hoc             the definitions of the post hoc and exploratory analyses (P1-P23), committed before each computation.
 
 The seals are local hash manifests; their timestamps cannot be verified independently (S1 Appendix, section 1).
 """
@@ -78,9 +75,9 @@ if __name__ == "__main__":
     build("S1_File.zip", [(os.path.join(ROOT, s), a) for s, a in S1_FILE], S1_FILE_NOTE)
     data = sorted(glob.glob(os.path.join(MAN, "figures", "data", "Fig*.csv")))
     build("S1_Data.zip", [(p, os.path.basename(p)) for p in data],
-          "S1 Data. The values behind every panel of Figs 1-11, written by manuscript/scripts/figNN.py next to each figure.\n")
+          "S1 Data. The values behind every panel of Figs 1-10, written by manuscript/scripts/figNN.py next to each figure.\n")
     titles = {1: "Conditional certificate by stratum (D4).", 2: "Periodic-orbit families (D5).", 3: "Full regression results (D1 rules, T1 fit).",
-              4: "Post hoc cost summaries of the sealed ledgers.", 5: "Study E pilots (exploratory) and rehearsal on selection data (not confirmatory)."}
+              4: "Post hoc cost summaries of the sealed ledgers."}
     for n, title in titles.items():
         parts = sorted(glob.glob(os.path.join(MAN, "si", f"S{n}_Table_*.csv")))
         if not parts:

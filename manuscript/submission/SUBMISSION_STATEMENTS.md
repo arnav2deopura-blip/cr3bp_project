@@ -65,8 +65,8 @@ a preprint).
 | Item | File |
 |---|---|
 | Manuscript (LaTeX submissions are uploaded as PDF, with the source) | `main.pdf`; source `build/submission/main.tex` (references pasted in) |
-| Figures, one file each, named as cited | `figures/Fig1.tif` … `figures/Fig11.tif` |
-| Supporting information, one file per item | `si/S1_Appendix.pdf`, `si/S1_Table.zip` … `si/S5_Table.zip`, `si/S1_File.zip`, `si/S1_Data.zip` |
+| Figures, one file each, named as cited | `figures/Fig1.tif` … `figures/Fig10.tif` |
+| Supporting information, one file per item | `si/S1_Appendix.pdf`, `si/S1_Table.zip` … `si/S4_Table.zip`, `si/S1_File.zip`, `si/S1_Data.zip` |
 
-`./build.sh submission` collects all of them in `build/submission/`. Each of S1–S5 Table is a set of CSV files (`si/SN_Table_*.csv`);
+`./build.sh submission` collects all of them in `build/submission/`. Each of S1–S4 Table is a set of CSV files (`si/SN_Table_*.csv`);
 `scripts/si_archives.py` packs each set into one archive, because PLOS takes one file per supporting item.
