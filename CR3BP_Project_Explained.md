@@ -2,7 +2,7 @@
 
 **What this document is.** A complete, plain-language walk-through of the project in `extended-orbit-ML-2`: the physics, the numerical methods, the machine learning, the statistics, the four preregistered studies, every figure and table of the manuscript, every main equation, the literature it builds on, and every code file. It is written the way a computational-physics professor would explain it to a smart non-specialist, so jargon gets explained the first time it appears and then collected in a glossary at the end (Section 20).
 
-**Where the facts come from.** Every number is taken from the project's own files: `manuscript/main.tex` (the PLOS ONE draft), `archive/study_a/RESULTS_REPORT.md` (Study A; short version in `STUDY_A_SUMMARY.md`), `part_b/RESULTS_PART_B.md`, `part_c/RESULTS_PART_C.md`, `part_d/RESULTS_PART_D.md`, the preregistrations, `part_d/NARRATIVE.md`, the post hoc checks in `posthoc/README.md` and `posthoc/results/` (with the second round summarized in `DEFENSE_STATUS.md`), the code under `orbit_ml_cr3bp/`, and the figure PNGs in `manuscript/figures/draft/`. Where I could not verify something, I say so. Section 19 lists problems I found while reading; read it before submitting anything. **Last checked against the project files on 2026-11-06.** The newest project files are from the Nov 3–4 round (git commit `1f8db60`), and this document already covered that round. What the 2026-11-06 check added is listed in Section 19.5 (notes 22–25), plus a few corrections in the text: the number of tests in Table 2 (Section 16), the seal dates (Section 3.4), one sentence in Section 15B.3 that mixed up two ratios, the poster files (Section 15B.7) and more questions in Section 21.
+**Where the facts come from.** Every number is taken from the project's own files: `manuscript/main.tex` (the PLOS ONE draft), `archive/study_a/RESULTS_REPORT.md` (Study A; short version in `STUDY_A_SUMMARY.md`), `part_b/RESULTS_PART_B.md`, `part_c/RESULTS_PART_C.md`, `part_d/RESULTS_PART_D.md`, the preregistrations, `part_d/NARRATIVE.md`, the post hoc checks in `posthoc/README.md` and `posthoc/results/` (with the second round summarized in `DEFENSE_STATUS.md`), the code under `orbit_ml_cr3bp/`, and the figure PNGs in `manuscript/figures/draft/`. Where I could not verify something, I say so. Section 19 lists problems I found while reading; read it before submitting anything. **Last checked against the project files on 2026-11-16.** Since the previous check (Nov 6) the manuscript has become a complete PLOS ONE draft that rebuilds with one command and checks itself against the journal's rules (Nov 15), and the poster moved to version 5 (Nov 10). The places in this document that changed because of that are Section 15B.7 (which poster file is current), Section 17.6 (future work, as the manuscript now states it), Sections 18.3–18.6 (the scripts, the tests and the manuscript folder) and the status lines of Section 19, with the new notes in Section 19.6.
 
 **Naming.** The manuscript calls the four studies **A, B, C, D**. The code and result folders call them **Part A** (the top-level `out/`, `data/`, `PREREGISTRATION.md`), **Part B** (`part_b/`, `out_b/`, `data_b/`), **Part C** and **Part D**. They are the same thing.
 
@@ -1039,17 +1039,28 @@ Three details of this result (from `posthoc/results/rk8s_*`). (1) The horizon ma
 
 The Society for Science guidance on generative AI (Oct 2025) says AI must **never** write the first draft of the research plan, abstract, paper, poster or conclusions; AI-written **code** is allowed with explicit citation and a log of the prompts. The manuscript, poster text and this document were drafted with AI. For a fair, the student has to write the abstract, poster and paper in their own words, and keep the AI transcripts as the prompt log.
 
-### 15B.7 The poster files: only one is corrected
+### 15B.7 The poster files: which one is current
 
-The project folder holds several copies of the poster, and they do not all say the same thing. I searched each one for the old wording.
+The current poster is **version 5** (Nov 10). It is built from text and layout written in one file, `poster/cr3bp_poster_v5.template.js`, in four steps:
 
-| File | Corrected? |
+1. `poster/build_v5.py` measures how wide every letter is in the poster font, lays the text out, and writes `poster/cr3bp_poster_v5.js` together with the exact box size of every figure (`poster/fig_sizes_v5.json`).
+2. `poster/gen_figs_v5.py` draws the figures at exactly those sizes and copies them to a folder on the Desktop.
+3. The script is run inside Affinity (the design program) through `affinity_bridge/`, which places the text and figures on a 48 × 36 inch page.
+4. You save the Affinity document yourself: a script running inside Affinity is not allowed to save into the project folder.
+
+So a text change that moves the layout needs the figures redrawn at the new sizes; a change that keeps every line where it was does not. The text was last edited on Nov 16 and the layout did not move, so the figures of Nov 10 still fit.
+
+Version 5 says what the manuscript says: the title calls it "Learned Step-Size Selection versus Adaptive Integration", the subtitle says the learned step "wins on most trajectories, but not in total cost", and the headline numbers are "0 / 14,161 … with an uncompiled model (31.6% once compiled)" and "71.4% … (71.6% on replication)".
+
+| File | Status |
 |---|---|
-| `poster/cr3bp_poster_v4.js` (changed Nov 4) | **Yes.** Its claim text now says "0 of 14,161 uncompiled, 31.6% compiled" and that changing the clock "won on 71% of trajectories but not in total". |
-| `poster/cr3bp_poster_v3.js`, `cr3bp_poster_48x36.js` (top level), `affinity_bridge/poster.js` | **No.** Each still has the old title wording "recovers most of the cost gap". v3 and `cr3bp_poster_48x36.js` also still say "0 of 14,161" without the word "uncompiled". |
-| `CR3BP_Poster.af` (Oct 31) and `poster/cr3bp_poster.af` (Nov 1) | **No.** These Affinity files were saved before v4 existed, and `DEFENSE_STATUS.md` says they were not touched. The v4 script has to be re-run in Affinity. |
+| `poster/cr3bp_poster_v5.template.js` and `poster/cr3bp_poster_v5.js` | **Current.** Edit the template, never the generated `.js`. |
+| `poster/cr3bp_poster_v4.js`, `poster/cr3bp_poster_v3.js`, `cr3bp_poster_48x36.js`, `affinity_bridge/poster.js` | **Out of date.** v3, the top-level file and the bridge copy still carry old wording ("recovers most of the cost gap"). |
+| `CR3BP_Poster.af` (Oct 31) and `poster/cr3bp_poster.af` (Nov 1) | **Out of date.** Saved before v4 and v5 existed. |
 
-None of the poster files is tracked by git (since 2026-11-13 they are listed in `.gitignore`), so there is no history to go back to if one is overwritten. Before printing, make sure the file you print was produced from v4. Remember the rule in Section 15B.6: the final poster words have to be the student's own.
+**No saved Affinity document of version 5 was found** (I looked in the project folder, the Desktop and Documents). Before printing, run the v5 script in Affinity, save the result, and print that file.
+
+None of the poster files is tracked by git (they are listed in `.gitignore`), so there is no history to go back to if one is overwritten; keep your own copy. Remember the rule in Section 15B.6: the final poster words have to be the student's own.
 
 ---
 
@@ -1199,7 +1210,15 @@ What is **not** new: the Sundman transformation (1913) and periapsis/Kepler math
 
 ### 17.6 Future work the manuscript proposes
 
-Test tolerance and horizon dependence; train on or abstain for periodic-orbit families; replace the Sundman function with a regularizing Kustaanheimo–Stiefel transformation near the Moon; move to an ephemeris model and other mass ratios; certify a path error instead of an endpoint error; measure batched GPU execution. Since Nov 3 the list starts with a learned step for a **higher-order fixed-step method in Sundman time**, compared against adaptive solvers in the same time variable (Section 15B.3).
+The manuscript's Conclusions now put the list this way:
+
+1. **A learned step for a higher-order fixed-step method in Sundman time,** tested against adaptive solvers that also run in Sundman time. The reason is the oracle result of Section 15B.3: with a perfectly chosen step, an 8th-order fixed step beat the perfectly tuned solvers on almost every trajectory. Whether a step that has to be *predicted* keeps enough of that margin has not been tested, and the manuscript says so.
+2. **Periodic-orbit families:** train on them, or have the policy hand them to an adaptive solver. A simple "am I far from my training data?" check would not be enough, because the axial families sit inside the training data and still fail.
+3. **A better time change near the Moon:** replace the Sundman function with the Kustaanheimo–Stiefel transformation, which also removes the collision singularity.
+4. **Realism:** move to the real Earth–Moon ephemeris, and to other mass ratios.
+5. **Timing:** time the methods on a second kind of processor, and measure batched runs on graphics processors (GPUs).
+
+The tolerance dial and a path-error label (Section 19, note 16) are not on the manuscript's list, but they are still untested limits (Section 17.3).
 
 ---
 
@@ -1327,9 +1346,11 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 | `smoke_test_3d.py` | A quick smoke test, dated Oct 13, before the sealed studies. |
 | `archive/study_a_tools/` | Older tools dated Oct 13, moved here on 2026-10-30 with their git history kept: `run_3d_analysis_from_data.py` (the original analysis script), `cost_analysis.py` (a training-cost break-even calculator), `generalization_tests.py` (region-transfer tests), `phase_space_analysis.py` (phase-space FTLE grids). No Study B–D code uses them; a README says how to rerun them. |
 | `run_posthoc.py` | The post hoc checks of Section 15A, one command each: `aggregates`, `fig4_check`, `three_quarters`, `symmetric`, `atol`, `d4b_fine`, `compiled`, `seeds`, and since Nov 3 the 14 commands of Section 15B (`risk`, `waterfall`, `overhead`, `concentration`, `timescale`, `mixture_curve`, `multiplicity`, `bca`, `refs`, `ood`, `sundman_adaptive`, `learned_rtol`, `multistep`, `rk8s`). Each writes a timestamped folder in `posthoc/results/` and first checks it reproduces the sealed numbers. |
-| `reproduce.sh` | One-command rebuilds: `env` (pinned conda environment from `environment.lock.txt`), `tests`, `b`/`c`/`d` (study figures), `manuscript` (Fig 1–10 and the PDF), `posthoc`, `check` (seal checks). Never reruns a confirmatory test. |
+| `reproduce.sh` | One-command rebuilds: `env` (pinned conda environment from `environment.lock.txt`), `tests`, `b`/`c`/`d` (study figures), `manuscript` (runs `manuscript/build.sh all`: figures, supporting information, both PDFs, the submission copy and the journal checks; Section 18.5), `posthoc`, `check` (seal checks). Never reruns a confirmatory test. |
 
 ### 18.4 Tests (`tests/`)
+
+There are **90 tests in seven files**, and all of them passed on 2026-11-16. Each file is run as a plain script (`python tests/test_part_c.py`); `./reproduce.sh tests` runs all seven.
 
 | File | What it protects |
 |---|---|
@@ -1343,7 +1364,29 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 
 ### 18.5 The manuscript folder
 
-`main.tex` (PLOS ONE template), `references.bib` (DOIs checked against Crossref on 2026-10-29 per its header), `plos2025.bst`, `main.pdf`/`main_draft.pdf`, `scripts/fig01–fig10.py` + `style.py`, `figures/` (TIFF), `figures/draft/` (PNG), `figures/data/` (CSV behind every panel), `figures/README.md` (build instructions). Added 2026-10-30: `scripts/si_tables.py`, which writes the supporting tables S1–S4 as CSV files into `si/` from the result files (nothing typed by hand; S3 includes bootstrap intervals on the rule coefficients, S4 the post hoc summaries), and `CITATION_AUDIT.md` (Section 19, note 21). Added Nov 3: `si/S1_Appendix.tex` and `.pdf` (the secondary methods and every study's dated deviations) and 23 more S4 CSV files for Section 15B.
+Since Nov 15 the manuscript is a complete PLOS ONE draft, and everything in its folder that is not written by hand is rebuilt by one command, `manuscript/build.sh all` (or `./reproduce.sh manuscript` from the project root). The folder's own `README.md` has a table of which files are sources and which are generated.
+
+**What you edit (the sources):**
+
+- `main.tex`: the article. PLOS wants one file with no `\input`, so everything is in it. The title is "A single pre-run time step loses to adaptive integration in the Earth–Moon three-body problem; in Sundman time it wins on most trajectories but not in total cost".
+- `references.bib` (49 references) and `plos2025.bst` (the journal's citation style).
+- `si/S1_Appendix.tex`: the secondary methods, every study's dated deviations, the timing-kernel history, the seal provenance and an index of the post hoc analyses.
+- `submission/SUBMISSION_STATEMENTS.md`: the short title and the statements PLOS collects in its online form (funding, competing interests, data availability and so on).
+- `scripts/`: the build. `fig01.py` … `fig10.py` draw the figures (shared look in `style.py`); `si_tables.py` writes the supporting tables; `si_archives.py` packs the supporting files; `make_submission.py` makes the upload copy; `check_manuscript.py` checks the journal's rules.
+
+**What the build writes (never edit these by hand):**
+
+- `figures/Fig1.tif` … `Fig10.tif`: the files to upload (600 dpi), plus small PNG copies in `figures/draft/` and the numbers behind every panel in `figures/data/*.csv`.
+- `si/S1_Table_*.csv` … `si/S4_Table_*.csv`: the four supporting tables, written from the result files, so no number is typed by hand. S3's bootstrap intervals take about 40 minutes and are rebuilt only by `./build.sh si-full`.
+- `si/S1_Appendix.pdf`.
+- Zip files, one per supporting item, because PLOS takes one file per item: `S1_Table.zip` … `S4_Table.zip`; **S1 File** (the four preregistrations as sealed, their seal manifests and the post hoc definitions); **S1 Data** (the numbers behind every figure panel). The zips come out byte-for-byte the same each time they are rebuilt.
+- `main.pdf`, the PDF for submission. PLOS wants it without graphics, so the figures are uploaded separately.
+- `main_draft.pdf`, the same text with each figure shown under its caption, for reading.
+- `build/submission/`: the upload set. It contains a copy of `main.tex` with the reference list pasted into it, which is compiled once on its own to prove it stands alone, plus the figures and one file per supporting item.
+
+**The journal check.** `scripts/check_manuscript.py` tests the PLOS rules the build can check. These include an abstract of at most 300 words, the order of the sections, figures and tables cited in order with each caption after the paragraph that first cites it, the TIFF format, and every citation present in the bibliography with no unused entries. Its report is `build/check_report.txt`. On 2026-11-16 it gave **0 failures and 9 warnings**: eight are the places only the author can fill in (Section 19, note 4), and one says the abbreviation MSE (mean squared error) is used only once, so it could be written out instead.
+
+Other files: `CITATION_AUDIT.md` (which reference was checked against which record, and when), `figures/README.md`, and `template/` (the unmodified PLOS template, kept for comparison).
 
 ### 18.6 Records and logs
 
@@ -1354,7 +1397,7 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 | `confirm_log_b/c/d.jsonl`, `final_eval_log.jsonl` | One line per confirmatory step, proving each ran once. |
 | `archive/study_a/RESULTS_REPORT.md` (Study A, ~440 KB; moved from the root), `STUDY_A_SUMMARY.md` (its executive summary), `part_*/RESULTS_PART_*.md`, `part_b/RESULTS_E3C_MU_DIAL.md`, `part_d/NARRATIVE.md` | Results write-ups. |
 | `posthoc/README.md`, `posthoc/results/` | The post hoc definitions (committed before any of them ran) and their run folders. |
-| `poster/`, `affinity_bridge/`, `cr3bp_poster_48x36.js`, `CR3BP_Poster.af` | Poster scripts, figures and Affinity files (not tracked by git). Only `poster/cr3bp_poster_v4.js` carries the corrected claims (Section 15B.7). |
+| `poster/`, `affinity_bridge/`, `cr3bp_poster_48x36.js`, `CR3BP_Poster.af` | Poster scripts, figures and Affinity files (not tracked by git). The current poster is version 5, edited in `poster/cr3bp_poster_v5.template.js`; the other poster files are out of date (Section 15B.7). |
 | `DEFENSE_PLAN.md`, `DEFENSE_STATUS.md` | The Nov 3 review of every claim and the record of what was done about each item (Section 15B). |
 | `environment.yml`, `environment.lock.txt` | The software environment, with exact package builds pinned. |
 | `part_*/PART_*_LOG.md` | Day-by-day decision logs. |
@@ -1372,14 +1415,14 @@ About 22,000 lines of Python. The reusable library is the package `orbit_ml_cr3b
 
 You asked me to be critical. These are the problems and soft spots I found while reading. None overturns the main conclusions, but several should be fixed before submission or judging.
 
-**Status as of 2026-11-06 (the project files last changed on 2026-11-04).** Many of these notes have since been dealt with (on Oct 30 and in the Nov 3–4 round, Section 15B). Each note ends with a **Status** line where something changed. Notes without one are unchanged.
+**Status as of 2026-11-16.** Many of these notes have since been dealt with (on Oct 30, in the Nov 3–4 round of Section 15B, and in the manuscript rebuild of Nov 15). Each note ends with a **Status** line where something changed. Notes without one are unchanged. New notes from this check are in Section 19.6.
 
 ### 19.1 Things that look wrong or inconsistent
 
 1. **The abstract's "0 of 14,161" sentence is ambiguous, arguably misleading.** It says "A fixed physical step was cheaper than an adaptive solver on 0 of 14,161 trajectories." That is the *predicted, safety-scaled, overhead-charged policy*. A *perfect* fixed physical step was cheaper than oracle-tuned RK45 on 25.8% and than certified RK45 on 67.9% (Study B). A reader will take the abstract sentence as a statement about fixed steps in general. Suggest: "A learned fixed physical step, with its overhead and safety margin counted, was cheaper … on 0 of 14,161." **Status: fixed**; the abstract now uses this wording.
 2. **Leapfrog cost in Study A is misstated.** The manuscript says "Studies A and B offered RK4 and leapfrog, with $e_{\text{RK4}} = 4$ and $e_{\text{leapfrog}} = 1$," and the Integrators paragraph says leapfrog needs one RHS evaluation per step. The sealed Study A snapshot (`snapshots/code_79a6455ddef8.tar.gz`, `physics_3d.py` line 1018) has `"leapfrog": 2`, and the current code comment confirms "Part A … charged 2." It does not change Study A's 0/996 conclusion (charging less would only help the policy, which still lost), but the sentence is factually wrong for Study A. **Status: fixed**; the manuscript now says leapfrog was charged 2 per step in Study A and 1 in Study B.
-3. **Supporting information was referenced but did not exist yet.** S1 Appendix, S1–S3 Tables and S1 Data are cited throughout (non-monotone labels, periapsis edge cases, landing rule, per-stratum and per-family tables, dated deviations). I found no such files in the folder. The manuscript is not submittable until they exist. **Status: partly fixed.** S1–S4 Tables now exist as CSV files in `manuscript/si/`, generated by `scripts/si_tables.py`; S4 is new and holds the post hoc summaries. Since Nov 3 the **S1 Appendix exists** (`manuscript/si/S1_Appendix.pdf`); **S1 Data** (the deposit of ledgers and figure data) is still missing.
-4. **Placeholders remain**: author affiliation, corresponding email, repository DOI. **Status: still open**, and so is the Zenodo deposit the DOI would point to. Also open since Nov 3: the **mentor acknowledgment and the contributions statement**, which only the author can write (a marked placeholder is in `main.tex`).
+3. **Supporting information was referenced but did not exist yet.** S1 Appendix, S1–S3 Tables and S1 Data are cited throughout (non-monotone labels, periapsis edge cases, landing rule, per-stratum and per-family tables, dated deviations). I found no such files in the folder. The manuscript is not submittable until they exist. **Status: partly fixed.** S1–S4 Tables now exist as CSV files in `manuscript/si/`, generated by `scripts/si_tables.py`; S4 is new and holds the post hoc summaries. Since Nov 3 the **S1 Appendix exists** (`manuscript/si/S1_Appendix.pdf`). **Since Nov 15 every supporting item the manuscript cites exists** and is rebuilt by `manuscript/build.sh` (Section 18.5): S1 Appendix, S1–S4 Tables, S1 File (the preregistrations and seal manifests) and S1 Data (the numbers behind every figure). What is still missing is the public deposit of the full data and code that the repository DOI would point to.
+4. **Placeholders remain**: author affiliation, corresponding email, repository DOI. **Status: still open.** As of Nov 16 the journal check (Section 18.5) lists eight places only the author can fill in: the department, institution, city, state and country of the affiliation; the corresponding email; the repository DOI (and the deposit it points to); and the mentor acknowledgment, which must say exactly what the mentor did. The contributions statement is entered in the PLOS online form with the CRediT roles, and it has to agree with the mentor acknowledgment and with the "Use of AI tools" paragraph.
 5. **Fig 4, regime I × closest approach 0.05–0.17 DU is empty** (n = 0) while the neighbouring cells have hundreds. It may be physical (regime-I near-Moon orbits that start beyond 0.05 DU may fall closer or crash and be excluded), but it is worth a 5-minute check, because a reviewer will ask. **Status: checked; it is physical** (Section 15A.5), and the caption now explains it.
 6. **The Claude Project description is out of date** and would mislead anyone (including a judge or a new collaborator) who reads it: it describes random-forest hurdle models as the method, a 3-evaluation leapfrog, Richardson validation, FTLE as a default feature, and calls the project "well-positioned for … publication" without mentioning that the headline is a negative result plus a partial fix. Update it to the four-study story. **Status: still open**; it lives outside the repository, so only you can change it.
 
@@ -1402,17 +1445,23 @@ You asked me to be critical. These are the problems and soft spots I found while
 
 ### 19.4 Process and presentation notes
 
-18. **AI-assistance disclosure.** The manuscript states that the analysis code was written with an AI coding agent and the text drafted with an AI model under the author's direction. That is honest and PLOS ONE has an AI policy, but check that the model names are exactly right, and check the **current ISEF / regional fair rules** on AI assistance and how it must be disclosed; I'm not certain what this year's rules require, and judges will likely ask what the student personally did. The student should be able to explain every equation and design choice in this document without notes. **Status: rules checked, action still needed.** The Society for Science's generative-AI table (Oct 2025) forbids AI-written first drafts of the abstract, paper, poster and conclusions, and allows AI-written code with citation and a prompt log (Section 15B.6). The model names in the manuscript still need the author's confirmation.
+18. **AI-assistance disclosure.** The manuscript states that the analysis code was written with an AI coding agent and the text drafted with an AI model under the author's direction. That is honest and PLOS ONE has an AI policy, but check that the model names are exactly right, and check the **current ISEF / regional fair rules** on AI assistance and how it must be disclosed; I'm not certain what this year's rules require, and judges will likely ask what the student personally did. The student should be able to explain every equation and design choice in this document without notes. **Status: rules checked, action still needed.** The Society for Science's generative-AI table (Oct 2025) forbids AI-written first drafts of the abstract, paper, poster and conclusions, and allows AI-written code with citation and a prompt log (Section 15B.6). **Since Nov 15** the manuscript has a full "Use of AI tools" paragraph in its Methods, which is what PLOS asks for. It names the tools (Claude Sonnet 5.5 and Claude Opus 5.5 for the work up to Nov 13, and Claude Fable 5.2 for the manuscript draft), says what they did (all code; first drafts of the preregistrations, reports and manuscript text), says that no figure contains AI-made images, and says how the output was checked (90 unit tests, the seals, every number recomputed from the result files, every reference checked). **You must confirm the model names and the description of your own role from your own records**, and keep the prompt logs. The science-fair rule of Section 15B.6 is stricter than PLOS's: for a fair, the paper, abstract, poster and conclusions must be in your own words.
 19. **Housekeeping.** Old pre-seal tools (Section 18.3) and the very large `RESULTS_REPORT.md` could be archived or summarized; the top level mixes four studies' scripts. Not urgent, but it would help a reviewer reproduce things. **Status: done.** The old tools and the Study A report are in `archive/`, with `STUDY_A_SUMMARY.md` at the root; `reproduce.sh` and a pinned environment were added (Section 15A.6).
 20. **Citation mismatch for HiGHS.** The manuscript says the rules were fitted with the "HiGHS interior point solver~\cite{huangfu2018}", but `huangfu2018` is "Parallelizing the dual revised simplex method" (a simplex paper, not interior point). Either cite the HiGHS software/interior-point reference or say "HiGHS solver". Also verify which HiGHS method SciPy actually used. **Status: fixed.** SciPy's `highs-ipm` runs HiGHS's interior-point solver **IPX**, now cited separately as Schork & Gondzio (2020), with Huangfu & Hall kept for HiGHS itself.
 21. **Literature review caveats.** `LITERATURE_REVIEW.md` flags several items as unverified (authors not captured, 2026 items abstract-only). The manuscript's `references.bib` claims DOIs were checked; make sure no unverified item from the review slipped into the manuscript. **Status: checked** (`manuscript/CITATION_AUDIT.md`). None of the flagged items is cited, except Dellnitz et al. (2023), whose authors and journal were then verified. Three other entries were checked against publisher or index records. The remaining 39 standard references were not re-resolved one by one; do that once before submission.
 
 ### 19.5 Added at the 2026-11-06 check
 
-22. **Study C's seal date differs between the manuscript and the git log.** The manuscript gives UTC dates (Oct 27 for Study C, in the sentence at line 312 of `main.tex`). The git commit that records the Study C seal is dated Oct 26 in New York time. Both are correct (Section 3.4). Say "UTC" when you quote the dates, and consider adding "UTC" to that manuscript sentence. **Status: open.**
-23. **Old poster files are still in the folder** (Section 15B.7). Only `poster/cr3bp_poster_v4.js` is corrected, and the Affinity files have not been rebuilt from it. **Status: open.**
+22. **Study C's seal date differs between the manuscript and the git log.** The manuscript gives UTC dates (Oct 27 for Study C, in the sentence at line 312 of `main.tex`). The git commit that records the Study C seal is dated Oct 26 in New York time. Both are correct (Section 3.4). Say "UTC" when you quote the dates, and consider adding "UTC" to that manuscript sentence. **Status: fixed** (the manuscript now says "dates in Coordinated Universal Time").
+23. **Old poster files are still in the folder** (Section 15B.7). **Status: partly fixed.** Version 5 is now the current poster and says what the manuscript says, but the older scripts and both Affinity files are still out of date, and no saved Affinity document of version 5 was found. Build and save it before printing.
 24. **The copy of `DEFENSE_PLAN.md` attached to the Claude Project is the version from before the fixes.** It is dated Nov 3, lists the twelve P0 items as work still to do, and says S1 Appendix "does not exist yet". Most of those items are now fixed (Section 15B). The current record is `DEFENSE_STATUS.md` in the repository folder, which is not attached to the Project. Do not use the Project copy as a to-do list. **Status: open**; replacing it is a one-step job.
 25. **Count the negative results correctly.** Table 2 of the manuscript has 19 tests. Seven were not supported or not met: A-H1, A-H1′a, A-H3, B-T3, C-C2, D-D2 and D-D5. (A-H2 is "consistent with the guarantee", and C3 is supported only narrowly.) An earlier version of this document said 18 tests and five negative results. **Status: fixed here.**
+
+### 19.6 Added at the 2026-11-16 check
+
+26. **The manuscript is a complete draft; what remains is yours to do.** It rebuilds with one command and passes the journal check with no failures (Section 18.5). Every remaining item needs you: the eight placeholders (note 4), confirming the AI paragraph (note 18), running each figure through the PLOS figure checker (NAAS) once, and resolving the 39 older references one by one (note 21). **Status: open.**
+27. **The manuscript states its numbers in more places than before** (abstract, Results, Discussion, Conclusions, the table notes and the supporting information). If any result file is re-run, rebuild with `manuscript/build.sh all`: the figures and supporting tables update themselves, but numbers typed into `main.tex` do not, so search the text for the old value. **Status: a rule to follow.**
+28. **Abstract length.** PLOS allows at most 300 words, and the check enforces it. Any sentence you add there has to be paid for by one you remove. **Status: passes now.**
 
 ---
 
@@ -1607,4 +1656,4 @@ Richardson (1980) halo expansions (and why differentially corrected halos should
 
 ---
 
-*End of document. Every number above comes from the project's own files. It was first written on 2026-10-29, updated on 2026-10-30 (post hoc checks, code changes) and on 2026-11-05 (second round of checks), and checked again against the files on 2026-11-06, when the corrections in Section 19.5 were made. If results are re-run or the manuscript changes, this document will need updating.*
+*End of document. Every number above comes from the project's own files. It was first written on 2026-10-29, updated on 2026-10-30 (post hoc checks, code changes) and on 2026-11-05 (second round of checks), checked again against the files on 2026-11-06, when the corrections in Section 19.5 were made, and on 2026-11-16, after the manuscript became a complete draft (Section 19.6). If results are re-run or the manuscript changes, this document will need updating.*
